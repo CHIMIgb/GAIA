@@ -1,8 +1,8 @@
 # GAIA — Catálogo de APIs y Fuentes de Datos
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.0  
-> **Fecha:** 2026-09-21  
+> **Versión del Documento:** 1.1  
+> **Fecha:** 2026-09-22  
 
 ---
 
@@ -584,7 +584,7 @@ Proporciona **fronteras internacionales, líneas de costa y límites urbanos** s
 - **Lagos y ríos** → Detalle geográfico complementario.
 
 > [!TIP]
-> Los datos de Natural Earth se empaquetan como archivos estáticos en el build de Webpack. No requieren peticiones de red en tiempo de ejecución.
+> Los datos de Natural Earth se empaquetan como archivos estáticos en el build de Vite. No requieren peticiones de red en tiempo de ejecución.
 
 ---
 

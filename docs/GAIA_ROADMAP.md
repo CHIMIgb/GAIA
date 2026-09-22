@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.3
+> **Versión del Documento:** 1.4
 > **Estado:** Aprobado y ejecutado (pasos y micro-pasos definidos, con estimaciones).
 > **Última actualización:** 2026-09-22
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -68,12 +68,12 @@ Cada fase se divide jerárquicamente así:
 **Paso 0.1 — Repo, tooling y CI básico**
 
 **Paso 0.1.1 — Inicializar monorepo TS**
-- [ ] `npm create vite@latest frontend -- --template react-ts` + `npm init -y` para back end en `backend/`, con `package.json` workspaces raíz (`frontend`, `backend`, `shared`).
+- [ ] `npm create vite@latest frontend -- --template react-ts` para el frontend; `backend/` en Python (FastAPI, `pyproject.toml`/uv); `shared/` con tipos TS del contrato (generados desde el esquema OpenAPI).
 - **Criterio:** se abre en `localhost:5173`; `npm run build` compila sin errores.
 - **Estimado:** ~0.75 h.
 
 **Paso 0.1.2 — Git + GitHub Actions vacío**
-- [ ] `git init`, `.gitignore` (node_modules, dist, .env, coverage), flujo Actions mínimo (CI sobre PR: `npm ci && npm run build` + vitest).
+- [ ] `git init`, `.gitignore` (node_modules, dist, .env, coverage), flujo Actions mínimo (CI sobre PR: `npm ci && npm run build` + vitest y `pytest` del backend).
 - **Criterio:** push a GitHub dispara el flujo y pasa.
 - **Estimado:** ~0.75 h.
 
@@ -83,19 +83,19 @@ Cada fase se divide jerárquicamente así:
 - **Estimado:** ~0.25 h.
 
 **Paso 0.1.4 — Carpeta compartida y contrato de errores**
-- [ ] En `shared/`: tipos + constantes de códigos de error (los 7 de `GAIA_SPECIFICATION.md`) y utilidades de fecha.
+- [ ] En `shared/`: tipos + constantes de códigos de error (los 7 del catálogo de `GAIA_API_CONTRACT.md`) y utilidades de fecha.
 - **Criterio:** los 7 códigos están tipados y exportados; test de roundtrip de utilidades.
 - **Estimado:** ~1.25 h.
 
 **Paso 0.2 — Backend base: contrato universal y Redis**
 
 **Paso 0.2.1 — Servidor HTTP universal**
-- [ ] En `backend/`: servidor Node (sin framework o Express mínimo) con `GET /api/health`, middleware de errores que responde la forma `{ok, error}`.
-- **Criterio:** `curl /api/health` → 200 `{ok:true}`; endpoints de módulos pueden registrarse en un router común.
+- [ ] En `backend/`: servidor FastAPI (Python + Uvicorn) con `GET /api/health`, middleware global de errores que responde el contrato `{success, data, error}`.
+- **Criterio:** `curl /api/health` → 200 `{success:true, data:{ok:true}, error:null}`; endpoints de módulos se registran en un router común.
 - **Estimado:** ~1.25 h.
 
 **Paso 0.2.2 — Cliente Redis de propósito general**
-- [ ] Pool de conexión Redis (ioredis o node-redis) reutilizable por los módulos (get/set/keys + TTL).
+- [ ] Cliente Redis async (`redis>=5`, `redis.asyncio`) reutilizable por los módulos (get/set/keys + TTL).
 - **Criterio:** `PING` responde; TTL se respeta; timeout configurable.
 - **Estimado:** ~1.25 h.
 
@@ -112,7 +112,7 @@ Cada fase se divide jerárquicamente así:
 **Paso 0.3 — Base de datos: esquema y sesiones**
 
 **Paso 0.3.1 — Migraciones iniciales**
-- [ ] Configurar migraciones (Drizzle o Prisma) con tablas base: `session`, `data_source`, `raw_payload`, `api_log`.
+- [ ] Configurar migraciones (Alembic + SQLAlchemy) con tablas base: `session`, `data_source`, `raw_payload`, `api_log`.
 - **Criterio:** `migrate` crea el esquema en SQLite/Postgres; migraciones idempotentes.
 - **Estimado:** ~1.25 h.
 
@@ -134,7 +134,7 @@ Cada fase se divide jerárquicamente así:
 - **Estimado:** ~1.25 h.
 
 **Paso 0.4.2 — Cliente API tipado**
-- [ ] Wrapper `fetch` con timeout, reintentos y manejo de errores del contrato (`{ok, error}`).
+- [ ] Wrapper `fetch` con timeout, reintentos y manejo de errores del contrato (`{success, data, error}`).
 - **Criterio:** fallo de red → estado `error` tipado; reintento configurable; test unitario.
 - **Estimado:** ~1.25 h.
 
@@ -172,23 +172,23 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.6 — Testing base y QA de la plataforma**
 
-**Paso 0.6.1 — Harness de test (vitest + supertest)**
-- [ ] Configurar vitest en backend y supertest para el HTTP universal.
-- **Criterio:** un test de `GET /api/health` pasa; runner se integra a `npm test`.
+**Paso 0.6.1 — Harness de test (pytest + TestClient)**
+- [ ] Configurar pytest y el `TestClient` de FastAPI para el HTTP universal.
+- **Criterio:** un test de `GET /api/health` pasa; runner se integra a `pytest` y al CI.
 - **Estimado:** ~1 h.
 
 **Paso 0.6.2 — Tests de errores del contrato**
-- [ ] Test que valida las respuestas `{ok, error}` con los 6 códigos de error en uso.
+- [ ] Test que valida las respuestas `{success, data, error}` con los 7 códigos del catálogo de la API.
 - **Criterio:** errores conocidos devuelven el código correcto.
 - **Estimado:** ~1.25 h.
 
-**Paso 0.6.3 — Injector de fuentes externas**
-- [ ] Abstracción para mockear `fetch` de fuentes (FIRMS, USGS, Open-Meteo, etc.).
+**Paso 0.6.3 — Mock de fuentes externas**
+- [ ] Abstracción para mockear las llamadas HTTP a fuentes (FIRMS, USGS, Open-Meteo, etc.) en los tests de backend (httpx MockTransport / respx).
 - **Criterio:** un módulo de prueba se testea sin red real.
 - **Estimado:** ~1.25 h.
 
 **Paso 0.6.4 — Gestor de fixtures**
-- [ ] Carpeta `shared/test-fixtures` con muestras JSON/CSV por fuente.
+- [ ] Carpeta `backend/tests/fixtures` con muestras JSON/CSV por fuente (y `shared/test-fixtures` cuando el worker las necesite).
 - **Criterio:** fixtures versionados y usados por varios tests.
 - **Estimado:** ~1 h.
 
@@ -297,7 +297,7 @@ Cada fase se divide jerárquicamente así:
 **Paso 0.8 — Documentación y convenciones del repo**
 
 **Paso 0.8.1 — README raíz (setup)**
-- [ ] README con pre-requisitos, `npm ci`, variables y scripts.
+- [ ] README con pre-requisitos (Node para el frontend, Python/uv para el backend), `npm ci` + `uv sync`, variables y scripts.
 - **Criterio:** se puede subir GAIA siguiendo el README.
 - **Estimado:** ~1 h.
 
@@ -612,7 +612,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 2.1.1 — Parser de NASA FIRMS y endpoint**
 - [ ] Fetch de FIRMS (CSV/GeoJSON), parseo a formato normalizado del contrato.
-- **Criterio:** `/api/fires` responde datos paginados con `{ok, error}` en errores; test con fixture.
+- **Criterio:** `/api/fires` responde datos paginados con el contrato `{success, data, error}` en errores; test con fixture.
 - **Estimado:** ~2 h.
 
 **Paso 2.1.2 — Filtros por horas y coordenadas**
@@ -1815,8 +1815,8 @@ Cada fase se divide jerárquicamente así:
 **Paso 11.1 — Cobertura y contrato**
 
 **Paso 11.1.1 — Umbrales de cobertura**
-- [ ] Configurar umbrales (cobertura ≥ 70 % en backend, ≥ 60 % crítico) con vitest.
-- **Criterio:** `npm test` muestra cobertura y falla si baja del umbral.
+- [ ] Configurar umbrales (cobertura ≥ 70 % en backend, ≥ 60 % crítico) con pytest-cov (frontend con vitest).
+- **Criterio:** `pytest --cov` y `npm test` muestran cobertura y fallan si baja del umbral.
 - **Estimado:** ~2.75 h.
 
 **Paso 11.1.2 — Tests de contrato de módulo**

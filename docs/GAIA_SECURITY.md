@@ -1,7 +1,7 @@
 # GAIA — Seguridad de la Aplicación
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.0  
+> **Versión del Documento:** 1.1  
 > **Fecha:** 2026-09-22  
 
 ---
@@ -98,7 +98,7 @@ async def get_radiation(request: Request, lat: float, lon: float, radius_km: int
 | ---------------------- | :-----------: | :---------------: | ----------------------- |
 | Global (todos `/api/*`) | 120/min (burst 240) | 60/min (burst 120) | Defensa base            |
 | `/api/fires`           | 60/min        | 30/min            | Poll del HUD             |
-| `/api/quakes`          | 60/min        | 30/min            |                          |
+| `/api/earthquakes`    | 60/min        | 30/min            |                          |
 | `/api/wind`            | 30/min        | 15/min            | Payload binario grande   |
 | `/api/radiation`       | 30/min        | 15/min            | Consulta geográfica costosa |
 | `/api/elevation`       | 120/min       | 60/min            | Ligeras, ubicuas         |
@@ -183,7 +183,7 @@ Con cabeceras `Retry-After: 30` y `RateLimit-*` estándar. El frontend (Workflow
 | `Permissions-Policy`              | `camera=(), microphone=(), geolocation=()` | API sensibles innecesarias     |
 
 > [!NOTE]
-> Webpack 5 inyecta el nonce CSP en el `index.html` generado (`html-webpack-plugin`), de modo que los scripts inline del HMR/build se permiten solo con nonce asociado al request.
+> El nonce CSP se inyecta en la build de producción con un plugin de Vite (`transformIndexHtml` en `vite.plugins.ts`): el meta CSP y los atributos `nonce` de los `<script>`/`<link>` se generan por request. En desarrollo, el HMR usa scripts inline: se permite `'nonce-{n}'` regenerado por el dev server (o `'unsafe-inline'` solo en modo dev).
 
 ### 6.3 Tests de seguridad
 

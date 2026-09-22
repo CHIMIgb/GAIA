@@ -9,7 +9,7 @@
 | Documento | Descripción |
 | --------- | ----------- |
 | [Especificación Técnica](docs/GAIA_SPECIFICATION.md) | Arquitectura de 4 capas, 14 requisitos funcionales (7 subsistemas) y 7 requisitos no funcionales. |
-| [Stack Tecnológico](docs/GAIA_TECH_STACK.md) | TypeScript, Webpack 5, Three.js + GLSL, React, Valtio, Web Workers + Comlink, FastAPI, Tailwind CSS — con justificación de cada elección. |
+| [Stack Tecnológico](docs/GAIA_TECH_STACK.md) | TypeScript, Vite, Three.js + GLSL, React, Valtio, Web Workers + Comlink, FastAPI, Tailwind CSS — con justificación de cada elección. |
 | [Contrato de API](docs/GAIA_API_CONTRACT.md) | Formato universal JSON `{ success, data, error }` para toda comunicación frontend ↔ backend. |
 | [Workflows Funcionales](docs/GAIA_WORKFLOWS.md) | 8 flujos de trabajo detallados: inicialización, incendios, viento, sismos, inundación, interacción, resiliencia y radiación. |
 | [Catálogo de APIs](docs/GAIA_DATA_SOURCES.md) | 21 APIs y fuentes de datos gratuitas organizadas por módulo funcional. |
@@ -29,7 +29,7 @@
 | Capa | Tecnología |
 | ---- | ---------- |
 | Lenguaje | TypeScript (strict) |
-| Bundler | Webpack 5 |
+| Bundler | Vite |
 | Motor 3D | Three.js + GLSL |
 | UI | React + Tailwind CSS |
 | Estado | Valtio |

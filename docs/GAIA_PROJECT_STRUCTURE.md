@@ -1,8 +1,8 @@
 # GAIA — Estructura del Proyecto
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.0  
-> **Fecha:** 2026-09-21  
+> **Versión del Documento:** 1.1  
+> **Fecha:** 2026-09-22  
 
 ---
 
@@ -25,8 +25,8 @@ GAIA/
 
 ```
 frontend/
-├── public/
-│   ├── index.html                     ← HTML raíz (mount del canvas WebGL + React root)
+├── index.html                         ← HTML raíz de Vite (mount del canvas WebGL + React root)
+├── public/                            ← Assets estáticos servidos tal cual (sin hash)
 │   └── favicon.ico
 │
 ├── src/
@@ -134,7 +134,7 @@ frontend/
 │   ├── services/                      ← Capa de comunicación con el backend
 │   │   ├── api.ts                     ← fetchAPI<T>(): wrapper tipado de fetch + manejo de contrato universal
 │   │   ├── fires.service.ts           ← getFires(hours): GET /api/fires
-│   │   ├── quakes.service.ts          ← getQuakes(days, minMag): GET /api/quakes
+│   │   ├── quakes.service.ts          ← getEarthquakes(days, minMag): GET /api/earthquakes
 │   │   ├── wind.service.ts            ← getWindGrid(resolution): GET /api/wind
 │   │   ├── radiation.service.ts       ← getRadiation(lat, lon, radius): GET /api/radiation
 │   │   └── elevation.service.ts       ← getElevation(lat, lon): GET /api/elevation
@@ -171,9 +171,8 @@ frontend/
 │           ├── wind_grid_latest.bin   ← Dataset de respaldo: rejilla de viento binaria
 │           └── radiation_latest.json  ← Dataset de respaldo: radiación (snapshot Safecast)
 │
-├── webpack.config.js                  ← Configuración Webpack 5 (GLSL loader, Workers, code splitting)
-├── webpack.dev.js                     ← Overrides para desarrollo (devServer, source maps)
-├── webpack.prod.js                    ← Overrides para producción (minificación, tree-shaking)
+├── vite.config.ts                     ← Configuración de Vite (React, Tailwind, GLSL, Workers, code splitting)
+├── vite.plugins.ts                    ← Plugins compartidos: ?raw GLSL, visualizer, CSP/nonce en build
 ├── tsconfig.json                      ← Configuración TypeScript (strict mode, paths)
 ├── tailwind.config.js                 ← Configuración Tailwind CSS (tema oscuro, colores custom)
 ├── postcss.config.js                  ← PostCSS: autoprefixer + tailwindcss
@@ -204,7 +203,7 @@ backend/
 │   ├── routers/                       ← Endpoints agrupados por módulo funcional
 │   │   ├── __init__.py
 │   │   ├── fires.py                   ← GET /api/fires — proxy NASA FIRMS + caché Redis
-│   │   ├── quakes.py                  ← GET /api/quakes — proxy USGS + caché Redis
+│   │   ├── quakes.py                  ← GET /api/earthquakes — proxy USGS + caché Redis
 │   │   ├── wind.py                    ← GET /api/wind — proxy Open-Meteo + procesamiento de rejilla
 │   │   ├── radiation.py               ← GET /api/radiation — proxy Safecast/EURDEP + normalización µSv/h
 │   │   ├── elevation.py               ← GET /api/elevation — proxy Open-Meteo Elevation
@@ -223,7 +222,7 @@ backend/
 │   │
 │   ├── cache/                         ← Integración con Redis
 │   │   ├── __init__.py
-│   │   ├── redis_client.py            ← Conexión singleton a Redis (aioredis)
+│   │   ├── redis_client.py            ← Conexión singleton a Redis (redis.asyncio)
 │   │   └── cache_keys.py              ← Constantes de claves de caché + TTLs por módulo
 │   │
 │   ├── db/                            ← Persistencia de históricos (PostgreSQL 18 + TimescaleDB)
@@ -249,7 +248,7 @@ backend/
 │   ├── __init__.py
 │   ├── conftest.py                    ← Fixtures pytest: FastAPI TestClient, Redis mock
 │   ├── test_fires.py                  ← Tests del endpoint /api/fires y servicio FIRMS
-│   ├── test_quakes.py                 ← Tests del endpoint /api/quakes y servicio USGS
+│   ├── test_quakes.py                 ← Tests del endpoint /api/earthquakes y servicio USGS
 │   ├── test_wind.py                   ← Tests del endpoint /api/wind y servicio Open-Meteo
 │   ├── test_radiation.py              ← Tests del endpoint /api/radiation + normalización µSv/h
 │   ├── test_elevation.py              ← Tests del endpoint /api/elevation
@@ -312,7 +311,7 @@ GAIA/
 | `radiation/radiation.vert`| Vertex     | Posiciones de sensores radiológicos instanciados               | RF-14     |
 | `radiation/radiation.frag`| Fragment   | Color por umbral µSv/h + parpadeo animado si > 1.0            | RF-14     |
 
-> Todos los archivos `.vert` y `.frag` se importan en TypeScript como strings gracias a la regla `asset/source` de Webpack 5.
+> Todos los archivos `.vert` y `.frag` se importan en TypeScript como strings gracias al sufijo `?raw` de Vite (o `vite-plugin-glsl`), con sus tipos declarados en `env.d.ts`.
 
 ---
 
@@ -396,7 +395,7 @@ Todos los workers exponen su API vía **Comlink** y transfieren datos al hilo pr
 | ----------------------- | --------------------------- | ------------------------ |
 | `api.ts`                | —                           | `fetchAPI<T>(url)` — wrapper genérico con manejo del contrato `{ success, data, error }` |
 | `fires.service.ts`      | `GET /api/fires`            | `FireHotspot[]`          |
-| `quakes.service.ts`     | `GET /api/quakes`           | `Earthquake[]`           |
+| `quakes.service.ts`     | `GET /api/earthquakes`     | `Earthquake[]`           |
 | `wind.service.ts`       | `GET /api/wind`             | `WindGridMeta`           |
 | `radiation.service.ts`  | `GET /api/radiation`        | `RadiationReading[]`     |
 | `elevation.service.ts`  | `GET /api/elevation`        | `{ elevation_m: number }` |
@@ -408,7 +407,7 @@ Todos los workers exponen su API vía **Comlink** y transfieren datos al hilo pr
 | Archivo          | Ruta              | Método | Descripción                                            |
 | ---------------- | ----------------- | :----: | ------------------------------------------------------ |
 | `fires.py`       | `/api/fires`      | GET    | Proxy NASA FIRMS. Params: `hours` (1–72).              |
-| `quakes.py`      | `/api/quakes`     | GET    | Proxy USGS. Params: `days` (1–30), `min_magnitude`.    |
+| `quakes.py`      | `/api/earthquakes` | GET    | Proxy USGS. Params: `days` (1–30), `min_magnitude`.    |
 | `wind.py`        | `/api/wind`       | GET    | Proxy Open-Meteo. Params: `resolution`.                |
 | `radiation.py`   | `/api/radiation`  | GET    | Proxy Safecast/EURDEP. Params: `lat`, `lon`, `radius_km`. |
 | `elevation.py`   | `/api/elevation`  | GET    | Proxy Open-Meteo Elevation. Params: `lat`, `lon`.      |
@@ -437,7 +436,7 @@ Todos retornan el [formato de contrato universal](./GAIA_API_CONTRACT.md): `{ su
 
 | Archivo           | Contenido                                                                     |
 | ----------------- | ----------------------------------------------------------------------------- |
-| `redis_client.py` | Conexión singleton a Redis usando `aioredis`. Reconexión automática si se pierde la conexión. |
+| `redis_client.py` | Conexión singleton a Redis usando `redis>=5` (API `redis.asyncio`). Reconexión automática si se pierde la conexión. |
 | `cache_keys.py`   | Constantes de claves y TTLs por módulo:                                       |
 
 | Módulo     | Clave Patrón            | TTL      |
@@ -456,7 +455,7 @@ Todos retornan el [formato de contrato universal](./GAIA_API_CONTRACT.md): `{ su
 | -------------------- | ----------------------------------------------------------------------------- |
 | `conftest.py`        | Fixtures: `TestClient` de FastAPI, mock de Redis (fakeredis), mock de httpx.  |
 | `test_fires.py`      | Endpoint `/api/fires`: respuesta exitosa, caché hit, fallback local.          |
-| `test_quakes.py`     | Endpoint `/api/quakes`: respuesta exitosa, validación de params, fallback.    |
+| `test_quakes.py`     | Endpoint `/api/earthquakes`: respuesta exitosa, validación de params, fallback.    |
 | `test_wind.py`       | Endpoint `/api/wind`: respuesta exitosa, formato de rejilla.                  |
 | `test_radiation.py`  | Endpoint `/api/radiation`: normalización CPM→µSv/h, umbrales de alerta.      |
 | `test_elevation.py`  | Endpoint `/api/elevation`: respuesta con metros, caché de 24h.               |
@@ -511,13 +510,11 @@ Mapeo por tabla: hipertabla por tiempo para datos de eventos; TTL físico vía r
 | `comlink`         | Comunicación tipada Main ↔ Workers            |
 | `tailwindcss`     | Framework CSS utilitario                      |
 | `typescript`      | Compilador TypeScript                         |
-| `webpack`         | Bundler principal                             |
-| `webpack-cli`     | CLI de Webpack                                |
-| `webpack-dev-server` | Servidor de desarrollo con HMR             |
-| `ts-loader`       | Carga de archivos TypeScript en Webpack       |
-| `css-loader`      | Carga de CSS en Webpack                       |
-| `postcss-loader`  | Procesamiento PostCSS (Tailwind)              |
-| `html-webpack-plugin` | Generación del HTML de salida             |
+| `vite`             | Bundler y dev server (esbuild + Rollup)    |
+| `@vitejs/plugin-react` | HMR y Fast Refresh para React          |
+| `vite-plugin-glsl` | Imports de shaders `.vert`/`.frag` (`?raw`) |
+| `rollup-plugin-visualizer` | Reporte visual del bundle (chunks)  |
+| `postcss` + `autoprefixer` | Procesamiento PostCSS vía config de Vite (Tailwind) |
 | `stats.js`        | Monitor de FPS en desarrollo (opcional)       |
 
 ### 7.2 Backend (`requirements.txt`)
@@ -528,7 +525,7 @@ Mapeo por tabla: hipertabla por tiempo para datos de eventos; TTL físico vía r
 | `uvicorn[standard]` | Servidor ASGI de alto rendimiento           |
 | `pydantic`        | Validación de datos y modelos de respuesta    |
 | `httpx`           | Cliente HTTP asíncrono (fetch a APIs externas)|
-| `aioredis`        | Cliente Redis asíncrono                       |
+| `redis`           | Cliente Redis asíncrono (`redis>=5`, API async) |
 | `numpy`           | Procesamiento de matrices (viento GRIB2)      |
 | `shapely`         | Operaciones geométricas espaciales            |
 | `geopandas`       | Análisis geoespacial sobre DataFrames         |

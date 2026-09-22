@@ -1,8 +1,8 @@
 # GAIA — Workflows Funcionales del Sistema
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.0  
-> **Fecha:** 2026-09-21  
+> **Versión del Documento:** 1.1  
+> **Fecha:** 2026-09-22  
 
 ---
 
@@ -58,7 +58,7 @@ El usuario abre la aplicación en el navegador.
 
 #### Paso 2 — Carga de Assets y Web Workers
 
-- Webpack / Navegador descarga los scripts minificados y assets estáticos:
+- Vite / Navegador descarga los scripts minificados y assets estáticos:
   - Texturas del planeta (diffuse map, specular map, normal map).
   - Heightmap de elevación GEBCO (batimetría y relieve continental).
 - Se instancian e inicializan **en paralelo** los tres Web Workers principales:

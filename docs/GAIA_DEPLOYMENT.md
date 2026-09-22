@@ -1,8 +1,8 @@
 # GAIA — Guía de Despliegue
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.0  
-> **Fecha:** 2026-09-21  
+> **Versión del Documento:** 1.1  
+> **Fecha:** 2026-09-22  
 
 ---
 
@@ -14,7 +14,7 @@ El despliegue contempla **tres piezas** que se orquestan de forma independiente:
 
 | Pieza        | Stack                          | Despliegue                   |
 | ------------ | ------------------------------ | ---------------------------- |
-| **Frontend** | Build estático (Webpack 5)     | Vercel / Netlify / Nginx CDN |
+| **Frontend** | Build estático (Vite)             | Vercel / Netlify / Nginx CDN |
 | **Backend**  | FastAPI + Uvicorn              | Railway / Render / Docker VPS |
 | **Datos**    | Redis (caché) + PostgreSQL 18 / TimescaleDB (históricos) | Docker / Redis Cloud |
 
@@ -31,7 +31,7 @@ El despliegue contempla **tres piezas** que se orquestan de forma independiente:
                                               ▼
                        ┌────────────────────────────────────────────┐
                        │              Backend FastAPI              │  (Railway · Render · VPS)
-                       │  /api/fires · /api/quakes · /api/wind     │
+                       │  /api/fires · /api/earthquakes · /api/wind
                        │  /api/history/* — desde PostgreSQL 18     │
                        │  /api/radiation · /api/elevation · /health│
                        └──────────────┬─────────────┬───────────────┘
@@ -55,7 +55,7 @@ Flujo de datos: el frontend consume exclusivamente `/api/*` del backend; el back
 
 | Herramienta          | Versión mínima | Uso                          |
 | -------------------- | -------------- | ---------------------------- |
-| Node.js              | 20 LTS         | Webpack, dev server, Vitest  |
+| Node.js              | 20 LTS         | Vite (dev server + build), Vitest |
 | Python               | 3.12           | FastAPI, Uvicorn, tests      |
 | Redis                | 7.x            | Caché (o Docker)             |
 | Docker               | 24+            | Opcional (Redis + backend)   |
@@ -81,11 +81,11 @@ uvicorn app.main:app --reload --port 8000
 cd frontend
 npm install
 cp .env.example .env.local        # editar variables (sección 4)
-npm run dev                       # devServer + HMR
+npm run dev                       # Vite dev server + HMR
 ```
 
 > [!NOTE]
-> **Hot reload de shaders GLSL:** Webpack 5 con la regla `asset/source` recarga los `.vert`/`.frag` en caliente. Al editar un shader, el HMR recompila el módulo y Three.js reutiliza el material sin recargar el canvas.
+> **Hot reload de shaders GLSL:** Vite con `?raw`/`vite-plugin-glsl` recarga los `.vert`/`.frag` en caliente. Al editar un shader, el HMR recompila el módulo y Three.js reutiliza el material sin recargar el canvas.
 
 ### 3.3 Verificación Rápida
 
@@ -130,8 +130,8 @@ curl 'http://localhost:8000/api/fires?hours=24'   # contrato universal
 
 | Variable              | Uso                                         |
 | --------------------- | ------------------------------------------- |
-| `GAIA_API_BASE_URL`   | Base del backend. Dev: `http://localhost:8000`. |
-| `GAIA_PUBLIC_URL`     | URL pública de la app (`DefinePlugin`/`publicPath` de Webpack). |
+| `VITE_GAIA_API_BASE_URL` | Base del backend. Dev: `http://localhost:8000`. Vite expone al cliente solo las variables `VITE_*` (`import.meta.env`). |
+| `VITE_GAIA_PUBLIC_URL`     | URL pública/base de la app (`build.base` de Vite). |
 | `MAPBOX_ACCESS_TOKEN` | **Opcional alt.** Si se sustituyera Esri por tiles Mapbox. |
 
 ### 4.4 Plantilla `.env.example`
@@ -155,7 +155,7 @@ TTL_RADIATION_SECONDS=300
 TTL_ELEVATION_SECONDS=86400
 
 # ---- Frontend (copiar a .env.local) ----
-GAIA_API_BASE_URL=http://localhost:8000
+VITE_GAIA_API_BASE_URL=http://localhost:8000
 ```
 
 > [!CAUTION]
@@ -169,18 +169,18 @@ GAIA_API_BASE_URL=http://localhost:8000
 
 ```bash
 cd frontend
-npm run build          # webpack --config webpack.prod.js
+npm run build          # vite build (build.prod en vite.config.ts)
 ```
 
-Optimizaciones de Webpack 5 habilitadas en `webpack.prod.js`:
+Optimizaciones de Vite (Rollup) habilitadas en `vite.config.ts` (build):
 
 | Optimización | Detalle                                                              |
 | ------------ | -------------------------------------------------------------------- |
-| Tree-shaking | Eliminación de exports no usados de Three.js y React.                |
-| Code splitting | `SplitChunksPlugin`: chunk de arranque, chunk Three.js (bajo demanda) y chunk de React. |
-| Minificación de shaders | GLSL minificado inline vía `asset/source` + `glslify`/loader custom. |
-| `Mode`, Source maps | `mode: production`, source maps de producción (no-full).            |
-| Deterministic IDs | `optimization.moduleIds: 'deterministic'` para caché HTTP estable de chunks. |
+| Tree-shaking | Eliminación de exports no usados de Three.js y React (esbuild/Rollup). |
+| Code splitting | `build.rollupOptions.output.manualChunks`: chunk de arranque, chunk Three.js (bajo demanda) y chunk de React. |
+| Minificación de shaders | GLSL minificado durante el build vía `vite-plugin-glsl`. |
+| Source maps | `build.sourcemap: 'hidden'` con `minify: 'esbuild'` para origen (non-full). |
+| Hashes deterministas | `chunkFileNames` con hash de contenido para caché HTTP estable de chunks. |
 
 **Presupuesto de bundle** (verificado en CI con `size-limit`; ver [Plan de Testing](./GAIA_TESTING.md)):
 
@@ -261,14 +261,14 @@ volumes:
 
 | Pieza       | Proveedor            | Configuración clave                                              |
 | ----------- | -------------------- | ---------------------------------------------------------------- |
-| **Frontend**| Vercel / Netlify     | Build: `npm run build`; output: `frontend/dist`. Env: `GAIA_API_BASE_URL`. |
+| **Frontend**| Vercel / Netlify     | Build: `npm run build`; output: `frontend/dist`. Env: `VITE_GAIA_API_BASE_URL`. |
 | **Backend** | Railway / Render     | Build: Dockerfile; env del §4.1 (secrets para `FIRMS_MAP_KEY`).  |
 | **Redis**   | Redis Cloud / Upstash| `REDIS_URL` apuntando al servicio gestionado.                     |
 
 Pasos:
 1. Subir `backend/` a Railway/Render como servicio Docker (comando `uvicorn app.main:app ...`).
 2. Conectar Redis gestionado y fijar `REDIS_URL`.
-3. Conectar el repo frontend a Vercel/Netlify: `GAIA_API_BASE_URL` = URL pública del backend; `CORS_ORIGINS` en el backend debe incluir la URL del frontend.
+3. Conectar el repo frontend a Vercel/Netlify: `VITE_GAIA_API_BASE_URL` = URL pública del backend; `CORS_ORIGINS` en el backend debe incluir la URL del frontend.
 4. Desplegar. Verificar `/health` y una request a `/api/fires`.
 
 ### 6.2 Opción B — Docker Compose en VPS
@@ -447,12 +447,11 @@ Versiones **objetivo** a fijar en `package.json` y `requirements.txt`. Las revis
 | `comlink`            | `^4.4.1`         | Workers tipados                             |
 | `tailwindcss`        | `^3.4.10`        | Tema oscuro del HUD (config `3.x`)          |
 | `typescript`         | `^5.6.2`         | strict mode                                 |
-| `webpack`            | `^5.94.0`        | GLSL loader + code splitting                |
-| `webpack-cli`        | `^5.1.4`         | CLI de build                                |
-| `webpack-dev-server` | `^5.1.0`         | HMR en desarrollo                           |
-| `ts-loader`          | `^9.5.1`         | Compilación TS en bundler                   |
-| `css-loader` / `postcss-loader` | `^7.1.2` / `^8.1.1` | Pipeline CSS + Tailwind |
-| `html-webpack-plugin`| `^5.6.0`         | Generación de `index.html`                  |
+| `vite`               | `^6.0.0`         | Bundler + dev server (esbuild/Rollup)     |
+| `@vitejs/plugin-react` | `^4.3.0`      | HMR y Fast Refresh para React             |
+| `vite-plugin-glsl`   | `^1.3.0`         | Imports `?raw` de shaders GLSL             |
+| `rollup-plugin-visualizer` | `^5.12.0` | Reporte del bundle (chunks)               |
+| `typescript`         | `^5.6.2`         | strict mode                                 |
 | `stats.js`           | `^0.17.0`        | Overlay de FPS (debug)                      |
 
 ### 8.2 Backend
@@ -463,7 +462,7 @@ Versiones **objetivo** a fijar en `package.json` y `requirements.txt`. Las revis
 | `uvicorn[standard]`| `^0.30.6`        | Servidor ASGI                                 |
 | `pydantic`         | `^2.9.2`         | Modelos de request/response                   |
 | `httpx`            | `^0.27.2`        | Cliente HTTP asíncrono (upstreams)            |
-| `aioredis`         | `2.0.1`          | Cliente Redis asyncio *(ver nota)*            |
+| `redis`            | `^5.0.7`         | Cliente Redis asyncio (`redis>=5`, API async) |
 | `numpy`            | `^2.1.1`         | Procesamiento de rejillas GRIB2/viento        |
 | `shapely`          | `^2.0.6`         | Operaciones geométricas                       |
 | `geopandas`        | `^1.0.1`         | Análisis geoespacial                          |
@@ -473,7 +472,7 @@ Versiones **objetivo** a fijar en `package.json` y `requirements.txt`. Las revis
 | `fakeredis`        | `^2.24.1`        | Mock de Redis en tests                        |
 
 > [!NOTE]
-> `aioredis` está en **modo mantenimiento** (fusionado en `redis-py` ≥ 4.2). Si se prefiere un cliente mantenido activamente, usar `redis>=5` con su API `async` — el DSN `REDIS_URL` es compatible. La estructura del proyecto conserva `aioredis` como baseline.
+> El cliente asíncrono es `redis>=5` (API `redis.asyncio`), el sucesor mantenido de `aioredis` (fusionado en `redis-py` ≥ 4.2). El DSN `REDIS_URL` es compatible.
 
 ### 8.3 Runtimes e Infraestructura
 

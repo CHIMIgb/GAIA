@@ -1,14 +1,14 @@
 # GAIA — Especificación Técnica y Requisitos del Sistema
 
 > **Nombre del Proyecto:** GAIA  
-> **Versión del Documento:** 1.0  
-> **Fecha:** 2026-09-21  
+> **Versión del Documento:** 1.1  
+> **Fecha:** 2026-09-22  
 
 ---
 
 ## 1. Visión General
 
-GAIA es una aplicación de visualización geoespacial 3D en tiempo real que integra múltiples fuentes de datos ambientales — incendios, actividad sísmica, corrientes de viento e inundaciones costeras — sobre un globo terráqueo interactivo renderizado con WebGL/Three.js.
+GAIA es una aplicación de visualización geoespacial 3D en tiempo real que integra múltiples fuentes de datos ambientales — incendios, actividad sísmica, corrientes de viento, inundaciones costeras y radiación ambiental — sobre un globo terráqueo interactivo renderizado con WebGL/Three.js.
 
 El sistema está diseñado para ofrecer una experiencia analítica táctica: un panel de control unificado donde científicos, analistas de desastres y ciudadanos puedan explorar, filtrar y comprender fenómenos naturales a escala planetaria con rendimiento de 60 FPS.
 

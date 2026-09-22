@@ -1,8 +1,8 @@
 # GAIA — Plan de Testing y Métricas de Rendimiento
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.0  
-> **Fecha:** 2026-09-21  
+> **Versión del Documento:** 1.1  
+> **Fecha:** 2026-09-22  
 
 ---
 
@@ -138,9 +138,9 @@ performance.measure('fcp', 'gaia:boot', 'gaia:globe-ready');
 | ------------------------ | ---------------------- | -------------------------------------- |
 | Chunk de arranque (main) | ≤ 180 KB               | App mínima + React core                 |
 | Chunk Three.js           | ≤ 250 KB               | Cargado bajo demanda (code splitting)   |
-| React + HUD              | ≤ 120 KB               | Vía `SplitChunksPlugin`                 |
+| React + HUD              | ≤ 120 KB               | Vía `build.rollupOptions.output.manualChunks`
 | Texturas / heightmap     | *streaming por tiles*  | TileManager de GLOBOTextures (Esri/Terrarium) |
-| **Total JS inicial**     | **≤ 450 KB**           | Verificado en CI con `size-limit` o `webpack-bundle-analyzer` |
+| **Total JS inicial**     | **≤ 450 KB**           | Verificado en CI con `size-limit` o `rollup-plugin-visualizer` |
 
 > [!IMPORTANT]
 > El cumplimiento de FCP < 2.0 s depende de **no bloquear el bundle con Three.js**: el globo base lo dibuja el chunk principal, y los módulos pesados (viento/sismos) se descargan bajo demanda cuando se activa la capa (Workflow 1, RNF-06).
@@ -262,7 +262,7 @@ Se verifica que:
 | Archivo                 | Qué verifica                                                                 |
 | ----------------------- | ---------------------------------------------------------------------------- |
 | `test_fires.py`         | `/api/fires`: 200, caché hit, fallback local, validación de `hours` (1–72)   |
-| `test_quakes.py`        | `/api/quakes`: 200, validación de `days` (1–30) y `min_magnitude`, fallback |
+| `test_quakes.py`        | `/api/earthquakes`: 200, validación de `days` (1–30) y `min_magnitude`, fallback |
 | `test_wind.py`          | `/api/wind`: 200, formato de rejilla, metadata de componentes binarios       |
 | `test_radiation.py`     | `/api/radiation`: **normalización CPM→µSv/h**, umbrales de alerta            |
 | `test_elevation.py`     | `/api/elevation`: metros, caché de 24h                                       |
@@ -283,7 +283,7 @@ Ejecución: `pytest backend/tests -q` en CI y local.
 
 ### 6.2 Frontend — Vitest (unidades puras)
 
-Se prioriza **Vitest** (misma cadena TS/ESM que Webpack) sobre Jest. Casos clave:
+Se prioriza **Vitest** (misma cadena TS/ESM que Vite/esbuild) sobre Jest. Casos clave:
 
 | Archivo / Módulo          | Pruebas                                                                 |
 | ------------------------- | ----------------------------------------------------------------------- |

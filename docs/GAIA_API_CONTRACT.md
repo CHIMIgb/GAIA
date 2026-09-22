@@ -100,7 +100,7 @@ El contrato **no reemplaza** los códigos de estado HTTP, los **complementa**:
 
 ### 4.2 Éxito — Sismos (USGS)
 
-**`GET /api/quakes?days=7&min_magnitude=4.0`** → `200 OK`
+**`GET /api/earthquakes?days=7&min_magnitude=4.0`** → `200 OK`
 
 ```json
 {
@@ -163,7 +163,7 @@ El contrato **no reemplaza** los códigos de estado HTTP, los **complementa**:
 
 ### 4.5 Error — Parámetros inválidos
 
-**`GET /api/quakes?days=400`** → `400 Bad Request`
+**`GET /api/earthquakes?days=400`** → `400 Bad Request`
 
 ```json
 {

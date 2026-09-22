@@ -1,8 +1,8 @@
 # GAIA — Stack Tecnológico
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.0  
-> **Fecha:** 2026-09-21  
+> **Versión del Documento:** 1.1  
+> **Fecha:** 2026-09-22  
 
 ---
 
@@ -12,13 +12,13 @@
 ┌─────────────────────────────────────────────────────────────┐
 │                        FRONTEND                             │
 │                                                             │
-│   TypeScript ─── Webpack 5 ─── Three.js + GLSL             │
+│   TypeScript ─── Vite ──────── Three.js + GLSL             │
 │        │              │              │                      │
 │        │              │              ├── InstancedMesh       │
 │        │              │              ├── Shaders .vert/.frag │
 │        │              │              └── Transform Feedback  │
 │        │              │                                      │
-│        │              ├── raw-loader (GLSL)                  │
+│        │              ├── ?raw / vite-plugin-glsl (GLSL)     │
 │        │              ├── Web Workers (new URL(...))         │
 │        │              └── Code Splitting (Three.js chunks)   │
 │        │                                                     │
@@ -83,40 +83,41 @@ interface FireHotspot {
 
 ---
 
-### 2.2 Tooling & Bundler — Webpack 5
+### 2.2 Tooling & Bundler — Vite
 
 | Aspecto       | Detalle                              |
 | ------------- | ------------------------------------ |
-| **Tecnología**| Webpack 5 (alternativa: Rspack)      |
-| **Rol**       | Empaquetador y pipeline de compilación |
+| **Tecnología**| Vite (esbuild + Rollup)              |
+| **Rol**       | Dev server con HMR y pipeline de compilación |
 
 #### Justificación Técnica
 
-Webpack 5 otorga **control total** sobre la canalización de compilación (build pipeline), lo cual es crítico para un proyecto con assets gráficos no convencionales:
+Vite cubre el mismo pipeline (GLSL, Workers, code splitting) que Webpack, pero con **mucho menos boilerplate de configuración** y un **HMR muy superior**:
 
-1. **Carga nativa de shaders GLSL:**  
-   Configuración de `raw-loader` (o `asset/source`) para importar archivos `.vert` y `.frag` directamente como strings en los módulos TypeScript.
+1. **Dev server sobre ESM nativo:**  
+   Vite aprovecha los módulos ESM del navegador para servir el código tal cual durante el desarrollo, con hot module replacement casi instantáneo incluso con bundles grandes como Three.js (~600 KB).
 
-   ```javascript
-   // webpack.config.js
-   {
-     test: /\.(vert|frag|glsl)$/,
-     type: 'asset/source',
-   }
+2. **Carga de shaders GLSL como strings:**  
+   Los `.vert`/`.frag` se importan directamente con el sufijo `?raw` (o el plugin `vite-plugin-glsl`), sin loaders custom:
+
+   ```typescript
+   // shaders.ts — Vite
+   import atmosphereVert from './atmosphere.vert?raw';
+   import atmosphereFrag from './atmosphere.frag?raw';
    ```
 
-2. **Web Workers de primera clase:**  
-   Webpack 5 soporta nativamente la sintaxis `new Worker(new URL('./worker.ts', import.meta.url))`, eliminando la necesidad de plugins externos como `worker-loader`.
+3. **Web Workers de primera clase:**  
+   Con la misma sintaxis que Webpack — `new Worker(new URL('./worker.ts', import.meta.url))` — Vite empaqueta el worker en un chunk aparte con tipado y HMR, sin plugins externos.
 
-3. **Code Splitting inteligente:**  
-   Separación de chunks para librerías pesadas (Three.js pesa ~600 KB minificado). Esto permite cargar el globo base primero y los módulos de viento/sismos bajo demanda.
+4. **Code Splitting inteligente:**  
+   Los `import()` dinámicos separan los chunks pesados (Three.js bajo demanda para viento/sismos), con hashes estables en producción (`build.rollupOptions.output.manualChunks`).
 
-4. **Dominio de bajo nivel:**  
-   Configurar Webpack 5 desde cero demuestra comprensión profunda de cómo funciona el empaquetado de assets gráficos y módulos bajo el capó — más allá de la abstracción preconfigurada que ofrece Vite.
+5. **Configuración declarativa y mantenible:**  
+   En `vite.config.ts` se declaran los plugins (React + Tailwind + analyzer) de forma explícita; la build de producción usa **Rollup** con tree-shaking.
 
 > [!NOTE]
-> **¿Por qué Webpack 5 en lugar de Vite?**  
-> Vite es excelente para desarrollo rápido, pero su modelo de ESM nativo durante el desarrollo puede generar fricción con la importación de shaders GLSL, la configuración de Web Workers tipados y el control granular de chunks para Three.js. Webpack 5 permite configurar cada paso del pipeline de forma explícita, lo cual es preferible en un proyecto de portafolio de nivel Senior donde se busca demostrar dominio técnico.
+> **¿Por qué Vite en lugar de Webpack?**
+> Vite elimina el boilerplate que Webpack exige (loaders, plugins, dev server y CLI propios) manteniendo lo esencial del pipeline de GAIA: imports `?raw` de GLSL, workers vía `new URL(...)` y code-splitting por `import()`. Además su HMR recarga los shaders en caliente sin reiniciar el canvas ([GAIA_DEPLOYMENT](./GAIA_DEPLOYMENT.md)), y es la elección del plan maestro ([GAIA_ROADMAP](./GAIA_ROADMAP.md), F0.1.1/F0.4.4).
 
 ---
 
@@ -293,7 +294,7 @@ Tailwind CSS permite la construcción ágil de **dashboards oscuros, densos e hi
 | Capa / Módulo        | Tecnología                      | Rol Principal                                          |
 | -------------------- | ------------------------------- | ------------------------------------------------------ |
 | Lenguaje Base        | **TypeScript**                  | Tipado estricto para coordenadas, buffers y WebGL      |
-| Tooling & Bundler    | **Webpack 5** (o Rspack)        | Pipeline de compilación con GLSL, Workers y code split |
+| Tooling & Bundler    | **Vite** (esbuild + Rollup)         | Dev server con HMR, pipeline GLSL, Workers y code split |
 | Motor 3D & Shaders   | **Three.js + GLSL**             | Renderizado 60 FPS, shaders, gestión de VRAM           |
 | UI & Dashboard       | **React**                       | HUD táctico, telemetría, controles de capas            |
 | Manejo de Estado     | **Valtio** (o Jotai)            | Estado reactivo Proxy-based entre Three.js y React     |
