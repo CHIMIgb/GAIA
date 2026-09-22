@@ -1,7 +1,7 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.4
-> **Estado:** Aprobado y ejecutado (pasos y micro-pasos definidos, con estimaciones).
+> **Versión del Documento:** 1.5
+> **Estado:** Planificado — NO ejecutado (pasos y micro-pasos definidos, con estimaciones; la implementación está por comenzar).
 > **Última actualización:** 2026-09-22
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
 

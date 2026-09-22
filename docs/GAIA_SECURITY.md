@@ -1,7 +1,7 @@
 # GAIA — Seguridad de la Aplicación
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.1  
+> **Versión del Documento:** 1.2  
 > **Fecha:** 2026-09-22  
 
 ---
@@ -59,7 +59,7 @@ El valor de la cookie es un **token opaco**: el servidor guarda solo su **hash**
 
 ### 3.2 Por qué no hay CSRF token
 
-Todas las mutaciones de estado de GAIA ocurren **en el cliente** (Valtio). El backend expone una API **solo lectura** (`GET /api/*`, `/health`). Con `SameSite=Lax` + `ReferrerPolicy`, el riesgo CSRF es despreciable porque no hay endpoints que muten datos en el servidor. Si en el futuro se añadiera escritura, se introduciría un token CSRF (`Double Submit`).
+Todas las mutaciones de estado de GAIA ocurren **en el cliente** (Valtio). El backend expone una API **solo lectura** (`GET /api/*`, `/api/health`). Con `SameSite=Lax` + `ReferrerPolicy`, el riesgo CSRF es despreciable porque no hay endpoints que muten datos en el servidor. Si en el futuro se añadiera escritura, se introduciría un token CSRF (`Double Submit`).
 
 ### 3.3 Marco de referencia (registro de sesión)
 
@@ -102,7 +102,7 @@ async def get_radiation(request: Request, lat: float, lon: float, radius_km: int
 | `/api/wind`            | 30/min        | 15/min            | Payload binario grande   |
 | `/api/radiation`       | 30/min        | 15/min            | Consulta geográfica costosa |
 | `/api/elevation`       | 120/min       | 60/min            | Ligeras, ubicuas         |
-| `/health`              | Exento        | Exento            | Para uptime checks       |
+| `/api/health`        | Exento        | Exento            | Para uptime checks       |
 
 ### 4.2 Respuesta `429` (contrato universal)
 

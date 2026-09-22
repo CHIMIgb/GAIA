@@ -1,7 +1,7 @@
 # GAIA — Identidad Visual y Diseño de Interfaz
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.1  
+> **Versión del Documento:** 1.2  
 > **Fecha:** 2026-09-22  
 > **Alcance:** Define la identidad visual de GAIA: marca, estética del planeta, paleta, tipografía, iconografía, layout, movimiento y accesibilidad. Es la fuente de verdad para toda decisión de interfaz. Refina el "HUD táctico" descrito en [TECH_STACK 2.8](./GAIA_TECH_STACK.md).
 
@@ -321,7 +321,7 @@ GAIA nunca es esto:
 | ---------- | ---------- |
 | **Button** | `--gaia-surface-2`, borde `--gaia-border`, radio `--gaia-radius-md`, hover eleva luminancia; primario: acento en borde, nunca bloque de color |
 | **Toggle** | Switch de 16×9 px, track `--gaia-border`, thumb `--gaia-text`; activo: track/thumb acento |
-| **Chip** | Etiqueta + dot/icono de línea, fondo `--gaia-surface`, radio `--gaia-radius-sm` |
+| **Chip** | Etiqueta + dot/icono de línea, fondo `--gaia-surface`, radio `--gaia-radius-md` |
 | **Slider** | Track fino 2px `--gaia-border`, thumb 12×12 px acento (time-scrubber y nivel del mar) |
 | **Tooltip** | `--gaia-surface-2`, borde `--gaia-border`, radio `--gaia-radius-md`, texto mono para datos |
 | **TimeScrubber** | Barra fina inferior: línea de tiempo, marcador del presente, thumb acento |

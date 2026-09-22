@@ -1,7 +1,7 @@
 # GAIA — Contrato Universal de Comunicación API
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.0  
+> **Versión del Documento:** 1.1  
 > **Fecha:** 2026-09-21  
 
 ---
@@ -50,7 +50,7 @@ Este documento define el **formato de contrato universal** para toda comunicaci�
 
 ### 3.2 Consistencia Absoluta
 
-- **Toda** ruta del backend debe retornar este formato, incluyendo endpoints de salud (`/health`), metadata y errores de validación.
+- **Toda** ruta del backend debe retornar este formato, incluyendo endpoints de salud (`/api/health`), metadata y errores de validación.
 - Los errores de servidor no controlados (500) también deben ser capturados por un middleware global y envueltos en este formato.
 
 ### 3.3 Códigos HTTP + Contrato

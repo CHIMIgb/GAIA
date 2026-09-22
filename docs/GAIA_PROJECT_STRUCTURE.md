@@ -1,7 +1,7 @@
 # GAIA — Estructura del Proyecto
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.1  
+> **Versión del Documento:** 1.2  
 > **Fecha:** 2026-09-22  
 
 ---
@@ -101,8 +101,8 @@ frontend/
 │   │   ├── ingestion.worker.ts        ← Worker 1: parseo de CSV/GeoJSON, conversión geodésica→cartesiana,
 │   │   │                                 escalado FRP, normalización CPM→µSv/h, empaquetado Float32Array
 │   │   ├── spatial.worker.ts          ← Worker 2: construcción de Octree 3D, consultas de proximidad
-│   │   ├── wind.worker.ts             ← Worker 3: decodificación de rejilla de viento (U,V),
-│   │   │                                 cálculo de magnitudes/direcciones, generación de DataTexture
+│   │   ├── wind.worker.ts             ← Worker 3: interpolación de la rejilla u/v (ya normalizada por el
+│   │   │                                 backend), generación de DataTexture para el GPU particle system
 │   │   └── worker.types.ts            ← Tipos compartidos: interfaces de mensajes Transferable,
 │   │                                     enums de tipos de mensaje (FIRES_READY, QUAKES_READY, etc.)
 │   │
@@ -123,7 +123,19 @@ frontend/
 │   │   └── common/
 │   │       ├── Badge.tsx              ← Badge reutilizable con variantes de color (normal/warning/critical)
 │   │       ├── Toggle.tsx             ← Switch on/off estilizado con Tailwind
-│   │       └── Slider.tsx             ← Slider numérico reutilizable
+│   │       ├── Slider.tsx             ← Slider numérico reutilizable
+│   │       └── primitives/
+│   │           ├── Button.tsx         ← Botón (variantes: secundario, primario acento en borde)
+│   │           ├── Chip.tsx           ← Etiqueta con dot/icono + texto corto (estado/error)
+│   │           └── Tooltip.tsx        ← Tooltip anclado a puntos/objetos del globo
+│   │
+│   ├── icons/                          ← Iconos SVG inline (trazo 1.5 px, según GAIA_VISUAL_DESIGN)
+│   │   ├── fire.tsx                   ← Icono de incendio
+│   │   ├── wind.tsx                   ← Icono de viento
+│   │   ├── earthquake.tsx             ← Icono de sismo
+│   │   ├── flood.tsx                  ← Icono de inundación
+│   │   ├── radiation.tsx              ← Icono de radiación
+│   │   └── index.ts                   ← Exporta el set de iconos
 │   │
 │   ├── store/                         ← Estado global Valtio
 │   │   ├── index.ts                   ← Creación del proxy state + export global
@@ -208,7 +220,7 @@ backend/
 │   │   ├── radiation.py               ← GET /api/radiation — proxy Safecast/EURDEP + normalización µSv/h
 │   │   ├── elevation.py               ← GET /api/elevation — proxy Open-Meteo Elevation
 │   │   ├── history.py                 ← GET /api/history/* — rangos históricos desde PostgreSQL 18
-│   │   └── health.py                  ← GET /health — estado del servidor, Redis, PostgreSQL y APIs
+│   │   └── health.py                  ← GET /api/health — estado del servidor, Redis, PostgreSQL y APIs
 │   │
 │   ├── services/                      ← Lógica de negocio (aislada de los routers)
 │   │   ├── __init__.py
@@ -365,7 +377,7 @@ Todos los workers exponen su API vía **Comlink** y transfieren datos al hilo pr
 | `hud/HUDLayout.tsx`      | Grid CSS del HUD: sidebar izquierda (controles), barra inferior (time-scrubber), esquina superior derecha (status). |
 | `hud/LayerControls.tsx`  | 5 toggles: Fuego 🔥, Viento 🌬️, Sismos 🌍, Inundación 🌊, Radiación ☢️. Muta `state.layers` vía Valtio. |
 | `hud/TimeScrubber.tsx`   | Selector de rango temporal: 24h / 7d / 30d. Muta `state.filters.timeRange`. Dispara re-filtrado en workers. |
-| `hud/SeaLevelSlider.tsx` | Slider `+0m` a `+10m`. Muta `state.seaLevel`. Three.js lee el valor directamente para el uniform. |
+| `hud/SeaLevelSlider.tsx` | Slider `+0m` a `+10m`. Muta `state.flood.seaLevel`. Three.js lee el valor directamente para el uniform. |
 | `hud/StatusIndicator.tsx`| Badge de estado por módulo: `LIVE` (verde), `CACHÉ` (amarillo), `RESGUARDO` (rojo). Lee `state.connectionStatus`. |
 | `panels/TelemetryPanel.tsx` | Panel flotante que aparece al hacer clic en un objeto. Renderiza el subpanel correspondiente según `state.selectedObject.type`. |
 | `panels/FireDetail.tsx`  | Muestra: coordenadas, FRP ($\text{MW/km}^2$), brightness (K), instrumento, confianza. |
@@ -412,7 +424,7 @@ Todos los workers exponen su API vía **Comlink** y transfieren datos al hilo pr
 | `radiation.py`   | `/api/radiation`  | GET    | Proxy Safecast/EURDEP. Params: `lat`, `lon`, `radius_km`. |
 | `elevation.py`   | `/api/elevation`  | GET    | Proxy Open-Meteo Elevation. Params: `lat`, `lon`.      |
 | `history.py`     | `/api/history/{modulo}` | GET | Históricos desde PostgreSQL 18. Params: `from`, `to`. |
-| `health.py`      | `/health`         | GET    | Estado del servidor, Redis, PostgreSQL y conectividad a APIs. |
+| `health.py`      | `/api/health`         | GET    | Estado del servidor, Redis, PostgreSQL y conectividad a APIs. |
 
 Todos retornan el [formato de contrato universal](./GAIA_API_CONTRACT.md): `{ success, data, error }`.
 
@@ -442,10 +454,10 @@ Todos retornan el [formato de contrato universal](./GAIA_API_CONTRACT.md): `{ su
 | Módulo     | Clave Patrón            | TTL      |
 | ---------- | ----------------------- | :------: |
 | Incendios  | `firms:{hours}h`        | 5 min    |
-| Sismos     | `usgs:{days}d:{mag}`    | 1 min    |
+| Sismos     | `usgs:{days}d:{mag}`    | 5 min    |
 | Viento     | `wind:{resolution}`     | 15 min   |
 | Radiación  | `rad:{lat}:{lon}:{km}`  | 5 min    |
-| Elevación  | `elev:{lat}:{lon}`      | 24 h     |
+| Elevación  | `elev:{lat}:{lon}`      | 5 min    |
 
 ---
 

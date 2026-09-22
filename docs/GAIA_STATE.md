@@ -1,7 +1,7 @@
 # GAIA — Especificación del Estado Global (Valtio)
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.0  
+> **Versión del Documento:** 1.1  
 > **Fecha:** 2026-09-21  
 
 ---

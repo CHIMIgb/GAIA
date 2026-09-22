@@ -1,7 +1,7 @@
 # GAIA — Catálogo de APIs y Fuentes de Datos
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.1  
+> **Versión del Documento:** 1.2  
 > **Fecha:** 2026-09-22  
 
 ---
@@ -317,11 +317,11 @@ Archivos incluidos:
 
 #### Uso en GAIA 3D
 
-Retorna componentes de viento $U$ y $V$ a diferentes altitudes. Su respuesta en FlatBuffers/JSON es rápida de procesar en el **Worker 3**:
+Retorna componentes de viento $U$ y $V$ a diferentes altitudes. Su respuesta en FlatBuffers/JSON es rápida de procesar:
 
-1. El Worker 3 descarga la rejilla de viento.
+1. El **backend descarga** la rejilla de viento y la normaliza.
 2. Calcula $U = \text{speed} \cdot \cos(\text{dir})$ y $V = \text{speed} \cdot \sin(\text{dir})$.
-3. Empaqueta en `DataTexture` para el GPU Particle System.
+3. Sirve las rejillas `u/v` como binarios compactos al frontend; el **Worker 3** las interpola y empaqueta en `DataTexture` para el GPU Particle System.
 
 #### Ejemplo de Petición
 

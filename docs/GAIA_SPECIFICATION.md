@@ -1,7 +1,7 @@
 # GAIA — Especificación Técnica y Requisitos del Sistema
 
 > **Nombre del Proyecto:** GAIA  
-> **Versión del Documento:** 1.1  
+> **Versión del Documento:** 1.2  
 > **Fecha:** 2026-09-22  
 
 ---
@@ -25,13 +25,13 @@ La arquitectura de GAIA se divide en **cuatro capas** acopladas mediante **event
 |                              CAPA DE DATOS ABIERTOS                                 |
 | NASA FIRMS | USGS | Open-Meteo | GEBCO | Safecast / EURDEP / RadNet / GMCMap        |
 +--------------------------------------+----------------------------------------------+
-                                       | (API Fetch / GeoJSON / Binary GRIB2)
+                                       | (API Fetch / GeoJSON / JSON)
                                        v
 +-------------------------------------------------------------------------------------+
 |                        CAPA DE COMPUTACIÓN (WEB WORKERS)                            |
 |  - Worker 1: Ingesta, Normalización (incendios, sismos, radiación) y Spatial Hashing|
 |  - Worker 2: Particionado Espacial (Octree 3D para Alertas de Proximidad)           |
-|  - Worker 3: Decodificador de Vectores de Viento (GRIB2 / ArrayBuffers)             |
+|  - Worker 3: Interpolación de Vectores de Viento (rejillas u/v compactas)             |
 +--------------------------------------+----------------------------------------------+
                                        | (Transferable Objects / SharedArrayBuffer)
                                        v
@@ -57,7 +57,7 @@ La arquitectura de GAIA se divide en **cuatro capas** acopladas mediante **event
 | -------------- | ----------------------- | -------------------- | ---------------- |
 | NASA FIRMS     | Anomalías térmicas      | CSV / GeoJSON        | REST API (HTTPS) |
 | USGS           | Actividad sísmica       | GeoJSON              | REST API (HTTPS) |
-| Open-Meteo     | Vectores de viento (U,V)| JSON / Binary GRIB2  | REST API (HTTPS) |
+| Open-Meteo     | Vectores de viento (U,V)| JSON / FlatBuffers   | REST API (HTTPS) |
 | GEBCO          | Batimetría / Elevación  | GeoTIFF / Heightmap  | Descarga estática|
 | Safecast       | Radiación ambiental     | JSON / REST          | REST API (HTTPS) |
 | EURDEP / RadNet| Dosis radiológica gamma | GeoJSON / WFS / XML  | REST API (HTTPS) |
@@ -72,9 +72,9 @@ Todo el procesamiento pesado se delega a **hilos secundarios (Web Workers)** par
 | --------- | --------------------------------------------------------------------------------------------------- |
 | Worker 1  | **Ingesta y Normalización:** Parseo de GeoJSON/CSV masivos, conversión de coordenadas y Spatial Hashing.|
 | Worker 2  | **Particionado Espacial:** Construcción de un Octree 3D para detección de proximidad y alertas.       |
-| Worker 3  | **Decodificación de Viento:** Decodificación de rejillas GRIB2/ArrayBuffers de vectores $(U, V)$.     |
+| Worker 3  | **Interpolación de Viento:** Interpolación en GPU de las rejillas de vectores $(U, V)$ ya normalizadas por el backend. |
 
-La comunicación entre workers y el hilo principal utiliza **Transferable Objects** y, donde el navegador lo permita, **SharedArrayBuffer** para transferencia de datos sin copia (zero-copy).
+La comunicación entre workers y el hilo principal utiliza **Transferable Objects** y, donde el navegador lo permita (con los headers `Cross-Origin-Opener-Policy: same-origin` y `Cross-Origin-Embedder-Policy: require-corp`), **SharedArrayBuffer** para transferencia de datos sin copia (zero-copy).
 
 ### 2.4 Capa de Renderizado GPU (Three.js)
 
@@ -141,7 +141,7 @@ Cada instancia de fuego debe mapear su tamaño y color según la **Potencia Radi
 
 #### RF-05 — Campo de Partículas de Viento
 
-El sistema debe procesar rejillas de vectores de viento $(U, V)$ procedentes de **Open-Meteo** o **NOAA** y renderizar un sistema de partículas continuo en la atmósfera del globo.
+El sistema debe procesar rejillas de vectores de viento $(U, V)$ procedentes de **Open-Meteo** (el backend descarga y normaliza las rejillas; el frontend las consume como binarios `u/v` compactos) y renderizar un sistema de partículas continuo en la atmósfera del globo.
 
 #### RF-06 — Cálculo de Trayectorias en GPU
 

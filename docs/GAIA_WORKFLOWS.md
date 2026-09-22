@@ -1,7 +1,7 @@
 # GAIA — Workflows Funcionales del Sistema
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.1  
+> **Versión del Documento:** 1.2  
 > **Fecha:** 2026-09-22  
 
 ---
@@ -419,7 +419,7 @@ void main() {
 [Usuario desliza Slider "Nivel del Mar" (+0m a +10m)]
         │
         ▼
-[Valtio: state.seaLevel = nuevoValor]
+[Valtio: state.flood.seaLevel = nuevoValor]
         │
         ├──────────────────────────────┐
         ▼                              ▼
@@ -453,7 +453,7 @@ El usuario desliza el control del **Nivel del Mar** en la interfaz de React ($+0
 
   ```typescript
   // En el componente React del slider
-  state.seaLevel = sliderValue; // Mutación directa vía Proxy
+  state.flood.seaLevel = sliderValue; // Mutación directa vía Proxy
   ```
 
 - El valor numérico se envía directamente al material del globo **sin reconstruir el árbol DOM de React**.
@@ -461,7 +461,7 @@ El usuario desliza el control del **Nivel del Mar** en la interfaz de React ($+0
 
   ```typescript
   // En el render loop de Three.js (cada frame)
-  globeMaterial.uniforms.u_seaLevel.value = state.seaLevel;
+  globeMaterial.uniforms.u_seaLevel.value = state.flood.seaLevel;
   ```
 
 #### Paso 3 — Cálculo de Mascarado e Inundación Costera (GLSL)
@@ -484,7 +484,7 @@ void main() {
   if (elevation <= u_seaLevel) {
     // Zona sumergida: aplicar shader de agua
     vec3 waterColor = vec3(0.0, 0.3, 0.7);
-    float depth = (u_seaLevel - elevation) / u_seaLevel;
+    float depth = (u_seaLevel - elevation) / max(u_seaLevel, 0.001);
     float alpha = mix(0.4, 0.85, depth); // Más profundo = más opaco
     gl_FragColor = vec4(waterColor, alpha);
   } else {

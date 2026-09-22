@@ -1,7 +1,7 @@
 # GAIA — Guía de Despliegue
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.1  
+> **Versión del Documento:** 1.2  
 > **Fecha:** 2026-09-22  
 
 ---
@@ -33,7 +33,7 @@ El despliegue contempla **tres piezas** que se orquestan de forma independiente:
                        │              Backend FastAPI              │  (Railway · Render · VPS)
                        │  /api/fires · /api/earthquakes · /api/wind
                        │  /api/history/* — desde PostgreSQL 18     │
-                       │  /api/radiation · /api/elevation · /health│
+                       │  /api/radiation · /api/elevation · /api/health│
                        └──────────────┬─────────────┬───────────────┘
                                       │             │  Redis (caché)
                                       ▼             ▼
@@ -55,7 +55,7 @@ Flujo de datos: el frontend consume exclusivamente `/api/*` del backend; el back
 
 | Herramienta          | Versión mínima | Uso                          |
 | -------------------- | -------------- | ---------------------------- |
-| Node.js              | 20 LTS         | Vite (dev server + build), Vitest |
+| Node.js              | 22 LTS         | Vite (dev server + build), Vitest |
 | Python               | 3.12           | FastAPI, Uvicorn, tests      |
 | Redis                | 7.x            | Caché (o Docker)             |
 | Docker               | 24+            | Opcional (Redis + backend)   |
@@ -90,7 +90,7 @@ npm run dev                       # Vite dev server + HMR
 ### 3.3 Verificación Rápida
 
 ```bash
-curl http://localhost:8000/health
+curl http://localhost:8000/api/health
 # {"success": true, "data": {"status": "ok", "redis": "connected", ...}, "error": null}
 
 curl 'http://localhost:8000/api/fires?hours=24'   # contrato universal
@@ -119,10 +119,10 @@ curl 'http://localhost:8000/api/fires?hours=24'   # contrato universal
 | Módulo     | Clave patrón            | TTL     | Variable              | Default |
 | ---------- | ----------------------- | :-----: | --------------------- | :-----: |
 | Incendios  | `firms:{hours}h`        | 5 min   | `TTL_FIRES_SECONDS`   | `300`   |
-| Sismos     | `usgs:{days}d:{mag}`    | 1 min   | `TTL_QUAKES_SECONDS`  | `60`    |
+| Sismos     | `usgs:{days}d:{mag}`    | 5 min   | `TTL_QUAKES_SECONDS`  | `300`   |
 | Viento     | `wind:{resolution}`     | 15 min  | `TTL_WIND_SECONDS`    | `900`   |
 | Radiación  | `rad:{lat}:{lon}:{km}`  | 5 min   | `TTL_RADIATION_SECONDS` | `300` |
-| Elevación  | `elev:{lat}:{lon}`      | 24 h    | `TTL_ELEVATION_SECONDS` | `86400` |
+| Elevación  | `elev:{lat}:{lon}`      | 5 min   | `TTL_ELEVATION_SECONDS` | `300`  |
 
 > Los TTLs viven en `backend/app/cache/cache_keys.py`; las variables los sobreescriben sin recompilar.
 
@@ -149,10 +149,10 @@ PUBLIC_FRONTEND_URL=http://localhost:8080
 
 # ---- TTLs ----
 TTL_FIRES_SECONDS=300
-TTL_QUAKES_SECONDS=60
+TTL_QUAKES_SECONDS=300
 TTL_WIND_SECONDS=900
 TTL_RADIATION_SECONDS=300
-TTL_ELEVATION_SECONDS=86400
+TTL_ELEVATION_SECONDS=300
 
 # ---- Frontend (copiar a .env.local) ----
 VITE_GAIA_API_BASE_URL=http://localhost:8000
@@ -269,7 +269,7 @@ Pasos:
 1. Subir `backend/` a Railway/Render como servicio Docker (comando `uvicorn app.main:app ...`).
 2. Conectar Redis gestionado y fijar `REDIS_URL`.
 3. Conectar el repo frontend a Vercel/Netlify: `VITE_GAIA_API_BASE_URL` = URL pública del backend; `CORS_ORIGINS` en el backend debe incluir la URL del frontend.
-4. Desplegar. Verificar `/health` y una request a `/api/fires`.
+4. Desplegar. Verificar `/api/health` y una request a `/api/fires`.
 
 ### 6.2 Opción B — Docker Compose en VPS
 
@@ -385,7 +385,7 @@ jobs:
 
 ### 7.1 Health Check
 
-`GET /health` (contrato universal de [GAIA_API_CONTRACT](./GAIA_API_CONTRACT.md)):
+`GET /api/health` (contrato universal de [GAIA_API_CONTRACT](./GAIA_API_CONTRACT.md)):
 
 ```json
 {
@@ -405,7 +405,7 @@ jobs:
 }
 ```
 
-Uso: configurar un **uptime check** (UptimeRobot / Vercel Cron / systemd timer) sobre `/health` que alerte cuando `status != ok` o `redis != connected`.
+Uso: configurar un **uptime check** (UptimeRobot / Vercel Cron / systemd timer) sobre `/api/health` que alerte cuando `status != ok` o `redis != connected`.
 
 ### 7.2 Logging Estructurado
 
@@ -419,14 +419,14 @@ Uso: configurar un **uptime check** (UptimeRobot / Vercel Cron / systemd timer) 
 | ---------------- | ----------------------------------- | ---------------------------- |
 | **Hit rate**     | `INFO commandstats` + conteo propio | < 0.6 sostenido ⇒ revisar TTLs |
 | **TTL expirados**| `SCAN` + `TTL` de claves patrón      | Expiración masiva ⇒ rate-limit upstream |
-| **Latency P95**  | `SLOWLOG` / timing en `/health`      | > 50 ms con hit ⇒ red/buffer |
+| **Latency P95**  | `SLOWLOG` / timing en `/api/health`      | > 50 ms con hit ⇒ red/buffer |
 
 ### 7.4 Alertas
 
 | Alerta                          | Umbral                                        | Acción                                   |
 | ------------------------------- | --------------------------------------------- | ---------------------------------------- |
 | API externa caída sostenida     | 3+ fallos consecutivos en 10 min              | Revisar fixture/rate-limit; verificar fallback activo |
-| Redis desconectado              | `/health` → `redis != connected`              | Reiniciar/ampliar instancia Redis        |
+| Redis desconectado              | `/api/health` → `redis != connected`              | Reiniciar/ampliar instancia Redis        |
 | FPS degradado (informativos)    | Reporte del perf job nightly < 45 FPS         | Revisar draw calls y uso de VRAM         |
 | Disk/CPU del VPS                | CPU > 80 % / disk > 85 % (30 min)             | Escalar droplet/instancia                |
 
@@ -451,7 +451,6 @@ Versiones **objetivo** a fijar en `package.json` y `requirements.txt`. Las revis
 | `@vitejs/plugin-react` | `^4.3.0`      | HMR y Fast Refresh para React             |
 | `vite-plugin-glsl`   | `^1.3.0`         | Imports `?raw` de shaders GLSL             |
 | `rollup-plugin-visualizer` | `^5.12.0` | Reporte del bundle (chunks)               |
-| `typescript`         | `^5.6.2`         | strict mode                                 |
 | `stats.js`           | `^0.17.0`        | Overlay de FPS (debug)                      |
 
 ### 8.2 Backend
@@ -461,9 +460,12 @@ Versiones **objetivo** a fijar en `package.json` y `requirements.txt`. Las revis
 | `fastapi`          | `^0.115.0`       | Framework asíncrono                           |
 | `uvicorn[standard]`| `^0.30.6`        | Servidor ASGI                                 |
 | `pydantic`         | `^2.9.2`         | Modelos de request/response                   |
+| `sqlalchemy[asyncio]` | (según lockfile)  | ORM asíncrono (asyncpg) para la DB de históricos |
+| `asyncpg`          | (según lockfile)   | Driver PostgreSQL 18 (pool async)             |
+| `alembic`          | (según lockfile)   | Migraciones de esquema de la DB               |
 | `httpx`            | `^0.27.2`        | Cliente HTTP asíncrono (upstreams)            |
 | `redis`            | `^5.0.7`         | Cliente Redis asyncio (`redis>=5`, API async) |
-| `numpy`            | `^2.1.1`         | Procesamiento de rejillas GRIB2/viento        |
+| `numpy`            | `^2.1.1`         | Procesamiento de rejillas de viento           |
 | `shapely`          | `^2.0.6`         | Operaciones geométricas                       |
 | `geopandas`        | `^1.0.1`         | Análisis geoespacial                          |
 | `python-dotenv`    | `^1.0.1`         | Carga de `.env`                               |
@@ -478,7 +480,7 @@ Versiones **objetivo** a fijar en `package.json` y `requirements.txt`. Las revis
 
 | Componente | Versión         | Nota                                   |
 | ---------- | --------------- | -------------------------------------- |
-| Node.js    | 22 LTS          | Runtimes dev/CI (alternativa 20 LTS).  |
+| Node.js    | 22 LTS          | Runtimes dev/CI.                 |
 | Python     | 3.12            | Imagen del Dockerfile y CI.            |
 | Redis      | 7.x (`redis:7-alpine`) | Modo persistente (`--appendonly`). |
 | PostgreSQL | 18 (`timescale/timescaledb:latest-pg18`) | Históricos + sesiones anonimizadas. |

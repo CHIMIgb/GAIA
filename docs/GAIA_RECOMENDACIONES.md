@@ -1,7 +1,7 @@
 # GAIA — Recomendaciones de Revisión Técnica
 
 > **Proyecto:** GAIA 3D
-> **Versión del Documento:** 1.0
+> **Versión del Documento:** 1.1
 > **Fecha:** 2026-09-22
 > **Alcance:** Auditoría objetiva de la documentación tras la pasada de unificación (commit `ba72761`).
 
@@ -72,23 +72,23 @@ Parar de escribir documentación y validar con implementación:
 - [ ] Crear una tabla central y única (endpoints, TTL, rate-limits, presupuestos, códigos de error) en un solo documento.
 - [ ] Hacer que el resto de docs lo **referencie** en vez de repetir los valores.
 
-### 4.3 [P1] Resolver la arquitectura del viento
-- [ ] Decidir: ¿el procesado GRIB2 vive en FastAPI (Python/`cfgrib`/`xarray`) o en Worker 3 (JS)?
-- [ ] Si el backend pre-procesa, ajustar `SPEC` para que Worker 3 solo consuma rejillas normalizadas.
+### 4.3 [P1] Resolver la arquitectura del viento ✅ (aplicado)
+- [x] Decidir: el procesado GRIB2 vive en el **backend FastAPI** (no en Worker 3).
+- [x] Ajustar `SPEC` para que Worker 3 solo interpole rejillas normalizadas (ya aplicado en `SPEC` §2.3 y §3; el backend sirve binarios `u/v` compactos).
 
-### 4.4 [P1] `SharedArrayBuffer` y headers de contexto
-- [ ] Si se mantiene SAB: documentar `Cross-Origin-Opener-Policy` + `Cross-Origin-Embedder-Policy` en `SECURITY` y `DEPLOYMENT`.
-- [ ] Si no: eliminar SAB y quedarse con **Transferable Objects** (sin headers extra).
+### 4.4 [P1] `SharedArrayBuffer` y headers de contexto ✅ (documentado)
+- [x] Documentar `Cross-Origin-Opener-Policy` + `Cross-Origin-Embedder-Policy` en `SPEC` §2.3 (condición para zero-copy).
+- [ ] Pendiente: reflejar ambos headers en `SECURITY` y `DEPLOYMENT` al implementar el despliegue.
 
 ### 4.5 [P2] Rate-limit: una sola implementación
 - [ ] Elegir entre `slowapi` y middleware custom sobre Redis y dejar un solo referente en docs.
 
 ### 4.6 [P2] Endurecer números fácticos
-- [ ] Verificar la disponibilidad real de `timescaledb:latest-pg18` (o fijar otra imagen).
+- [x] `timescaledb:latest-pg18` **existe** (imagen oficial; verificar pin de versión en despliegue real).
 - [ ] Anotar los presupuestos de rendimiento como *objetivos medibles* con hardware de referencia.
 
-### 4.7 [P2] Estado del ROADMAP
-- [ ] Cambiar a "Estado: Planificado" y volver a "Aprobado y ejecutado" fase por fase conforme se implementa.
+### 4.7 [P2] Estado del ROADMAP ✅ (aplicado)
+- [x] Cambiar a "Estado: Planificado" (aplicado en `ROADMAP` §1); volver a "Aprobado y ejecutado" fase por fase conforme se implementa.
 
 ### 4.8 [P3] Decisión de idioma
 - [ ] Fijar español/inglés como criterio explícito (o plan de bilingüe) para evitar drift futuro.

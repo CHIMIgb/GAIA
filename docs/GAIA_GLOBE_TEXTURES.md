@@ -1,7 +1,7 @@
 # GAIA — APIs de Textura Satelital, Elevación y Altimetría
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.0  
+> **Versión del Documento:** 1.1  
 > **Fecha:** 2026-09-21  
 
 ---
@@ -39,6 +39,9 @@ Estas APIs proveen **teselas (tiles) raster** en formato PNG/JPEG en proyeccione
 | **Límite gratuito**  | 100% gratuito para desarrollo y uso no comercial                       |
 | **Cobertura**        | Global                                                                 |
 | **Resolución máx.**  | ~0.3m (zonas urbanas), ~15m (zonas rurales)                            |
+
+> [!NOTE]
+> **Licencia:** Esri establece límites para uso **no comercial y de desarrollo**; para despliegue comercial o en producción de terceros conviene revisar los términos de ArcGIS Online antes de fijarlo como opción principal. La alternativa Mapbox o Maptiler, con contrato propio, cubre ese escenario.
 
 #### Uso en GAIA 3D
 
