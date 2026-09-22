@@ -20,7 +20,7 @@
 | [Guía de Despliegue](docs/GAIA_DEPLOYMENT.md) | Desarrollo local, Docker, CI/CD, variables de entorno y versiones del stack. |
 | [Seguridad](docs/GAIA_SECURITY.md) | Rate limiting, protección DDoS, XSS, sesiones por cookie sin cuentas y endurecimiento. |
 | [Base de Datos](docs/GAIA_DATABASE.md) | Postgres/TimescaleDB para históricos, ingesta, API de consulta y evaluación de sesiones. |
-| [Roadmap de Desarrollo](docs/GAIA_ROADMAP.md) | 16 fases incrementales en pasos pequeños con criterios de aceptación, duraciones y trazabilidad RF/RNF. |
+| [Roadmap de Desarrollo](docs/GAIA_ROADMAP.md) | 14 fases incrementales: construcción de un módulo a la vez (de extremo a extremo) con pasos pequeños, criterios de aceptación y trazabilidad RF/RNF. |
 
 ---
 
