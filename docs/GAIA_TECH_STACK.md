@@ -38,6 +38,7 @@
 │                                                              │
 │   FastAPI (Python) ─── Uvicorn (ASGI)                        │
 │        ├── Redis (Caché)                                     │
+│        ├── PostgreSQL 18 + TimescaleDB (Históricos)          │
 │        ├── Shapely / GeoPandas (Geoespacial)                 │
 │        └── NumPy (Procesamiento de matrices GRIB2/NetCDF)    │
 │                                                              │
@@ -265,6 +266,9 @@ Python es el **lenguaje estándar en ciencia de datos y análisis espacial**. Fa
    - Calcular intersecciones con polígonos de áreas protegidas.
    - Filtrar sismos por proximidad a centros urbanos.
 
+5. **Persistencia de históricos (PostgreSQL 18 + TimescaleDB):**  
+   SQLAlchemy (async + asyncpg) y migraciones **Alembic** archivan los snapshots ingeridos (incendios, sismos, viento, radiación, elevación) en **hipertablas temporales**, permitiendo servir `/api/history/*` con paginación y TTL físico por retención. La DB es solo archivo: el pipeline en caliente sigue siendo Redis → API externa ([GAIA_DATABASE](./GAIA_DATABASE.md)).
+
 ---
 
 ### 2.8 Estilos & UI Táctica — Tailwind CSS
@@ -294,7 +298,7 @@ Tailwind CSS permite la construcción ágil de **dashboards oscuros, densos e hi
 | UI & Dashboard       | **React**                       | HUD táctico, telemetría, controles de capas            |
 | Manejo de Estado     | **Valtio** (o Jotai)            | Estado reactivo Proxy-based entre Three.js y React     |
 | Concurrencia         | **Web Workers + Comlink**       | Procesamiento paralelo sin bloquear UI                 |
-| Backend & Proxy      | **FastAPI (Python)**            | Caché Redis, rate-limiting, normalización de $\mu\text{Sv/h}$ y procesamiento geoespacial |
+| Backend & Proxy      | **FastAPI (Python) + PostgreSQL 18 / TimescaleDB** | Caché Redis, rate-limiting, normalización de $\mu\text{Sv/h}$, procesamiento geoespacial y archivo de históricos |
 | Estilos              | **Tailwind CSS**                | Dashboards oscuros, densos e hiperfuncionales          |
 | Fuentes de Datos     | NASA FIRMS, USGS, Open-Meteo, GEBCO, **Safecast, EURDEP, RadNet, GMCMap** | Ingesta ambiental, sísmica, meteorológica y de radiación |
 
@@ -307,7 +311,9 @@ Tailwind CSS permite la construcción ágil de **dashboards oscuros, densos e hi
   USGS ────────────────┤
   Open-Meteo ──────────┤──→ FastAPI (Python) ──→ Redis Cache
   GEBCO ───────────────┤         │
-  Safecast / EURDEP ───┘         │ JSON / Binary ArrayBuffer
+  Safecast / EURDEP ───┘         │ JSON / Binary ArrayBuffer (a Frontend)
+                                 │
+                                 ├───► PostgreSQL 18 + TimescaleDB (históricos)
                                  v
                             ┌─────────┐
                             │ Frontend │

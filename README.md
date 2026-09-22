@@ -18,6 +18,8 @@
 | [Estado Global (Valtio)](docs/GAIA_STATE.md) | Forma del estado, reglas de mutación Three.js vs React y catálogo de acciones. |
 | [Plan de Testing](docs/GAIA_TESTING.md) | Métricas de rendimiento, pruebas de memoria GPU, resiliencia de red y compatibilidad. |
 | [Guía de Despliegue](docs/GAIA_DEPLOYMENT.md) | Desarrollo local, Docker, CI/CD, variables de entorno y versiones del stack. |
+| [Seguridad](docs/GAIA_SECURITY.md) | Rate limiting, protección DDoS, XSS, sesiones por cookie sin cuentas y endurecimiento. |
+| [Base de Datos](docs/GAIA_DATABASE.md) | Postgres/TimescaleDB para históricos, ingesta, API de consulta y evaluación de sesiones. |
 
 ---
 

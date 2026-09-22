@@ -13,7 +13,7 @@ GAIA/
 ├── docs/                              ← Documentación técnica
 ├── frontend/                          ← Aplicación WebGL + React (TypeScript)
 ├── backend/                           ← Proxy API (FastAPI / Python)
-├── docker-compose.yml                 ← Orquestación backend + Redis
+├── docker-compose.yml                 ← Orquestación backend + Redis + PostgreSQL
 ├── .env.example                       ← Plantilla de variables de entorno
 ├── .gitignore
 └── README.md                          ← Punto de entrada del repositorio
@@ -207,7 +207,8 @@ backend/
 │   │   ├── wind.py                    ← GET /api/wind — proxy Open-Meteo + procesamiento de rejilla
 │   │   ├── radiation.py               ← GET /api/radiation — proxy Safecast/EURDEP + normalización µSv/h
 │   │   ├── elevation.py               ← GET /api/elevation — proxy Open-Meteo Elevation
-│   │   └── health.py                  ← GET /health — estado del servidor, Redis y conectividad a APIs
+│   │   ├── history.py                 ← GET /api/history/* — rangos históricos desde PostgreSQL 18
+│   │   └── health.py                  ← GET /health — estado del servidor, Redis, PostgreSQL y APIs
 │   │
 │   ├── services/                      ← Lógica de negocio (aislada de los routers)
 │   │   ├── __init__.py
@@ -223,6 +224,18 @@ backend/
 │   │   ├── __init__.py
 │   │   ├── redis_client.py            ← Conexión singleton a Redis (aioredis)
 │   │   └── cache_keys.py              ← Constantes de claves de caché + TTLs por módulo
+│   │
+│   ├── db/                            ← Persistencia de históricos (PostgreSQL 18 + TimescaleDB)
+│   │   ├── __init__.py
+│   │   ├── database.py                ← Engine/Session async SQLAlchemy (asyncpg) desde DATABASE_URL
+│   │   ├── models.py                  ← ORM: FireHotspot, Earthquake, WindFrame, RadiationReading, ElevationSample, SessionEvent
+│   │   ├── ingest.py                  ← Jobs periódicos: upsert con dedup desde Redis/upstream
+│   │   ├── queries.py                 ← Consultas históricas paginadas (rangos temporales) para /api/history/*
+│   │   └── session_store.py           ← Registro de sesiones anonimizadas (hash de cookie) — ver GAIA_SECURITY §9
+│   │
+│   ├── alembic/                       ← Migraciones de esquema de la DB
+│   │   ├── env.py                     ← Configuración de Alembic sobre DATABASE_URL
+│   │   └── versions/                  ← Revisiones de migración (una por cambio de schema)
 │   │
 │   └── fallback/                      ← Datasets estáticos de resguardo (Workflow 7)
 │       ├── firms_latest.json          ← Snapshot reciente de incendios NASA FIRMS
@@ -253,7 +266,7 @@ backend/
 
 ```
 GAIA/
-├── docker-compose.yml                 ← Orquesta: backend (FastAPI) + redis (Redis 7)
+├── docker-compose.yml                 ← Orquesta: backend (FastAPI) + redis (Redis 7) + db (PostgreSQL 18)
 ├── .env.example                       ← Plantilla de variables de entorno para el monorepo
 ├── .gitignore                         ← Ignora node_modules, __pycache__, .env, dist/, build/
 └── README.md                          ← Punto de entrada: descripción + enlaces a docs/
@@ -397,7 +410,8 @@ Todos los workers exponen su API vía **Comlink** y transfieren datos al hilo pr
 | `wind.py`        | `/api/wind`       | GET    | Proxy Open-Meteo. Params: `resolution`.                |
 | `radiation.py`   | `/api/radiation`  | GET    | Proxy Safecast/EURDEP. Params: `lat`, `lon`, `radius_km`. |
 | `elevation.py`   | `/api/elevation`  | GET    | Proxy Open-Meteo Elevation. Params: `lat`, `lon`.      |
-| `health.py`      | `/health`         | GET    | Estado del servidor, Redis ping, y conectividad a APIs.|
+| `history.py`     | `/api/history/{modulo}` | GET | Históricos desde PostgreSQL 18. Params: `from`, `to`. |
+| `health.py`      | `/health`         | GET    | Estado del servidor, Redis, PostgreSQL y conectividad a APIs. |
 
 Todos retornan el [formato de contrato universal](./GAIA_API_CONTRACT.md): `{ success, data, error }`.
 
@@ -446,6 +460,23 @@ Todos retornan el [formato de contrato universal](./GAIA_API_CONTRACT.md): `{ su
 | `test_elevation.py`  | Endpoint `/api/elevation`: respuesta con metros, caché de 24h.               |
 | `test_contract.py`   | Verifica que **toda** respuesta del backend cumple `{ success, data, error }`. |
 | `test_fallback.py`   | Simula fallo de API externa (timeout/5xx) → verifica cadena Redis → Local.    |
+| `test_history.py`    | Endpoints `/api/history/*`: paginación, dedup por clave, retención.             |
+
+---
+
+### 5.12 `backend/app/db/` — Persistencia (PostgreSQL 18 + TimescaleDB)
+
+La DB es el **archivo histórico** de GAIA ([GAIA_DATABASE](./GAIA_DATABASE.md)): persiste los snapshots ingeridos para servir rangos pasados que las APIs externas ya no ofrecen, además del registro de sesiones anonimizadas.
+
+| Archivo               | Responsabilidad                                                                 |
+| --------------------- | ------------------------------------------------------------------------------- |
+| `database.py`         | `create_async_engine(DATABASE_URL)` + sesión SQLAlchemy asíncrona (asyncpg).    |
+| `models.py`           | ORM: `FireHotspot`, `Earthquake`, `WindFrame`, `RadiationReading`, `ElevationSample`, `SessionEvent`. |
+| `ingest.py`           | Jobs periódicos: upsert con dedup (`ON CONFLICT ... DO NOTHING`) al persistir datos ya ingeridos en caliente. |
+| `queries.py`          | Consultas paginadas por rango temporal (`/api/history/*`), muestreo para volúmenes altos. |
+| `session_store.py`    | Registro de sesiones anonimizadas: **hash** SHA-256 de la cookie, nunca el valor crudo (privacidad). |
+
+Mapeo por tabla: hipertabla por tiempo para datos de eventos; TTL físico vía retención de TimescaleDB por módulo.
 
 ---
 
@@ -461,7 +492,7 @@ Todos retornan el [formato de contrato universal](./GAIA_API_CONTRACT.md): `{ su
 | Shaders GLSL             | `kebab.vert` / `kebab.frag`   | `atmosphere.frag`               |
 | Archivos Python          | `snake_case.py`                | `firms_client.py`, `cache_keys.py` |
 | Endpoints FastAPI        | `/api/kebab-plural`            | `/api/fires`, `/api/radiation`  |
-| Variables de entorno     | `UPPER_SNAKE_CASE`             | `REDIS_URL`, `FIRMS_MAP_KEY`    |
+| Variables de entorno     | `UPPER_SNAKE_CASE`             | `REDIS_URL`, `DATABASE_URL`, `FIRMS_MAP_KEY` |
 
 ---
 
@@ -503,6 +534,9 @@ Todos retornan el [formato de contrato universal](./GAIA_API_CONTRACT.md): `{ su
 | `pytest`          | Framework de testing                          |
 | `pytest-asyncio`  | Soporte async para tests                      |
 | `fakeredis`       | Mock de Redis para tests                      |
+| `sqlalchemy[asyncio]` | ORM asíncrono (asyncpg) para la DB de históricos |
+| `asyncpg`         | Driver PostgreSQL 18 (pool async)             |
+| `alembic`         | Migraciones de esquema de la DB               |
 
 ---
 
