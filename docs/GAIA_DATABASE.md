@@ -38,7 +38,7 @@ Definir el diseño de la base de datos de GAIA. Su **única responsabilidad** es
 | Criterio              | PostgreSQL + TimescaleDB                          | Alternativa (no elegida) |
 | --------------------- | ------------------------------------------------- | ------------------------ |
 | Naturaleza de datos   | Series temporales de eventos geoespaciales        | MongoDB (documentos)     |
-| Particionado por tiempo | Hipertablas automáticas (`time` como dimensión) | MySSQL/particionado manual |
+| Particionado por tiempo | Hipertablas automáticas (`time` como dimensión) | MySQL/particionado manual |
 | Funciones geoespaciales | `PostGIS` integrable (opcional)                | —                        |
 | Contención geográfica (flood/radiation) | B-tree + GIST en lat/lon                | —                        |
 | Retención/borrado     | `drop_chunks` para purga por antigüedad (medidas de privacidad §8) | — |

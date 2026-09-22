@@ -61,7 +61,7 @@ El valor de la cookie es un **token opaco**: el servidor guarda solo su **hash**
 
 Todas las mutaciones de estado de GAIA ocurren **en el cliente** (Valtio). El backend expone una API **solo lectura** (`GET /api/*`, `/health`). Con `SameSite=Lax` + `ReferrerPolicy`, el riesgo CSRF es despreciable porque no hay endpoints que muten datos en el servidor. Si en el futuro se añadiera escritura, se introduciría un token CSRF (`Double Submit`).
 
-### 3.3 Frameo de referencia (registro de sesión)
+### 3.3 Marco de referencia (registro de sesión)
 
 La pregunta de si conviene **mantener un registro de cookies de sesión** se analiza en profundidad en [GAIA_DATABASE.md §8](./GAIA_DATABASE.md). Conclusión anticipada: **sí, pero con diseño de privacidad** (guardar solo hash + eventos, nunca la cookie cruda, retención corta y purga automática).
 
@@ -141,7 +141,7 @@ Con cabeceras `Retry-After: 30` y `RateLimit-*` estándar. El frontend (Workflow
 ### 5.2 Capa de aplicación / servidor
 
 - **Nginx** (Opción B de despliegue): `limit_req` y `limit_conn` por IP; tamaño máximo de request **1 MB** (`client_max_body_size`); timeouts de proxy ≤ 5 s (alineados con el fallback de upstream).
-- **Uvicorn bajo desgate**: ejecutar con multi-workers (o `--workers` detrás de un proxy) para no saturar un solo proceso.
+- **Uvicorn bajo carga**: ejecutar con multi-workers (o `--workers` detrás de un proxy) para no saturar un solo proceso.
 - **Backpressure**: si Redis no responde, fallar **rápido** (`fail-fast`) en `slowapi` en lugar de encolar peticiones ilimitadas.
 - **CORS con allowlist**: solo `CORS_ORIGINS` configurado (ver [Deployment §4](./GAIA_DEPLOYMENT.md)); ninguna origin `*` en producción.
 
@@ -236,7 +236,7 @@ Sin cuentas de usuario, la aplicación **no recolecta identidad personal** por d
 | -------------------- | ------------------------------------------ | --------------------------------------------------------- |
 | Abuso de API / DoS   | rate-limit slowapi + límites Nginx          | Test de límite: 200 req/min → `429` con contrato          |
 | DDoS volumétrico     | Cloudflare + `limit_req`/`limit_conn`       | Smoke de rendimiento bajo throttling (Testing §2.3)      |
-| XSS                  | React escaping + CSP + proib. `dangerouslySetInnerHTML` | `xss.spec.tsx` + header check en CI          |
+| XSS                  | React escaping + CSP + prohib. `dangerouslySetInnerHTML` | `xss.spec.tsx` + header check en CI          |
 | Robo de sesión       | Cookie `HttpOnly`/`Secure`/`SameSite` + token opaco | Audit de atributos de `Set-Cookie`              |
 | CSRF                 | API solo lectura + `SameSite=Lax`           | Revisión: cero endpoints de escritura                     |
 | Inyección SQL        | SQLAlchemy parametrizado                    | Revisión de código                                        |

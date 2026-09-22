@@ -20,6 +20,7 @@
 | [Guía de Despliegue](docs/GAIA_DEPLOYMENT.md) | Desarrollo local, Docker, CI/CD, variables de entorno y versiones del stack. |
 | [Seguridad](docs/GAIA_SECURITY.md) | Rate limiting, protección DDoS, XSS, sesiones por cookie sin cuentas y endurecimiento. |
 | [Base de Datos](docs/GAIA_DATABASE.md) | Postgres/TimescaleDB para históricos, ingesta, API de consulta y evaluación de sesiones. |
+| [Roadmap de Desarrollo](docs/GAIA_ROADMAP.md) | 16 fases incrementales en pasos pequeños con criterios de aceptación, duraciones y trazabilidad RF/RNF. |
 
 ---
 
@@ -33,11 +34,11 @@
 | UI | React + Tailwind CSS |
 | Estado | Valtio |
 | Workers | Web Workers + Comlink |
-| Backend | FastAPI + Redis |
+| Backend | FastAPI + Redis + PostgreSQL 18 / TimescaleDB |
 
 ## Fuentes de Datos
 
-NASA FIRMS · USGS Earthquakes · Open-Meteo · AWS Terrarium · Esri World Imagery · Safecast · EURDEP · GEBCO · Natural Earth
+NASA FIRMS · USGS Earthquakes · Open-Meteo · AWS Terrarium · Esri World Imagery · Safecast · EURDEP · EPA RadNet · GMCMap · GEBCO · Natural Earth
 
 ---
 

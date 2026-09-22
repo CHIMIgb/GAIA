@@ -161,7 +161,7 @@ export interface FloodState {
 ```
 
 > [!NOTE]
-> **Coherencia con Workflows:** en el documento [GAIA_WORKFLOWS](./GAIA_WORKFLOWS.md) (Workflow 5) se escribió `state.seaLevel` a modo de pseudocódigo. Aquí se adopta `state.flood.seaLevel` como **única fuente de verdad**. The FastAPI/flood shader lee exactamente esa propiedad en cada frame:
+> **Coherencia con Workflows:** en el documento [GAIA_WORKFLOWS](./GAIA_WORKFLOWS.md) (Workflow 5) se escribió `state.seaLevel` a modo de pseudocódigo. Aquí se adopta `state.flood.seaLevel` como **única fuente de verdad**. El shader de inundación (Three.js) lee exactamente esa propiedad en cada frame:
 >
 > ```typescript
 > globeMaterial.uniforms.u_seaLevel.value = state.flood.seaLevel;

@@ -166,9 +166,10 @@ frontend/
 │       │   ├── ne_110m_countries.json ← Natural Earth: fronteras de países
 │       │   └── PB2002_boundaries.json ← Placas tectónicas (Peter Bird)
 │       └── fallback/
-│           ├── firms_sample.json      ← Dataset de respaldo: incendios de muestra
-│           ├── quakes_sample.json     ← Dataset de respaldo: sismos de muestra
-│           └── radiation_sample.json  ← Dataset de respaldo: radiación de muestra
+│           ├── firms_latest.json      ← Dataset de respaldo: incendios (snapshot FIRMS)
+│           ├── quakes_latest.json     ← Dataset de respaldo: sismos (snapshot USGS)
+│           ├── wind_grid_latest.bin   ← Dataset de respaldo: rejilla de viento binaria
+│           └── radiation_latest.json  ← Dataset de respaldo: radiación (snapshot Safecast)
 │
 ├── webpack.config.js                  ← Configuración Webpack 5 (GLSL loader, Workers, code splitting)
 ├── webpack.dev.js                     ← Overrides para desarrollo (devServer, source maps)
@@ -241,7 +242,8 @@ backend/
 │       ├── firms_latest.json          ← Snapshot reciente de incendios NASA FIRMS
 │       ├── quakes_latest.json         ← Snapshot reciente de sismos USGS
 │       ├── wind_grid_latest.bin       ← Rejilla de viento binaria pre-procesada
-│       └── radiation_latest.json      ← Snapshot reciente de lecturas Safecast
+│       ├── radiation_latest.json      ← Snapshot reciente de lecturas Safecast
+│       └── heightmap_global.png       ← Heightmap global de elevación (opcional)
 │
 ├── tests/                             ← Tests del backend
 │   ├── __init__.py

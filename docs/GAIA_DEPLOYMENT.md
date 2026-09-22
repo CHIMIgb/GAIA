@@ -131,7 +131,7 @@ curl 'http://localhost:8000/api/fires?hours=24'   # contrato universal
 | Variable              | Uso                                         |
 | --------------------- | ------------------------------------------- |
 | `GAIA_API_BASE_URL`   | Base del backend. Dev: `http://localhost:8000`. |
-| `VITE_PUBLIC_URL`     | URL pública de la app (marcado de base en Webpack). |
+| `GAIA_PUBLIC_URL`     | URL pública de la app (`DefinePlugin`/`publicPath` de Webpack). |
 | `MAPBOX_ACCESS_TOKEN` | **Opcional alt.** Si se sustituyera Esri por tiles Mapbox. |
 
 ### 4.4 Plantilla `.env.example`
