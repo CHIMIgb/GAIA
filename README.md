@@ -21,6 +21,7 @@
 | [Seguridad](docs/GAIA_SECURITY.md) | Rate limiting, protección DDoS, XSS, sesiones por cookie sin cuentas y endurecimiento. |
 | [Base de Datos](docs/GAIA_DATABASE.md) | Postgres/TimescaleDB para históricos, ingesta, API de consulta y evaluación de sesiones. |
 | [Roadmap de Desarrollo](docs/GAIA_ROADMAP.md) | 14 fases incrementales: construcción de un módulo a la vez (de extremo a extremo) con pasos pequeños, criterios de aceptación y trazabilidad RF/RNF. |
+| [Recomendaciones Técnicas](docs/GAIA_RECOMENDACIONES.md) | Auditoría objetiva de la documentación: fortalezas, deudas técnicas y recomendaciones accionables priorizadas (P0–P3). |
 
 ---
 
