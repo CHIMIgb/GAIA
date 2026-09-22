@@ -1,7 +1,7 @@
 # GAIA — Stack Tecnológico
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.1  
+> **Versión del Documento:** 1.2  
 > **Fecha:** 2026-09-22  
 
 ---
@@ -281,10 +281,10 @@ Python es el **lenguaje estándar en ciencia de datos y análisis espacial**. Fa
 
 #### Justificación Técnica
 
-Tailwind CSS permite la construcción ágil de **dashboards oscuros, densos e hiperfuncionales**:
+Tailwind CSS permite la construcción ágil de **HUDs oscuros, mínimos y de alta precisión**. El criterio visual (paleta, tipografía, iconos, layout centrado en el planeta) está definido en [GAIA_VISUAL_DESIGN](./GAIA_VISUAL_DESIGN.md):
 
 - Clases utilitarias para diseño responsivo sin escribir CSS custom.
-- Temas oscuros nativos con `dark:` para la estética táctica/militar del HUD.
+- Temas oscuros nativos con `dark:` para la estética orbital/telemetría del HUD.
 - Composición rápida de paneles flotantes, barras laterales colapsables y controles de filtrado.
 
 ---
@@ -300,7 +300,7 @@ Tailwind CSS permite la construcción ágil de **dashboards oscuros, densos e hi
 | Manejo de Estado     | **Valtio** (o Jotai)            | Estado reactivo Proxy-based entre Three.js y React     |
 | Concurrencia         | **Web Workers + Comlink**       | Procesamiento paralelo sin bloquear UI                 |
 | Backend & Proxy      | **FastAPI (Python) + PostgreSQL 18 / TimescaleDB** | Caché Redis, rate-limiting, normalización de $\mu\text{Sv/h}$, procesamiento geoespacial y archivo de históricos |
-| Estilos              | **Tailwind CSS**                | Dashboards oscuros, densos e hiperfuncionales          |
+| Estilos              | **Tailwind CSS**                | HUD sobrio minimalista (ver [GAIA_VISUAL_DESIGN](./GAIA_VISUAL_DESIGN.md))          |
 | Fuentes de Datos     | NASA FIRMS, USGS, Open-Meteo, GEBCO, **Safecast, EURDEP, RadNet, GMCMap** | Ingesta ambiental, sísmica, meteorológica y de radiación |
 
 ---
