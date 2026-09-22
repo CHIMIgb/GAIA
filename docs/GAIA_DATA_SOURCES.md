@@ -15,6 +15,7 @@
 | 3   | [Viento y Vectores Atmosféricos](#3-módulo-de-viento-y-vectores-atmosféricos)                       | 3 |
 | 4   | [Elevación, Batimetría e Inundaciones](#4-módulo-de-elevación-batimetría-e-inundaciones-costeras)    | 4 |
 | 5   | [Fuentes OSINT Complementarias](#5-fuentes-osint-complementarias-satélites-y-fronteras)             | 3 |
+| 6   | [Radiación Ambiental y Riesgo Nuclear](#6-módulo-de-radiación-ambiental-y-riesgo-nuclear)           | 4 |
 
 ---
 
@@ -625,7 +626,115 @@ out body;
 
 ---
 
-## 6. Matriz Resumen: Módulo ↔ APIs
+## 6. Módulo de Radiación Ambiental y Riesgo Nuclear
+
+> Requisitos vinculados: **RF-13, RF-14**
+
+### 6.1 Safecast API ⭐ Opción Principal OSINT
+
+| Campo               | Detalle                                                              |
+| -------------------- | -------------------------------------------------------------------- |
+| **Proveedor**        | Safecast Project (CC0 Public Domain)                                 |
+| **URL Base**         | `https://api.safecast.org/measurements.json`                         |
+| **Formatos**         | JSON / REST                                                          |
+| **Autenticación**    | **Sin API Key** ni registro                                          |
+| **Límites**          | Gratuita e ilimitada                                                 |
+| **Licencia**         | Dominio Público (CC0)                                                |
+| **Cobertura**        | Global (mayor densidad en Japón, Europa y EE.UU.)                    |
+
+#### Descripción
+
+La red abierta de monitoreo radiológico impulsada por la ciudadanía más grande del mundo, creada tras el desastre nuclear de Fukushima en 2011. Cuenta con miles de sensores fijos y móviles que transmiten lecturas continuas.
+
+#### Uso en GAIA 3D
+
+Devuelve arrays de mediciones geoespaciales con latitud, longitud, valor radiológico, unidad ($\mu\text{Sv/h}$ o $\text{CPM}$) y timestamp.
+
+#### Ejemplo de Petición
+
+```
+GET https://api.safecast.org/measurements.json?latitude=35.6762&longitude=139.6503&distance=5000
+```
+
+---
+
+### 6.2 EPA RadNet API (Estados Unidos)
+
+| Campo               | Detalle                                                              |
+| -------------------- | -------------------------------------------------------------------- |
+| **Proveedor**        | U.S. Environmental Protection Agency (EPA)                           |
+| **URL Base**         | `https://www.epa.gov/radnet` / Envirofacts REST API                  |
+| **Formatos**         | JSON / XML                                                           |
+| **Autenticación**    | Gratuita y abierta                                                   |
+| **Límites**          | Sin restricciones documentadas                                       |
+| **Cobertura**        | Estados Unidos (>140 estaciones continuas de monitoreo gamma)        |
+
+#### Descripción
+
+La red nacional de monitoreo de radiación ambiental de la Agencia de Protección Ambiental de EE. UU. Medidores automáticos en más de 140 puntos transmiten continuamente lecturas de radiación gamma en el aire.
+
+#### Uso en GAIA 3D
+
+Proporciona cobertura densa del territorio continental de EE.UU. con mediciones oficiales de radiación gamma ambiental. Complementa a Safecast con datos institucionales validados.
+
+---
+
+### 6.3 EURDEP / JRC REMON (Unión Europea)
+
+| Campo               | Detalle                                                              |
+| -------------------- | -------------------------------------------------------------------- |
+| **Proveedor**        | Comisión Europea — Joint Research Centre (JRC)                       |
+| **URL Base**         | `https://remon.jrc.ec.europa.eu/`                                    |
+| **Formatos**         | GeoJSON / WFS                                                        |
+| **Autenticación**    | Gratuito para acceso público                                         |
+| **Límites**          | Sin restricciones documentadas                                       |
+| **Cobertura**        | Europa (>30 países integrados en tiempo casi real)                   |
+
+#### Descripción
+
+European Radiological Data Exchange Platform, operada por la Comisión Europea (JRC). Agrega en tiempo casi real el intercambio automático de dosis radiológicas gamma desde las redes nacionales de monitoreo de más de 30 países europeos.
+
+#### Uso en GAIA 3D
+
+Ideal para mostrar mapas de intensidad de tasa de dosis equivalente ambiental sobre el continente europeo. Complementa a Safecast proporcionando datos oficiales de redes gubernamentales europeas.
+
+---
+
+### 6.4 GMCMap API (Red de Contadores Geiger Conectados)
+
+| Campo               | Detalle                                                              |
+| -------------------- | -------------------------------------------------------------------- |
+| **Proveedor**        | GQ Electronics / Red Ciudadana GMCMap                                |
+| **URL Base**         | `http://www.gmcmap.com/api/`                                         |
+| **Formatos**         | JSON / CSV                                                           |
+| **Autenticación**    | Requiere ID de consulta pública simple                               |
+| **Límites**          | Sin costo                                                            |
+| **Cobertura**        | Global (estaciones personales IoT 24/7)                              |
+
+#### Descripción
+
+Mapa interactivo colaborativo global alimentado por miles de estaciones de contadores Geiger personales (modelos GQ Electronics y compatibles) conectados a internet las 24 horas.
+
+#### Uso en GAIA 3D
+
+Permite obtener feeds en tiempo real de contadores de radiación distribuidos en ciudades de todo el mundo. Los datos se expresan nativamente en $\text{CPM}$ y se convierten a $\mu\text{Sv/h}$ en el proxy FastAPI.
+
+---
+
+### Comparativa — Módulo de Radiación
+
+| Característica           | Safecast ⭐    | EPA RadNet      | EURDEP          | GMCMap          |
+| ------------------------ | :------------: | :-------------: | :-------------: | :-------------: |
+| Cobertura global         | ✅             | ❌ (EE.UU.)     | ❌ (Europa)     | ✅              |
+| Sin API Key / ID         | ✅             | ✅              | ✅              | ⚠️ (ID query)   |
+| Estaciones fijas vs móviles | Ambas       | Fijas           | Fijas           | Fijas (IoT)     |
+| Unidades nativas         | $\mu\text{Sv/h}$ / $\text{CPM}$ | $\mu\text{Sv/h}$ / Gamma | Rate dosis ($\mu\text{Sv/h}$) | $\text{CPM}$ |
+| Tiempo real              | ✅             | ✅              | ✅ (~NRT)       | ✅              |
+| Licencia abierta         | ✅ (CC0)       | ✅              | ✅              | ✅              |
+
+---
+
+## 7. Matriz Resumen: Módulo ↔ APIs
 
 | Módulo                 | API Principal ⭐              | APIs Complementarias                              |
 | ---------------------- | ----------------------------- | ------------------------------------------------- |
@@ -634,10 +743,11 @@ out body;
 | **Viento**             | Open-Meteo                    | NOAA GFS (GRIB2), ECMWF Open Data                |
 | **Elevación/Inundación** | AWS Terrarium (RGB Tiles)   | GEBCO (batimetría), Copernicus DEM, NOAA Tides    |
 | **OSINT/Contexto**     | Natural Earth                 | CelesTrak (satélites), OpenStreetMap (infra)      |
+| **Radiación Ambiental**| Safecast API                  | EURDEP, EPA RadNet, GMCMap                        |
 
 ---
 
-## 7. Estrategia de Fallback por Módulo
+## 8. Estrategia de Fallback por Módulo
 
 Cada módulo sigue la cadena de resiliencia definida en el [Workflow 7](./GAIA_WORKFLOWS.md#workflow-7-resiliencia-y-manejo-de-fallos-data-fallback):
 
@@ -647,7 +757,9 @@ Cada módulo sigue la cadena de resiliencia definida en el [Workflow 7](./GAIA_W
 | Sismos       | USGS                        | EMSC                        | `fallback/quakes_latest.json`           |
 | Viento       | Open-Meteo                  | NOAA GFS (vía FastAPI)      | `fallback/wind_grid_latest.bin`         |
 | Elevación    | AWS Terrarium               | Copernicus DEM              | `fallback/heightmap_global.png`         |
+| Radiación    | Safecast API                | EURDEP / GMCMap             | `fallback/radiation_latest.json`        |
 
 ---
 
 *Este documento complementa la [Especificación Técnica](./GAIA_SPECIFICATION.md), el [Stack Tecnológico](./GAIA_TECH_STACK.md), el [Contrato de API](./GAIA_API_CONTRACT.md) y los [Workflows](./GAIA_WORKFLOWS.md) del proyecto GAIA.*
+

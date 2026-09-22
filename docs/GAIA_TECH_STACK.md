@@ -44,7 +44,7 @@
 ├──────────────────────────────────────────────────────────────┤
 │                    FUENTES DE DATOS                           │
 │                                                              │
-│   NASA FIRMS │ USGS GeoJSON │ Open-Meteo │ GEBCO             │
+│   NASA FIRMS │ USGS │ Open-Meteo │ GEBCO │ Safecast/EURDEP   │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -294,43 +294,44 @@ Tailwind CSS permite la construcción ágil de **dashboards oscuros, densos e hi
 | UI & Dashboard       | **React**                       | HUD táctico, telemetría, controles de capas            |
 | Manejo de Estado     | **Valtio** (o Jotai)            | Estado reactivo Proxy-based entre Three.js y React     |
 | Concurrencia         | **Web Workers + Comlink**       | Procesamiento paralelo sin bloquear UI                 |
-| Backend & Proxy      | **FastAPI (Python)**            | Caché Redis, rate-limiting, procesamiento geoespacial  |
+| Backend & Proxy      | **FastAPI (Python)**            | Caché Redis, rate-limiting, normalización de $\mu\text{Sv/h}$ y procesamiento geoespacial |
 | Estilos              | **Tailwind CSS**                | Dashboards oscuros, densos e hiperfuncionales          |
+| Fuentes de Datos     | NASA FIRMS, USGS, Open-Meteo, GEBCO, **Safecast, EURDEP, RadNet, GMCMap** | Ingesta ambiental, sísmica, meteorológica y de radiación |
 
 ---
 
 ## 4. Diagrama de Flujo de Datos
 
 ```
-  NASA FIRMS ──┐
-  USGS ────────┤
-  Open-Meteo ──┤──→ FastAPI (Python) ──→ Redis Cache
-  GEBCO ───────┘         │
-                         │ JSON / Binary ArrayBuffer
-                         v
-                    ┌─────────┐
-                    │ Frontend │
-                    │ (TS)    │
-                    └────┬────┘
-                         │
-              ┌──────────┼──────────┐
-              v          v          v
-          Worker 1   Worker 2   Worker 3
-         (Ingesta)  (Octree)   (Viento)
-              │          │          │
-              └──────────┼──────────┘
-                         │ Transferable Objects
-                         v
-                  ┌─────────────┐
-                  │  Three.js   │──→ Canvas WebGL 2.0
-                  │  (GPU)      │
-                  └──────┬──────┘
-                         │ Valtio (Proxy State)
-                         v
-                  ┌─────────────┐
-                  │   React     │──→ DOM (HUD Overlay)
-                  │  + Tailwind │
-                  └─────────────┘
+  NASA FIRMS ──────────┐
+  USGS ────────────────┤
+  Open-Meteo ──────────┤──→ FastAPI (Python) ──→ Redis Cache
+  GEBCO ───────────────┤         │
+  Safecast / EURDEP ───┘         │ JSON / Binary ArrayBuffer
+                                 v
+                            ┌─────────┐
+                            │ Frontend │
+                            │ (TS)    │
+                            └────┬────┘
+                                 │
+              ┌──────────────────┼──────────────────┐
+              v                  v                  v
+          Worker 1           Worker 2           Worker 3
+    (Ingesta + Radiación)   (Octree)           (Viento)
+              │                  │                  │
+              └──────────────────┼──────────────────┘
+                                 │ Transferable Objects
+                                 v
+                          ┌─────────────┐
+                          │  Three.js   │──→ Canvas WebGL 2.0
+                          │  (GPU)      │
+                          └──────┬──────┘
+                                 │ Valtio (Proxy State)
+                                 v
+                          ┌─────────────┐
+                          │   React     │──→ DOM (HUD Overlay)
+                          │  + Tailwind │
+                          └─────────────┘
 ```
 
 ---

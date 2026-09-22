@@ -200,6 +200,45 @@ El contrato **no reemplaza** los códigos de estado HTTP, los **complementa**:
 }
 ```
 
+### 4.7 Éxito — Radiación Ambiental (Safecast / EURDEP)
+
+**`GET /api/radiation?lat=35.6762&lon=139.6503&radius_km=50`** → `200 OK`
+
+```json
+{
+  "success": true,
+  "data": {
+    "count": 128,
+    "source": "SAFECAST_OSINT",
+    "cached": true,
+    "unit_standard": "uSv/h",
+    "items": [
+      {
+        "lat": 35.6762,
+        "lon": 139.6503,
+        "value_usvh": 0.142,
+        "raw_value": 42.0,
+        "raw_unit": "CPM",
+        "station_id": "sf_tokyo_09",
+        "alert_level": "normal",
+        "timestamp": "2026-09-21T18:20:00Z"
+      },
+      {
+        "lat": 37.4211,
+        "lon": 141.0312,
+        "value_usvh": 1.250,
+        "raw_value": 1.250,
+        "raw_unit": "uSv/h",
+        "station_id": "sf_fukushima_02",
+        "alert_level": "critical",
+        "timestamp": "2026-09-21T18:22:10Z"
+      }
+    ]
+  },
+  "error": null
+}
+```
+
 ---
 
 ## 5. Implementación

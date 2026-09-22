@@ -17,6 +17,7 @@
 | 5   | [Simulación de Inundación y Nivel del Mar](#workflow-5-simulación-dinámica-de-inundación-y-nivel-del-mar)                    | RF-09, RF-10, RNF-01                 |
 | 6   | [Interacción, Telemetría y Filtrado Temporal](#workflow-6-interacción-del-usuario-selección-de-telemetría-y-filtrado-temporal)| RF-11, RF-12, RNF-04                 |
 | 7   | [Resiliencia y Manejo de Fallos (Fallback)](#workflow-7-resiliencia-y-manejo-de-fallos-data-fallback)                        | RNF-05                               |
+| 8   | [Ingesta y Mapeo Radiológico (Safecast / EURDEP)](#workflow-8-ingesta-normalización-y-mapeo-radiológico-safecast--eurdep--gmcmap--radnet) | RF-13, RF-14, RNF-01, RNF-03, RNF-04 |
 
 ---
 
@@ -698,6 +699,128 @@ async def get_fires(hours: int = 24) -> APIResponse:
 
 ---
 
+## Workflow 8: Ingesta, Normalización y Mapeo Radiológico (Safecast / EURDEP / GMCMap / RadNet)
+
+**Requisitos vinculados:** RF-13, RF-14, RNF-01, RNF-03, RNF-04
+
+### Diagrama de Flujo
+
+```
+[Activar Capa Radiación / Polling Auto]
+        │
+        ▼
+[Frontend fetch → FastAPI Proxy]
+        │
+        ▼
+[FastAPI: Consulta Safecast / EURDEP / RadNet / GMCMap + Redis Cache]
+        │
+        ▼
+[Normalización a µSv/h en FastAPI Proxy (CPM → µSv/h)]
+        │
+        ▼
+[Respuesta JSON (contrato universal) → Worker 1]
+        │
+        ▼
+[Worker 1: Conversión Geodésica→Cartesiana + Asignación de Umbral/Color]
+        │
+        ▼
+[Empaquetar Float32Array (posiciones + colores + niveles)]
+        │
+        ▼
+[Transferable Objects → Hilo Principal (zero-copy)]
+        │
+        ▼
+[Actualizar InstancedMesh / Heatmap Shader]
+        │
+        ▼
+[GPU: Renderizado cromático + Alerta de Parpadeo si > 1.00 µSv/h]
+```
+
+### Secuencia Detallada
+
+#### Paso 1 — Disparador
+
+Activación del toggle de la **capa de radiación** en el HUD táctico o polling automático configurado.
+
+#### Paso 2 — Proxy Backend y Conversión de Unidades (FastAPI)
+
+1. El frontend invoca `GET /api/radiation?lat=35.67&lon=139.65&radius_km=50`.
+2. FastAPI revisa **caché Redis** (TTL: 5 min).
+3. En caso de cache miss, consulta **Safecast**, **EURDEP**, **EPA RadNet** o **GMCMap** según la cobertura geográfica disponible.
+4. FastAPI **normaliza** lecturas dispersas en Cuentas Por Minuto ($\text{CPM}$) aplicando factores de calibración estándar de tubo Geiger para entregar un estándar unificado en $\mu\text{Sv/h}$:
+
+$$\mu\text{Sv/h} \approx \frac{\text{CPM}}{334}$$
+
+> Factor de conversión para Cs-137 / Cs-134 en sensores GQ típicos.
+
+5. Retorna los datos en el [formato de contrato universal](./GAIA_API_CONTRACT.md) → **RF-13**.
+
+```python
+# FastAPI — Normalización de unidades radiológicas
+def normalize_to_usvh(value: float, unit: str) -> float:
+    if unit == "uSv/h":
+        return value
+    elif unit == "CPM":
+        return value / 334.0  # Factor Cs-137 para sensores GQ
+    elif unit == "nSv/h":
+        return value / 1000.0
+    else:
+        raise ValueError(f"Unknown radiation unit: {unit}")
+```
+
+#### Paso 3 — Procesamiento Multihilo (Worker 1)
+
+1. Se transfiere el payload al **Worker 1**.
+2. Worker 1 calcula las posiciones 3D $(X, Y, Z)$ sobre la esfera del planeta.
+3. Clasifica el **nivel de alerta** y asigna los componentes de color GLSL:
+
+   | Tasa de Dosis ($\mu\text{Sv/h}$) | Nivel de Alerta | Color RGBA                             |
+   | -------------------------------- | --------------- | -------------------------------------- |
+   | $< 0.20$                         | `normal`        | Verde / Azul tenue `(0.2, 0.8, 0.4)`  |
+   | $0.20 - 1.00$                    | `elevated`      | Amarillo / Naranja `(1.0, 0.7, 0.1)`  |
+   | $> 1.00$                         | `critical`      | Rojo incandescente `(1.0, 0.1, 0.0)`  |
+
+4. Empaqueta posiciones, niveles de radiación y colores en un `Float32Array` y lo envía al hilo principal mediante **Transferable Objects** (zero-copy) → **RNF-03**.
+
+```typescript
+// Dentro del Worker 1
+const buffer = new Float32Array(count * 8); // x,y,z,r,g,b,usvh,alertLevel
+// ... poblar buffer con datos normalizados ...
+self.postMessage({ type: 'RADIATION_READY', buffer }, [buffer.buffer]);
+```
+
+#### Paso 4 — Renderizado GPU (Three.js & GLSL)
+
+1. Se asigna el buffer al **InstancedMesh** o shader de **mapa de calor esférico**.
+2. El shader GLSL de fragmentos aplica **pulsaciones animadas** o **efectos de parpadeo** a los sensores que exceden el umbral crítico de $1.00\ \mu\text{Sv/h}$ → **RF-14**.
+
+```glsl
+// Fragment Shader — Alerta radiológica con parpadeo (simplificado)
+uniform float u_time;
+
+varying float v_usvh;
+varying vec3 v_color;
+
+void main() {
+  vec3 color = v_color;
+  float alpha = 0.8;
+
+  // Parpadeo para niveles críticos (> 1.0 µSv/h)
+  if (v_usvh > 1.0) {
+    float pulse = sin(u_time * 6.0) * 0.5 + 0.5; // 3 Hz
+    color = mix(v_color, vec3(1.0, 1.0, 1.0), pulse * 0.4);
+    alpha = mix(0.6, 1.0, pulse);
+  }
+
+  gl_FragColor = vec4(color, alpha);
+}
+```
+
+> [!CAUTION]
+> Al actualizar datos de radiación (cambio de filtro o polling), las geometrías y materiales anteriores deben liberarse con `dispose()` antes de reconstruir el InstancedMesh (RNF-04).
+
+---
+
 ## Resumen: Matriz Workflow ↔ Requisitos
 
 | Workflow | RF                | RNF                | Capa Primaria        |
@@ -709,7 +832,9 @@ async def get_fires(hours: int = 24) -> APIResponse:
 | **W5**   | RF-09, RF-10      | RNF-01                 | GPU (solo shaders)|
 | **W6**   | RF-11, RF-12      | RNF-04                 | HUD + Workers    |
 | **W7**   | —                 | RNF-05                 | Backend + Workers|
+| **W8**   | RF-13, RF-14      | RNF-01, RNF-03, RNF-04 | Workers + GPU    |
 
 ---
 
 *Este documento complementa la [Especificación Técnica](./GAIA_SPECIFICATION.md), el [Stack Tecnológico](./GAIA_TECH_STACK.md) y el [Contrato de API](./GAIA_API_CONTRACT.md) del proyecto GAIA.*
+

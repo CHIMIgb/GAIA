@@ -21,33 +21,34 @@ La arquitectura de GAIA se divide en **cuatro capas** acopladas mediante **event
 ### 2.1 Diagrama de Capas
 
 ```
-+-------------------------------------------------------------------------------+
-|                            CAPA DE DATOS ABIERTOS                             |
-|  NASA FIRMS (Fuegos) | USGS (Sismos) | Open-Meteo (Viento) | GEBCO (Batimetría) |
-+------------------------------------+------------------------------------------+
-                                     | (API Fetch / GeoJSON / Binary GRIB2)
-                                     v
-+-------------------------------------------------------------------------------+
-|                      CAPA DE COMPUTACIÓN (WEB WORKERS)                        |
-|  - Worker 1: Ingesta, Normalización y Spatial Hashing                         |
-|  - Worker 2: Particionado Espacial (Octree 3D para Alertas de Proximidad)     |
-|  - Worker 3: Decodificador de Vectores de Viento (GRIB2 / ArrayBuffers)       |
-+------------------------------------+------------------------------------------+
-                                     | (Transferable Objects / SharedArrayBuffer)
-                                     v
-+-------------------------------------------------------------------------------+
-|                      CAPA DE RENDERIZADO GPU (THREE.JS)                       |
-|  - Fire Module: InstancedMesh + FRP Color Gradient                            |
-|  - Wind Module: GPU Particle System (Transform Feedback / Compute Shader)     |
-|  - Seismic Module: Extruded Cylinder Geometries + Wave Displace Shaders       |
-|  - Ocean Module: Heightmap Displacement + Translucent Water Shader            |
-+------------------------------------+------------------------------------------+
-                                     |
-                                     v
-+-------------------------------------------------------------------------------+
-|                        CAPA DE INTERFAZ TÁCTICA (HUD)                         |
-|  Dashboard React/DOM, Controles de Capas, Time-Scrubber y Feed de Alertas     |
-+-------------------------------------------------------------------------------+
++-------------------------------------------------------------------------------------+
+|                              CAPA DE DATOS ABIERTOS                                 |
+| NASA FIRMS | USGS | Open-Meteo | GEBCO | Safecast / EURDEP / RadNet / GMCMap        |
++--------------------------------------+----------------------------------------------+
+                                       | (API Fetch / GeoJSON / Binary GRIB2)
+                                       v
++-------------------------------------------------------------------------------------+
+|                        CAPA DE COMPUTACIÓN (WEB WORKERS)                            |
+|  - Worker 1: Ingesta, Normalización (incendios, sismos, radiación) y Spatial Hashing|
+|  - Worker 2: Particionado Espacial (Octree 3D para Alertas de Proximidad)           |
+|  - Worker 3: Decodificador de Vectores de Viento (GRIB2 / ArrayBuffers)             |
++--------------------------------------+----------------------------------------------+
+                                       | (Transferable Objects / SharedArrayBuffer)
+                                       v
++-------------------------------------------------------------------------------------+
+|                        CAPA DE RENDERIZADO GPU (THREE.JS)                           |
+|  - Fire Module: InstancedMesh + FRP Color Gradient                                  |
+|  - Wind Module: GPU Particle System (Transform Feedback / Compute Shader)           |
+|  - Seismic Module: Extruded Cylinder Geometries + Wave Displace Shaders             |
+|  - Ocean Module: Heightmap Displacement + Translucent Water Shader                  |
+|  - Radiation Module: InstancedMesh / Heatmap Shader + Chromatic Alert Shader        |
++--------------------------------------+----------------------------------------------+
+                                       |
+                                       v
++-------------------------------------------------------------------------------------+
+|                          CAPA DE INTERFAZ TÁCTICA (HUD)                             |
+|  Dashboard React/DOM, Controles de Capas, Time-Scrubber y Feed de Alertas           |
++-------------------------------------------------------------------------------------+
 ```
 
 ### 2.2 Capa de Datos Abiertos
@@ -58,6 +59,8 @@ La arquitectura de GAIA se divide en **cuatro capas** acopladas mediante **event
 | USGS           | Actividad sísmica       | GeoJSON              | REST API (HTTPS) |
 | Open-Meteo     | Vectores de viento (U,V)| JSON / Binary GRIB2  | REST API (HTTPS) |
 | GEBCO          | Batimetría / Elevación  | GeoTIFF / Heightmap  | Descarga estática|
+| Safecast       | Radiación ambiental     | JSON / REST          | REST API (HTTPS) |
+| EURDEP / RadNet| Dosis radiológica gamma | GeoJSON / WFS / XML  | REST API (HTTPS) |
 
 Esta capa es el punto de entrada de todos los datos al sistema. Las consultas se realizan mediante `fetch()` con reintentos y caché local como mecanismo de fallback.
 
@@ -81,6 +84,7 @@ Esta capa gestiona toda la representación visual en WebGL 2.0:
 - **Wind Module:** Sistema de partículas GPU con actualización de posiciones vía shaders GLSL o Transform Feedback.
 - **Seismic Module:** Geometrías cilíndricas extruidas con shaders de onda para animación de choque.
 - **Ocean Module:** Malla de agua con displacement de heightmap y shader translúcido/refractor.
+- **Radiation Module:** `InstancedMesh` o heatmap shader para lecturas radiológicas con shader de alerta cromática y parpadeo para umbrales críticos.
 
 ### 2.5 Capa de Interfaz Táctica (HUD)
 
@@ -188,8 +192,26 @@ Al hacer clic en un incendio, sismo o partícula de viento, el sistema debe most
 
 El usuario debe poder:
 
-- **Conmutar de forma independiente** la visibilidad de capas: Fuego, Viento, Sismos, Inundación.
+- **Conmutar de forma independiente** la visibilidad de capas: Fuego, Viento, Sismos, Inundación, Radiación.
 - **Filtrar datos por rango de tiempo:** Últimas 24h, 7 días, 30 días.
+
+---
+
+### Subsistema 7: Monitor de Radiación Ambiental y Seguridad Nuclear
+
+#### RF-13 — Ingesta y Normalización Radiológica
+
+El sistema debe consumir feeds OSINT y oficiales de monitoreo radiológico en tiempo real (**Safecast API**, **EPA RadNet**, **EURDEP / JRC REMON**, **GMCMap**). El backend proxy y Worker 1 deben normalizar las distintas unidades de medida (tales como Cuentas Por Minuto — $\text{CPM}$) a un estándar único en microsieverts por hora ($\mu\text{Sv/h}$).
+
+#### RF-14 — Visualización GLSL y Mapeo de Niveles de Alerta
+
+El sistema debe renderizar los puntos de lectura o capas de calor radiológico sobre la corteza 3D del globo utilizando `InstancedMesh` o shaders de mapa de calor. La GPU asignará colores e indicadores dinámicos según los umbrales de seguridad:
+
+| Tasa de Dosis ($\mu\text{Sv/h}$) | Categoría / Estado                      | Color GLSL / Efecto                    |
+| -------------------------------- | --------------------------------------- | -------------------------------------- |
+| $< 0.20$                         | Radiación de fondo natural (seguro)     | Azul / Verde tenue                     |
+| $0.20 - 1.00$                    | Niveles elevados / anómalos             | Amarillo / Naranja                     |
+| $> 1.00$                         | Umbral de alerta / Evento radiológico   | Rojo incandescente con parpadeo GLSL   |
 
 ---
 
@@ -277,6 +299,7 @@ La aplicación debe ser **100% compatible** con navegadores modernos que soporte
 | 4. Sismos (USGS)        |    USGS        |   W1,W2 |    ✅           |  ✅ |
 | 5. Inundación           |    GEBCO       |    —    |    ✅           |  ✅ |
 | 6. HUD y Filtros        |      —         |    —    |      —          |  ✅ |
+| 7. Radiación Ambiental  | Safecast / EURDEP / RadNet / GMCMap | W1 | ✅ | ✅ |
 
 ---
 
@@ -294,6 +317,9 @@ La aplicación debe ser **100% compatible** con navegadores modernos que soporte
 | **Transferable Objects**| Objetos JavaScript (ArrayBuffer, ImageBitmap, etc.) cuya propiedad se transfiere al worker sin copia.|
 | **FCP**                | First Contentful Paint — Momento en que el navegador renderiza el primer contenido visible.          |
 | **Draw Call**          | Instrucción enviada a la GPU para dibujar un conjunto de geometrías. Minimizarlas mejora el rendimiento.|
+| **$\mu\text{Sv/h}$**  | Microsieverts por hora — Unidad estándar de tasa de dosis de radiación ambiental.                       |
+| **CPM**                | Cuentas Por Minuto — Unidad de lectura bruta de un contador Geiger. Se convierte a $\mu\text{Sv/h}$ mediante factores de calibración. |
+| **Heatmap Shader**     | Shader GLSL que renderiza una capa de mapa de calor sobre la superficie del globo basada en densidad o intensidad de datos puntuales. |
 
 ---
 
