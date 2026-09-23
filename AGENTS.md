@@ -29,7 +29,7 @@ Todos los docs de `docs/` comparten valores canónicos en paralelo. Al editar cu
 - **Nuevos docs**: cabecera con `version`+`fecha`, fila añadida en el README y enlaces cruzados desde docs afines (patrón de `GAIA_VISUAL_DESIGN.md`).
 
 ## Roadmap (`GAIA_ROADMAP.md`)
-- Números verificables que deben cuadrar en TODA mención: 14 fases · 97 grupos · **332 micro-pasos · 564.5 h ≈ 94 jornadas** (jornada = 6 h). Las horas de cada fase deben cuadrar con (jornadas de la fase × 6) ±1.2 h.
+- Números verificables que deben cuadrar en TODA mención: 14 fases · 88 grupos · **332 micro-pasos · 564 h ≈ 94 jornadas** (jornada = 6 h). Las horas de cada fase deben cuadrar con (jornadas de la fase × 6) ±1.2 h.
 - Estado real: **planificado, NO ejecutado** (no hay código). No afirmar que fases están "aprobadas y ejecutadas" (deuda conocida: el ROADMAP decía "Aprobado y ejecutado").
 - Recomendaciones accionables priorizadas en `GAIA_RECOMENDACIONES.md` (P0–P3); P0 = arrancar Fase 0 (Vite scaffold + health FastAPI + Redis PING + migration Alembic + contrato).
 
@@ -44,4 +44,4 @@ Todos los docs de `docs/` comparten valores canónicos en paralelo. Al editar cu
   - `/api/quakes` → 0 resultados; `quakes.*` interno (archivos/carpetas) es legítimo: no marcarlo como error.
   - `webpack` solo como comparación intencional (TECH_STACK/DEPLOYMENT).
   - "denso" solo como contexto de dataset (ROADMAP) o anti-patrón (VISUAL_DESIGN).
-  - En `GAIA_ROADMAP.md`: recontar micro-pasos (332), horas (564.5), grupos (97) y rutas por fase (14/14 OK).
+  - En `GAIA_ROADMAP.md`: recontar micro-pasos (332), horas (564), grupos (88) y rutas por fase (14/14 OK).
