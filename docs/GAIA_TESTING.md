@@ -1,8 +1,8 @@
 # GAIA — Plan de Testing y Métricas de Rendimiento
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.1  
-> **Fecha:** 2026-09-22  
+> **Versión del Documento:** 1.2  
+> **Fecha:** 2026-09-23  
 
 ---
 
@@ -95,6 +95,17 @@ Presupuesto de draw calls derivado de la [Estructura del Proyecto](./GAIA_PROJEC
 
 > [!CAUTION]
 > Siempre medir con `devicePixelRatio` capado a 2.0 (ver `core/Resizer.ts`) y con la misma GPU/reference profile; los números entre hardware distinto no son comparables. Fijar una máquina de referencia en CI (Node + headless con SwiftShader/ANGLE) para el test de draw calls y la FPS nominal.
+
+#### Perfil de hardware de referencia
+
+Los presupuestos de rendimiento (60 FPS, p95 ≤ 18 ms, ≤ 8 draw calls) son **objetivos medibles** y se validan contra este perfil, no contra hardware arbitrario:
+
+| Perfil                    | Descripción                                                                 | Uso                             |
+| ------------------------- | --------------------------------------------------------------------------- | ------------------------------- |
+| **CI (headless)**         | Node + SwiftShader/ANGLE sin GPU física; `devicePixelRatio` = 1.0            | Gate determinista de draw calls y FPS nominal (RNF-01) |
+| **Cliente objetivo**      | Portátil/escritorio gama media, 1080p, GPU integrada o discreta básica, `devicePixelRatio` capado a 2.0 | Validación de p95 ≤ 18 ms y 60 FPS reales con todas las capas |
+
+Los números solo son comparables dentro del mismo perfil; al publicar resultados de rendimiento se indica siempre el perfil usado (doc de referencia: `GAIA_DEPLOYMENT.md` §7.3 para el job de rendimiento).
 
 ---
 

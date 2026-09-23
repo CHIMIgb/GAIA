@@ -1,8 +1,8 @@
 # GAIA — Recomendaciones de Revisión Técnica
 
 > **Proyecto:** GAIA 3D
-> **Versión del Documento:** 1.1
-> **Fecha:** 2026-09-22
+> **Versión del Documento:** 1.2
+> **Fecha:** 2026-09-23
 > **Alcance:** Auditoría objetiva de la documentación tras la pasada de unificación (commit `ba72761`).
 
 ---
@@ -39,11 +39,11 @@ El contrato de API aparecía en 7 documentos; los TTL, rate-limits, módulos y e
 
 Si el backend ya normalizó la rejilla, ¿qué decodifica el Worker 3? Hay que elegir una y degradar la otra a fallback.
 
-### 3.4 `SharedArrayBuffer` sin `COOP`/`COEP`
-`SPEC`/`TECH_STACK` prometen `SharedArrayBuffer` (zero-copy), que **requiere** los headers `Cross-Origin-Opener-Policy` y `Cross-Origin-Embedder-Policy` en producción. No aparecen en `SECURITY` ni `DEPLOYMENT`: tal cual está planificado, no funcionará en el navegador.
+### 3.4 `SharedArrayBuffer` sin `COOP`/`COEP` ✅ (resuelto)
+`SPEC`/`TECH_STACK` prometían `SharedArrayBuffer` (zero-copy), que **requiere** los headers `Cross-Origin-Opener-Policy` y `Cross-Origin-Embedder-Policy` en producción. No aparecían en `SECURITY` ni `DEPLOYMENT`. **Decisión:** se eliminó `SharedArrayBuffer`; solo `Transferable Objects` (zero-copy, sin headers extra). Aplicado en `SPEC` y `TECH_STACK`; nota en `DEPLOYMENT` §6.2.
 
-### 3.5 Rate-limit con dos implementaciones
-`SECURITY` menciona `slowapi`; el ROADMAP pide "middleware sobre Redis" (custom). Son dos soluciones: hay que elegir una.
+### 3.5 Rate-limit con dos implementaciones ✅ (resuelto)
+`SECURITY` mencionaba `slowapi`; el ROADMAP pedía "middleware sobre Redis" (custom). **Decisión:** middleware custom sobre Redis con `redis>=5`/`redis.asyncio`; `slowapi` eliminado. Aplicado en `SECURITY` §4.1 y ROADMAP Paso 0.2.3.
 
 ### 3.6 Números fácticos con riesgo
 - `timescale/timescaledb:latest-pg18`: la compatibilidad de TimescaleDB con PostgreSQL 18 va con retraso; puede no existir la imagen.
@@ -76,16 +76,15 @@ Parar de escribir documentación y validar con implementación:
 - [x] Decidir: el procesado GRIB2 vive en el **backend FastAPI** (no en Worker 3).
 - [x] Ajustar `SPEC` para que Worker 3 solo interpole rejillas normalizadas (ya aplicado en `SPEC` §2.3 y §3; el backend sirve binarios `u/v` compactos).
 
-### 4.4 [P1] `SharedArrayBuffer` y headers de contexto ✅ (documentado)
-- [x] Documentar `Cross-Origin-Opener-Policy` + `Cross-Origin-Embedder-Policy` en `SPEC` §2.3 (condición para zero-copy).
-- [ ] Pendiente: reflejar ambos headers en `SECURITY` y `DEPLOYMENT` al implementar el despliegue.
+### 4.4 [P1] `SharedArrayBuffer` y headers de contexto ✅ (resuelto)
+- [x] **Eliminar** `SharedArrayBuffer` del diseño: solo `Transferable Objects` (zero-copy, sin headers COOP/COEP). Aplicado en `SPEC` §2.3, `TECH_STACK` y nota en `DEPLOYMENT` §6.2.
 
-### 4.5 [P2] Rate-limit: una sola implementación
-- [ ] Elegir entre `slowapi` y middleware custom sobre Redis y dejar un solo referente en docs.
+### 4.5 [P2] Rate-limit: una sola implementación ✅ (aplicado)
+- [x] Elegir: **middleware custom sobre Redis (token bucket asíncrono)** con el cliente `redis>=5`; `slowapi` eliminado de `SECURITY` §4.1 y ROADMAP Paso 0.2.3 alineado.
 
-### 4.6 [P2] Endurecer números fácticos
+### 4.6 [P2] Endurecer números fácticos ✅ (aplicado)
 - [x] `timescaledb:latest-pg18` **existe** (imagen oficial; verificar pin de versión en despliegue real).
-- [ ] Anotar los presupuestos de rendimiento como *objetivos medibles* con hardware de referencia.
+- [x] Presupuestos de rendimiento anotados como *objetivos medibles* con **perfil de hardware de referencia** en `TESTING` §2 (CI headless + cliente objetivo gama media).
 
 ### 4.7 [P2] Estado del ROADMAP ✅ (aplicado)
 - [x] Cambiar a "Estado: Planificado" (aplicado en `ROADMAP` §1); volver a "Aprobado y ejecutado" fase por fase conforme se implementa.

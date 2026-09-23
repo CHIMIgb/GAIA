@@ -1,8 +1,8 @@
 # GAIA — Guía de Despliegue
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.2  
-> **Fecha:** 2026-09-22  
+> **Versión del Documento:** 1.3  
+> **Fecha:** 2026-09-23  
 
 ---
 
@@ -274,6 +274,9 @@ Pasos:
 ### 6.2 Opción B — Docker Compose en VPS
 
 Recomendada para control total (DigitalOcean / Hetzner / Linode):
+
+> [!NOTE]
+> **Web Workers:** la comunicación entre hilos usa **Transferable Objects** (sin copia). No se usa `SharedArrayBuffer`, por lo que **no** se requieren los headers `Cross-Origin-Opener-Policy`/`Cross-Origin-Embedder-Policy` — evita restricciones sobre recursos cross-origin (teselas, APIs externas).
 
 ```
 [Internet] ──► Nginx :443 (HTTPS/TLS) ──► frontend estático (volumen)

@@ -1,8 +1,8 @@
 # GAIA — Seguridad de la Aplicación
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.2  
-> **Fecha:** 2026-09-22  
+> **Versión del Documento:** 1.3  
+> **Fecha:** 2026-09-23  
 
 ---
 
@@ -71,28 +71,51 @@ La pregunta de si conviene **mantener un registro de cookies de sesión** se ana
 
 Se aplica en **dos niveles**: edge (CDN) y aplicación (FastAPI).
 
-### 4.1 Aplicación — `slowapi` (FastAPI)
+### 4.1 Aplicación — Middleware custom sobre Redis (token bucket asíncrono)
 
-Algoritmo: **ventana deslizante por IP y por sesión** con almacén en Redis (token bucket). La clave incluye el prefijo del endpoint.
+Algoritmo: **token bucket por IP y por sesión** con almacén en Redis (`redis>=5`, API `redis.asyncio`). Cada bucket es un hash en Redis (clave `{sesión|IP}:{endpoint}`) con los campos `tokens` y `last`; se rellena según el tiempo transcurrido hasta el techo `capacity` (esto expresa *burst* 240 con *sustained* 120/min), y cada petición drena un token en un script LUA atómico.
 
 ```python
 # backend/app/middleware/rate_limit.py (esquema)
-from slowapi import Limiter
-from slowapi.util import get_remote_address
+import time
+from redis.asyncio import Redis
 
-limiter = Limiter(key_func=get_remote_address, storage_uri=settings.REDIS_URL)
+redis = Redis(connection_pool=settings.REDIS_POOL)
 
-# Límite global por IP
-@limiter.limit("120/min; burst=240")
-async def root():
-    ...
+# Token bucket por {sesión|IP}:{endpoint} — clave Redis con {tokens, last}
+LIMITS = {
+    "global": {"capacity": 240, "refill_per_min": 120},   # burst 240, sustained 120/min
+    "/api/fires":      {"capacity": 60,  "refill_per_min": 60},
+    "/api/earthquakes":{"capacity": 60,  "refill_per_min": 60},
+    "/api/wind":       {"capacity": 30,  "refill_per_min": 30},
+    "/api/radiation":  {"capacity": 30,  "refill_per_min": 30},
+    "/api/elevation":  {"capacity": 120, "refill_per_min": 120},
+}
 
-# Límites específicos por endpoint "pesado"
-@app.get("/api/radiation")
-@limiter.limit("30/min")                      # consulta por radio = costosa
-async def get_radiation(request: Request, lat: float, lon: float, radius_km: int = 50):
-    ...
+# Script LUA: recarga tokens según tiempo transcurrido y drena 1 si hay
+LUA_ALLOW = """
+local t = tonumber(redis.call('GET', KEYS[1] .. ':tokens') or ARGV[3])
+local last = tonumber(redis.call('GET', KEYS[1] .. ':last') or ARGV[1])
+local now, cap, rate = tonumber(ARGV[1]), tonumber(ARGV[2]), tonumber(ARGV[3]) / 60.0
+t = math.min(cap, t + (now - last) * rate)
+if t < 1 then
+    redis.call('SET', KEYS[1] .. ':tokens', t)
+    return 0  -- 429
+end
+redis.call('SET', KEYS[1] .. ':tokens', t - 1)
+redis.call('SET', KEYS[1] .. ':last', now)
+return 1
+"""
+
+async def allow(key: str, bucket: dict) -> bool:
+    now = time.time()
+    ok = await redis.eval(LUA_ALLOW, 1, key, now, bucket["capacity"], bucket["refill_per_min"])
+    return bool(ok)
 ```
+
+- Los campos `tokens`/`last` llevan TTL (≈ `refill_per_min` × 2) para limpieza automática de buckets inactivos.
+- Se aplica como ASGI middleware global sobre todos los endpoints `/api/*`, con excepción de `/api/health` (uptime checks).
+- **Nota:** se eligió middleware custom sobre el **cliente Redis asíncrono del proyecto** (`redis>=5`) en lugar de `slowapi`/`limits` para mantener un único cliente Redis y la convención del stack (ver ROADMAP Paso 0.2.3).
 
 | Endpoint               | Límite por IP | Límite por sesión | Nota                    |
 | ---------------------- | :-----------: | :---------------: | ----------------------- |
@@ -142,7 +165,7 @@ Con cabeceras `Retry-After: 30` y `RateLimit-*` estándar. El frontend (Workflow
 
 - **Nginx** (Opción B de despliegue): `limit_req` y `limit_conn` por IP; tamaño máximo de request **1 MB** (`client_max_body_size`); timeouts de proxy ≤ 5 s (alineados con el fallback de upstream).
 - **Uvicorn bajo carga**: ejecutar con multi-workers (o `--workers` detrás de un proxy) para no saturar un solo proceso.
-- **Backpressure**: si Redis no responde, fallar **rápido** (`fail-fast`) en `slowapi` en lugar de encolar peticiones ilimitadas.
+- **Backpressure**: si Redis no responde, fallar **rápido** (`fail-fast`) en el middleware de rate-limit en lugar de encolar peticiones ilimitadas.
 - **CORS con allowlist**: solo `CORS_ORIGINS` configurado (ver [Deployment §4](./GAIA_DEPLOYMENT.md)); ninguna origin `*` en producción.
 
 ### 5.3 Límites de recursos
@@ -234,7 +257,7 @@ Sin cuentas de usuario, la aplicación **no recolecta identidad personal** por d
 
 | Amenaza              | Control principal                          | Verificación / Test                                       |
 | -------------------- | ------------------------------------------ | --------------------------------------------------------- |
-| Abuso de API / DoS   | rate-limit slowapi + límites Nginx          | Test de límite: 200 req/min → `429` con contrato          |
+| Abuso de API / DoS   | rate-limit middleware Redis + límites Nginx | Test de límite: 200 req/min → `429` con contrato          |
 | DDoS volumétrico     | Cloudflare + `limit_req`/`limit_conn`       | Smoke de rendimiento bajo throttling (Testing §2.3)      |
 | XSS                  | React escaping + CSP + prohib. `dangerouslySetInnerHTML` | `xss.spec.tsx` + header check en CI          |
 | Robo de sesión       | Cookie `HttpOnly`/`Secure`/`SameSite` + token opaco | Audit de atributos de `Set-Cookie`              |

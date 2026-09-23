@@ -1,8 +1,8 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.5
+> **Versión del Documento:** 1.6
 > **Estado:** Planificado — NO ejecutado (pasos y micro-pasos definidos, con estimaciones; la implementación está por comenzar).
-> **Última actualización:** 2026-09-22
+> **Última actualización:** 2026-09-23
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
 
 ## 1. Introducción y Método
@@ -100,7 +100,7 @@ Cada fase se divide jerárquicamente así:
 - **Estimado:** ~1.25 h.
 
 **Paso 0.2.3 — Rate-limit global (120 r/m y burst 240)**
-- [ ] Middleware de rate-limit global aplicado a **todos** los endpoints, implementado sobre Redis.
+- [ ] Middleware de rate-limit global aplicado a **todos** los endpoints, implementado sobre Redis (**token bucket asíncrono** con `redis>=5` / `redis.asyncio`, middleware custom — ver [SECURITY §4.1](./GAIA_SECURITY.md)).
 - **Criterio:** más de 120 peticiones/minuto → 429 con el código de error correspondiente; burst hasta 240 tolerado; test automatizado.
 - **Estimado:** ~2 h.
 

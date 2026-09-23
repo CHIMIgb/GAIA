@@ -1,8 +1,8 @@
 # GAIA — Base de Datos (Históricos + Sesiones)
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.0  
-> **Fecha:** 2026-09-22  
+> **Versión del Documento:** 1.1  
+> **Fecha:** 2026-09-23  
 
 ---
 
@@ -166,6 +166,8 @@ async def ingest_hotspots(items: list[FireHotspot]):
 - **Idempotencia**: las claves de dedup garantizan que re-persistir el mismo evento no duplica filas.
 
 ### 4.2 Volumen estimado (orden de magnitud)
+
+> **Tabla canónica de retención.** Los días de retención por módulo viven aquí (única fuente de verdad); otros docs los referencian sin repetirlos (patrón del ROADMAP §1.1, criterio en AGENTS.md).
 
 | Módulo      | Filas/día aprox. (alto tráfico) | Retención propuesta |
 | ----------- | ------------------------------- | ------------------- |

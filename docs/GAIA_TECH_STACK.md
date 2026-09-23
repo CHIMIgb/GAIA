@@ -1,8 +1,8 @@
 # GAIA — Stack Tecnológico
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.2  
-> **Fecha:** 2026-09-22  
+> **Versión del Documento:** 1.3  
+> **Fecha:** 2026-09-23  
 
 ---
 
@@ -65,7 +65,7 @@
 TypeScript con tipado estricto es fundamental en un proyecto de esta complejidad gráfica y computacional:
 
 - **Coordenadas geoespaciales:** Interfaces tipadas para latitud, longitud, altitud y proyecciones evitan errores silenciosos en cálculos de posición sobre la esfera.
-- **Buffers de memoria binarios:** Los `ArrayBuffer`, `Float32Array` y `SharedArrayBuffer` que se transfieren entre Web Workers y el hilo principal requieren contratos de tipo claros para evitar corrupciones de datos.
+- **Buffers de memoria binarios:** Los `ArrayBuffer` y `Float32Array` que se transfieren entre Web Workers y el hilo principal (vía **Transferable Objects**, sin copia) requieren contratos de tipo claros para evitar corrupciones de datos.
 - **Estructuras de datos WebGL:** Los uniforms, attributes y varyings de los shaders GLSL necesitan interfaces TypeScript que reflejen la forma exacta de los datos enviados a la GPU.
 
 ```typescript
