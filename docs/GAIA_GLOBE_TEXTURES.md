@@ -1,8 +1,8 @@
 # GAIA — APIs de Textura Satelital, Elevación y Altimetría
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.1  
-> **Fecha:** 2026-09-21  
+> **Versión del Documento:** 1.2  
+> **Fecha:** 2026-09-24  
 
 ---
 
@@ -317,7 +317,7 @@ async def get_elevation(lat: float, lon: float) -> APIResponse:
             f"https://api.open-meteo.com/v1/elevation?latitude={lat}&longitude={lon}"
         )
         elevation = resp.json()["elevation"][0]
-        await redis.setex(cache_key, 86400, str(elevation))  # TTL: 24h
+        await redis.setex(cache_key, 300, str(elevation))  # TTL: 300 s (canónico)
 
     return APIResponse.ok({"elevation_m": elevation})
 ```

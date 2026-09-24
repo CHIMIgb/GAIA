@@ -1,8 +1,8 @@
 # GAIA — Base de Datos (Históricos + Sesiones)
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.1  
-> **Fecha:** 2026-09-23  
+> **Versión del Documento:** 1.2  
+> **Fecha:** 2026-09-24  
 
 ---
 
@@ -162,7 +162,7 @@ async def ingest_hotspots(items: list[FireHotspot]):
     )
 ```
 
-- **Frecuencia**: igual a los TTLs de Redis (incendios/radiación 5 min, sismos 1 min, viento 15 min) — se persiste lo que ya se ingirió en caliente, sin peticiones extras a las APIs.
+- **Frecuencia**: igual a los TTLs de Redis (incendios/sismos/radiación 5 min, viento 15 min) — se persiste lo que ya se ingirió en caliente, sin peticiones extras a las APIs.
 - **Idempotencia**: las claves de dedup garantizan que re-persistir el mismo evento no duplica filas.
 
 ### 4.2 Volumen estimado (orden de magnitud)

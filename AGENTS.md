@@ -20,7 +20,7 @@ Todos los docs de `docs/` comparten valores canónicos en paralelo. Al editar cu
 - **Endpoints**: `/api/fires`, `/api/earthquakes` (no `/api/quakes`), `/api/wind`, `/api/radiation`, `/api/history/*`, `/api/health`.
 - **Env vars de frontend**: prefijo `VITE_GAIA_*` (Vite solo expone `VITE_*`).
 - **Valores canónicos (ROADMAP §17)**: TTL 300/900/300 s, retención por módulo 90/365/30/90/365 d (fires/quakes/wind/radiation/elevation, tabla canónica en `GAIA_DATABASE.md` §4.2), rate-limit global 120 r/m (burst 240), por módulo 60/60/30/30/120, ≤8 draw calls, 60 FPS p95 ≤18 ms, FCP <2 s, bundle ≤450 KB gzip, cookie `gaia_session` (30 d, sha256, sin PII).
-- Al editar un doc: subir su `version` y `fecha` (cada doc declara la suya en cabecera — hoy van de 1.0 a 1.4 —; no asumir una versión global ni usar fechas falsas).
+- Al editar un doc: subir su `version` y `fecha` (cada doc declara la suya en cabecera — hoy van de 1.1 a 1.6 —; no asumir una versión global ni usar fechas falsas).
 
 ## Convenciones del proyecto (verificadas en los docs)
 - **No duplicar valores técnicos.** Las tablas canónicas (TTL, rate limits, retención, draw calls) viven en su doc de origen: referenciarlas y citar el RF/RNF aplicable en vez de repetirlas (patrón del ROADMAP §1.1, presente en WORKFLOWS y DATA_SOURCES).
