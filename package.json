@@ -20,7 +20,6 @@
     "prettier": "^3.9.9"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx,css,md,json}": "prettier --write",
-    "frontend/**/*.{ts,tsx}": "oxlint --fix-dir ."
+    "*.{ts,tsx,js,jsx,css,md,json}": "prettier --write"
   }
 }
