@@ -1,0 +1,26 @@
+{
+  "name": "gaia",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "frontend",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w frontend",
+    "build": "npm run build -w frontend",
+    "lint": "npm run lint -w frontend",
+    "typecheck": "npm run typecheck -w shared",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.9.9"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,css,md,json}": "prettier --write",
+    "frontend/**/*.{ts,tsx}": "oxlint --fix-dir ."
+  }
+}
