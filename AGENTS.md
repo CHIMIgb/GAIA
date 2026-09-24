@@ -4,6 +4,8 @@
 - **Todos los docs de `docs/` son la ÚNICA fuente de verdad** del proyecto. Ninguna afirmación, convención o valor debe inventarse ni asumirse fuera de lo que dictan.
 - **Ante cualquier duda o contradicción** entre documentos — por mínima que sea — **preguntar al usuario antes de actuar** (usar la tool de preguntas). No resolver ambigüedades por cuenta propia.
 - **Prohibido modificar documentación sin permiso explícito.** No editar, crear, renombrar ni eliminar ningún doc de `docs/` (ni sus versiones/fechas) salvo que el usuario lo autorice.
+- **Avance paso a paso, solo con pasos validados.** El proyecto (roadmap / fases / micro-pasos) se realiza de uno en uno. Al completar un paso se marca como **realizado**; después el usuario lo valida y, cuando valida, se marca como **validado**. **No se puede avanzar al siguiente paso mientras el paso anterior no esté marcado como validado.** Todo trabajo pendiente se registra en una lista de tareas con estados `pending → in_progress → completed (realizado) → validated (validado)`.
+- **Usar todas las herramientas disponibles.** Antes de cada tarea, cargar la skill pertinente del proyecto con la tool `skill` (las instaladas en `.agents/skills/`, ver sección Skills más abajo) y usar el MCP `context7` para documentación actualizada de librerías/frameworks. No reinventar lo que ya está disponible en skills, MCP o el propio código del proyecto.
 
 ## Estado del repo
 - Solo documentación (15 docs en `docs/`, cada uno con `version` + `fecha` en cabecera). **No existe** `frontend/` ni `backend/`: no hay package.json, tests, lint ni CI. No inventar comandos de build/test (no existen).
@@ -33,8 +35,17 @@ Todos los docs de `docs/` comparten valores canónicos en paralelo. Al editar cu
 - Estado real: **planificado, NO ejecutado** (no hay código). No afirmar que fases están "aprobadas y ejecutadas" (deuda conocida: el ROADMAP decía "Aprobado y ejecutado").
 - Recomendaciones accionables priorizadas en `GAIA_RECOMENDACIONES.md` (P0–P3); P0 = arrancar Fase 0 (Vite scaffold + health FastAPI + Redis PING + migration Alembic + contrato).
 
+## Skills del proyecto
+- Instaladas en `.agents/skills/` (26). Antes de cada tarea cargar la pertinente según la capa:
+  - **3D/Frontend**: `threejs`, `threejs-shaders`, `vite`, `vercel-react-best-practices`, `tailwind`, `typescript-advanced-types`.
+  - **Backend Python**: `fastapi`, `fastapi-python`, `alembic-migrations`, `sqlalchemy-models`, `pydantic-schemas`, `fastapi-errors`, `settings-config`, `http-client-integration`.
+  - **Redis/BD**: `redis-core`, `redis-connections`, `redis-security`, `supabase-postgres-best-practices`.
+  - **Dominio geo**: `mapbox-web-performance-patterns`, `mapbox-cartography`.
+  - **Workflow/Testing**: `writing-plans`, `executing-plans`, `test-driven-development`, `verification-before-completion`, `systematic-debugging`, `webapp-testing`.
+
 ## Git
 - Mensajes de commit estilo `docs: ...` (historial existente lo usa).
+- **Commit por paso realizado.** Cada paso/micro-paso que se marque como **realizado** se commitea de inmediato (al completarlo y antes de pedir su validación), bajo rama/commit `feat/fase-X`, con prefijo semántico (`feat:`, `fix:`, `docs:`). Esto sirve de historial verificable de avance y respaldo para la validación del usuario. Excepción: cambios de configuración local (`opencode.json`, `.env`, skills) no se commitean salvo indicación contraria.
 - `opencode.json` y `.env` están **gitignored** (`opencode.json` contiene la API key de Context7). No committear ni editar el `opencode.json` para romper el plugin ponytail o el MCP de context7; **sí** commitear `.env.example`.
 - Tras commit suele pushearse a `origin/main`.
 
