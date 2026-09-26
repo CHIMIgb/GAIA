@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="GAIA API", version="0.1.0")
 
-# Router común de módulos (STEP 0.2.1): cada módulo se registra aquí.
+# Router común de módulos (Paso 0.2.1): cada módulo se registra aquí.
 api_router = APIRouter(prefix="/api")
 api_router.include_router(health.router)
 app.include_router(api_router)
@@ -47,7 +47,7 @@ async def handle_http_exception(
     return JSONResponse(
         status_code=exc.status_code,
         content=APIResponse.fail(code, str(exc.detail)).model_dump(mode="json"),
-        headers=getattr(exc, "headers", None),
+        headers=exc.headers,
     )
 
 

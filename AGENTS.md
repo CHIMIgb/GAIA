@@ -1,17 +1,21 @@
 # AGENTS.md — GAIA
 
 ## Reglas de oro del proyecto
+
 - **Todos los docs de `docs/` son la ÚNICA fuente de verdad** del proyecto. Ninguna afirmación, convención o valor debe inventarse ni asumirse fuera de lo que dictan.
+- **El código se implementa según los docs, no según el criterio del implementador.** Ante una decisión de diseño o un "esto se ve raro": (1) buscar el doc que la fija y aplicarlo tal cual, citando el doc (sección/RF/RNF) en el mensaje de commit; (2) si ningún doc la fija, **preguntar al usuario** en vez de decidir. Antes de "corregir" un valor o mapeo del código, comprobar si contradice el código o si el doc es lo que está mal (p. ej. el `429 → UPSTREAM_RATE_LIMITED` del rate-limit global del cliente lo fija `GAIA_SECURITY.md` §4.2). Los silencios de los docs **no** se rellenan por criterio propio: se consultan.
 - **Ante cualquier duda o contradicción** entre documentos — por mínima que sea — **preguntar al usuario antes de actuar** (usar la tool de preguntas). No resolver ambigüedades por cuenta propia.
 - **Prohibido modificar documentación sin permiso explícito.** No editar, crear, renombrar ni eliminar ningún doc de `docs/` (ni sus versiones/fechas) salvo que el usuario lo autorice.
 - **Avance paso a paso, solo con pasos validados.** El proyecto (roadmap / fases / micro-pasos) se realiza de uno en uno. Al completar un paso se marca como **realizado**; después el usuario lo valida y, cuando valida, se marca como **validado**. **No se puede avanzar al siguiente paso mientras el paso anterior no esté marcado como validado.** Todo trabajo pendiente se registra en una lista de tareas con estados `pending → in_progress → completed (realizado) → validated (validado)`.
 - **Usar todas las herramientas disponibles.** Antes de cada tarea, cargar la skill pertinente del proyecto con la tool `skill` (las instaladas en `.agents/skills/`, ver sección Skills más abajo) y usar el MCP `context7` para documentación actualizada de librerías/frameworks. No reinventar lo que ya está disponible en skills, MCP o el propio código del proyecto.
 
 ## Estado del repo
+
 - Solo documentación (15 docs en `docs/`, cada uno con `version` + `fecha` en cabecera). **No existe** `frontend/` ni `backend/`: no hay package.json, tests, lint ni CI. No inventar comandos de build/test (no existen).
 - Todo el contenido es **en español** (identificadores, rutas y comandos en inglés). Escribir nueva documentación en español.
 
 ## Regla de oro: coherencia entre documentos
+
 Todos los docs de `docs/` comparten valores canónicos en paralelo. Al editar cualquier doc, rastrear y alinear los demás (verificar con grep tras editar). Fuentes de verdad:
 
 - **Contrato API**: `{ success, data, error }` — NUNCA `{ ok, error }`. Canónico en `GAIA_API_CONTRACT.md`.
@@ -23,6 +27,7 @@ Todos los docs de `docs/` comparten valores canónicos en paralelo. Al editar cu
 - Al editar un doc: subir su `version` y `fecha` (cada doc declara la suya en cabecera — hoy van de 1.1 a 1.6 —; no asumir una versión global ni usar fechas falsas).
 
 ## Convenciones del proyecto (verificadas en los docs)
+
 - **No duplicar valores técnicos.** Las tablas canónicas (TTL, rate limits, retención, draw calls) viven en su doc de origen: referenciarlas y citar el RF/RNF aplicable en vez de repetirlas (patrón del ROADMAP §1.1, presente en WORKFLOWS y DATA_SOURCES).
 - **`quakes` interno ≠ endpoint público.** Pueden existir `quakes.service.ts`, `quakes.py` o `quakes_latest.json`; el endpoint público es SIEMPRE `/api/earthquakes`. No "corregir" los nombres internos.
 - **Radiación en `µSv/h` siempre**; CPM se normaliza en el backend (SPEC, Subsistema 7). No menear ninguna otra unidad en docencia de radiación.
@@ -31,11 +36,13 @@ Todos los docs de `docs/` comparten valores canónicos en paralelo. Al editar cu
 - **Nuevos docs**: cabecera con `version`+`fecha`, fila añadida en el README y enlaces cruzados desde docs afines (patrón de `GAIA_VISUAL_DESIGN.md`).
 
 ## Roadmap (`GAIA_ROADMAP.md`)
+
 - Números verificables que deben cuadrar en TODA mención: 14 fases · 88 grupos · **332 micro-pasos · 564 h ≈ 94 jornadas** (jornada = 6 h). Las horas de cada fase deben cuadrar con (jornadas de la fase × 6) ±1.2 h.
 - Estado real: **planificado, NO ejecutado** (no hay código). No afirmar que fases están "aprobadas y ejecutadas" (deuda conocida: el ROADMAP decía "Aprobado y ejecutado").
 - Recomendaciones accionables priorizadas en `GAIA_RECOMENDACIONES.md` (P0–P3); P0 = arrancar Fase 0 (Vite scaffold + health FastAPI + Redis PING + migration Alembic + contrato).
 
 ## Skills del proyecto
+
 - Instaladas en `.agents/skills/` (26). Antes de cada tarea cargar la pertinente según la capa:
   - **3D/Frontend**: `threejs`, `threejs-shaders`, `vite`, `vercel-react-best-practices`, `tailwind`, `typescript-advanced-types`.
   - **Backend Python**: `fastapi`, `fastapi-python`, `alembic-migrations`, `sqlalchemy-models`, `pydantic-schemas`, `fastapi-errors`, `settings-config`, `http-client-integration`.
@@ -44,12 +51,14 @@ Todos los docs de `docs/` comparten valores canónicos en paralelo. Al editar cu
   - **Workflow/Testing**: `writing-plans`, `executing-plans`, `test-driven-development`, `verification-before-completion`, `systematic-debugging`, `webapp-testing`.
 
 ## Git
+
 - Mensajes de commit estilo `docs: ...` (historial existente lo usa).
 - **Commit por paso realizado.** Cada paso/micro-paso que se marque como **realizado** se commitea de inmediato (al completarlo y antes de pedir su validación), bajo rama/commit `feat/fase-X`, con prefijo semántico (`feat:`, `fix:`, `docs:`). Esto sirve de historial verificable de avance y respaldo para la validación del usuario. Excepción: cambios de configuración local (`opencode.json`, `.env`, skills) no se commitean salvo indicación contraria.
 - `opencode.json` y `.env` están **gitignored** (`opencode.json` contiene la API key de Context7). No committear ni editar el `opencode.json` para romper el plugin ponytail o el MCP de context7; **sí** commitear `.env.example`.
 - Tras commit suele pushearse a `origin/main`.
 
 ## Verificación (no hay framework)
+
 - No hay lint/typecheck/test. Validar cambios con greps de coherencia:
   - Contrato, endpoints, stack y nombres propios (ver arriba).
   - `/api/quakes` → 0 resultados; `quakes.*` interno (archivos/carpetas) es legítimo: no marcarlo como error.

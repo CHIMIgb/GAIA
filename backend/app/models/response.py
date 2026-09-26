@@ -21,6 +21,8 @@ class ErrorCode(StrEnum):
     INTERNAL_SERVER_ERROR = "INTERNAL_SERVER_ERROR"
 
 
+# Pares status→código del catálogo (API_CONTRACT §6). El 429 usa UPSTREAM_RATE_LIMITED
+# también para el rate-limit global del cliente: lo fija SECURITY §4.2.
 CODE_BY_STATUS: dict[int, ErrorCode] = {
     400: ErrorCode.VALIDATION_ERROR,
     404: ErrorCode.NOT_FOUND,
