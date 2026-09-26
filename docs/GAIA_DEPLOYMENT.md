@@ -1,7 +1,7 @@
 # GAIA — Guía de Despliegue
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.5  
+> **Versión del Documento:** 1.6  
 > **Fecha:** 2026-09-26
 
 ---
@@ -53,29 +53,37 @@ Flujo de datos: el frontend consume exclusivamente `/api/*` del backend; el back
 
 ### 3.1 Requisitos Previos
 
-| Herramienta | Versión mínima | Uso                               |
-| ----------- | -------------- | --------------------------------- |
-| Node.js     | 22 LTS         | Vite (dev server + build), Vitest |
-| Python      | 3.12           | FastAPI, Uvicorn, tests           |
-| Redis       | 7.x            | Caché (o Docker)                  |
-| Docker      | 24+            | Opcional (Redis + backend)        |
-| Git         | —              | Clonar el repositorio             |
+| Herramienta | Versión mínima | Uso                                                      |
+| ----------- | -------------- | -------------------------------------------------------- |
+| Node.js     | 22 LTS         | Vite (dev server + build), Vitest                        |
+| Python      | 3.12           | FastAPI, Uvicorn, tests                                  |
+| uv          | 0.5+           | Entorno y dependencias del backend (`uv sync`, `uv run`) |
+| Redis       | 7.x            | Caché (o Docker)                                         |
+| PostgreSQL  | 18             | Base de datos (migraciones Alembic)                      |
+| Docker      | 24+            | Opcional (solo Redis)                                    |
+| Git         | —              | Clonar el repositorio                                    |
+
+> El backend es un proyecto uv (`backend/pyproject.toml` + `backend/uv.lock`): no hay `requirements.txt`. `uv sync` crea `backend/.venv` con binarios del sistema donde se ejecute.
 
 ### 3.2 Levantar el Entorno
 
 ```bash
-# 1) Backend + Redis con Docker (opción rápida)
-docker compose up -d              # levanta redis (7-alpine) + backend (:8000)
-
-# 2) O solo Redis local (y backend nativo)
+# 1) Redis en Docker (o nativo si ya lo tienes en :6379)
 docker run -d --rm -p 6379:6379 --name gaia-redis redis:7-alpine
+
+# 2) PostgreSQL 18 nativo (NO en Docker) con la BD y el rol dedicados
+#    GAIA_DATABASE.md §6.3 — el firewall de Windows corta el tráfico WSL → 5432,
+#    así que el backend se levanta desde Windows si la BD es local.
+createdb -U postgres gaia            # una vez
+psql -U postgres -c "CREATE ROLE gaia LOGIN PASSWORD '<clave>'"
+psql -U postgres -c "ALTER DATABASE gaia OWNER TO gaia"
 
 # 3) Backend nativo
 cd backend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env              # editar variables (sección 4)
-uvicorn app.main:app --reload --port 8000
+uv sync                              # crea .venv con las dependencias de uv.lock
+cp ../.env.example .env              # editar variables (sección 4)
+uv run alembic upgrade head          # crea el esquema (GAIA_DATABASE.md §6.4)
+uv run uvicorn app.main:app --reload --port 8000
 
 # 4) Frontend (otro terminal)
 cd frontend
@@ -94,6 +102,37 @@ curl http://localhost:8000/api/health
 # {"success": true, "data": {"status": "ok", "redis": "connected", ...}, "error": null}
 
 curl 'http://localhost:8000/api/fires?hours=24'   # contrato universal
+```
+
+### 3.4 Ejecutar los Tests
+
+El runner es `pytest` sobre `TestClient` de FastAPI con Redis simulado (`fakeredis`), sin red ni servicios externos.
+
+**WSL (Linux) — la suite completa, salvo lo que habla con PostgreSQL:**
+
+```bash
+cd backend
+uv run pytest -q            # p. ej. 25 passed, 4 skipped
+```
+
+Los 4 omitidos son `tests/test_migrations.py` y `tests/test_session_db.py`: requieren PostgreSQL de verdad y se **omiten** (no fallan) cuando la BD no responde, para que la suite siga siendo verde sin base de datos.
+
+**Windows (PowerShell) — los tests que necesitan PostgreSQL:**
+
+```powershell
+cd backend
+& C:\Users\chimi\.venvs\gaia-backend\Scripts\python.exe -m pytest tests/test_session_db.py tests/test_migrations.py -q --noconftest -o asyncio_mode=auto
+# 4 passed
+```
+
+> [!IMPORTANT]
+> **Por qué dos entornos y no uno.** `uv` solo está instalado en WSL y `backend/.venv` contiene binarios de Linux, así que desde Windows se usa un venv propio (`python -m venv`, mínimo: `pytest`, `pytest-asyncio`, `SQLAlchemy`, `asyncpg`, `alembic`). `--noconftest` es necesario porque el `conftest.py` del proyecto importa FastAPI, que no está en ese venv; `-o asyncio_mode=auto` porque los tests son `async` y ese venv no lee la configuración de `pyproject.toml`. No lances `uv run` desde Windows sobre `backend/`: reutilizaría (o recrearía) el `.venv` de Linux.
+
+**Migraciones** (mismo motivo: necesitan la BD real):
+
+```powershell
+cd backend
+& C:\Users\chimi\.venvs\gaia-backend\Scripts\alembic.exe upgrade head
 ```
 
 ---
@@ -211,12 +250,17 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# El backend es un proyecto uv: se instala desde uv.lock, no desde requirements.txt.
+COPY pyproject.toml uv.lock ./
+RUN pip install --no-cache-dir uv \
+    && uv sync --frozen --no-dev --no-install-project
 
 COPY ./app ./app
 
 EXPOSE 8000
+
+# uv sync deja el venv en /app/.venv; se ejecuta con su binario en el PATH.
+ENV PATH="/app/.venv/bin:$PATH"
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
@@ -367,7 +411,7 @@ jobs:
         run: npx vitest run
       - name: Tests backend
         working-directory: backend
-        run: pip install -r requirements.txt && pytest tests -q
+        run: uv sync && uv run pytest tests -q
       - name: Budget + draw calls
         working-directory: frontend
         run: npm run perf:check # size-limit + assert drawCalls ≤ 8
@@ -449,7 +493,7 @@ Uso: configurar un **uptime check** (UptimeRobot / Vercel Cron / systemd timer) 
 
 ## 8. Versiones del Stack
 
-Versiones **objetivo** a fijar en `package.json` y `requirements.txt`. Las revisiones menores exactas quedan congeladas en el lockfile (`package-lock.json` / `pip freeze`) al primer `npm ci`/`pip install`.
+Versiones **objetivo** a fijar en `package.json` y `backend/pyproject.toml`. Las revisiones menores exactas quedan congeladas en el lockfile (`package-lock.json` / `uv.lock`) al primer `npm ci`/`uv sync`.
 
 ### 8.1 Frontend
 
