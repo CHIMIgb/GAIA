@@ -1,7 +1,7 @@
 # GAIA — Guía de Despliegue
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.4  
+> **Versión del Documento:** 1.5  
 > **Fecha:** 2026-09-26
 
 ---
@@ -102,18 +102,22 @@ curl 'http://localhost:8000/api/fires?hours=24'   # contrato universal
 
 ### 4.1 Backend
 
-| Variable                | Obligatoria | Default                                              | Descripción                                                       |
-| ----------------------- | :---------: | ---------------------------------------------------- | ----------------------------------------------------------------- |
-| `REDIS_URL`             |     ✅      | `redis://localhost:6379/0`                           | DSN de Redis (asyncio).                                           |
-| `REDIS_TIMEOUT_SECONDS` |     ❌      | `5`                                                  | Timeout de conexión y lectura a Redis (s).                        |
-| `DATABASE_URL`          |     ✅      | `postgresql+asyncpg://gaia:gaia@localhost:5432/gaia` | DSN SQLAlchemy async (asyncpg) para históricos.                   |
-| `DB_PASSWORD`           |     ❌      | —                                                    | Password de PostgreSQL cuando el DSN se compone por variables.    |
-| `FIRMS_MAP_KEY`         |     ❌      | —                                                    | API Key de NASA FIRMS. Sin ella, Fuego cae a modo fallback local. |
-| `CORS_ORIGINS`          |     ✅      | `http://localhost:8080`                              | Orígenes permitidos (separados por coma) para el frontend.        |
-| `DEBUG`                 |     ❌      | `false`                                              | Activa detalles en `INTERNAL_SERVER_ERROR` y logs verbose.        |
-| `LOG_LEVEL`             |     ❌      | `INFO`                                               | Nivel de logging Uvicorn/FastAPI.                                 |
-| `PORT`                  |     ❌      | `8000`                                               | Puerto de Uvicorn (usado por el contenedor).                      |
-| `PUBLIC_FRONTEND_URL`   |     ✅      | —                                                    | URL pública del frontend (para CORS en producción y métricas).    |
+| Variable                 | Obligatoria | Default                                              | Descripción                                                                              |
+| ------------------------ | :---------: | ---------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `REDIS_URL`              |     ✅      | `redis://localhost:6379/0`                           | DSN de Redis (asyncio).                                                                  |
+| `REDIS_TIMEOUT_SECONDS`  |     ❌      | `5`                                                  | Timeout de conexión y lectura a Redis (s).                                               |
+| `DATABASE_URL`           |     ✅      | `postgresql+asyncpg://gaia:gaia@localhost:5432/gaia` | DSN SQLAlchemy async (asyncpg) para históricos.                                          |
+| `DB_PASSWORD`            |     ❌      | —                                                    | Password de PostgreSQL cuando el DSN se compone por variables.                           |
+| `SESSION_COOKIE_NAME`    |     ❌      | `gaia_session`                                       | Nombre de la cookie de sesión anónima (SECURITY §3.1).                                   |
+| `SESSION_TTL_SECONDS`    |     ❌      | `2592000`                                            | `Max-Age` de la cookie y TTL de su hash en Redis: 30 días (§3.1).                        |
+| `SESSION_COOKIE_SECURE`  |     ❌      | `false`                                              | Marca `Secure` en la cookie. **`true` en producción** (HTTPS).                           |
+| `SESSION_DB_FLUSH_EVERY` |     ❌      | `10`                                                 | Peticiones que Redis acumula en caliente antes de refrescar la fila de `session_events`. |
+| `FIRMS_MAP_KEY`          |     ❌      | —                                                    | API Key de NASA FIRMS. Sin ella, Fuego cae a modo fallback local.                        |
+| `CORS_ORIGINS`           |     ✅      | `http://localhost:8080`                              | Orígenes permitidos (separados por coma) para el frontend.                               |
+| `DEBUG`                  |     ❌      | `false`                                              | Activa detalles en `INTERNAL_SERVER_ERROR` y logs verbose.                               |
+| `LOG_LEVEL`              |     ❌      | `INFO`                                               | Nivel de logging Uvicorn/FastAPI.                                                        |
+| `PORT`                   |     ❌      | `8000`                                               | Puerto de Uvicorn (usado por el contenedor).                                             |
+| `PUBLIC_FRONTEND_URL`    |     ✅      | —                                                    | URL pública del frontend (para CORS en producción y métricas).                           |
 
 ### 4.2 TTLs de Caché por Módulo (configurables)
 
@@ -142,6 +146,10 @@ curl 'http://localhost:8000/api/fires?hours=24'   # contrato universal
 REDIS_URL=redis://localhost:6379/0
 REDIS_TIMEOUT_SECONDS=5
 DATABASE_URL=postgresql+asyncpg://gaia:gaia@localhost:5432/gaia
+SESSION_COOKIE_NAME=gaia_session
+SESSION_TTL_SECONDS=2592000
+SESSION_COOKIE_SECURE=false
+SESSION_DB_FLUSH_EVERY=10
 FIRMS_MAP_KEY=
 CORS_ORIGINS=http://localhost:8080
 DEBUG=false
