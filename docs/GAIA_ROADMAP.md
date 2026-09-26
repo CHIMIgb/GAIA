@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.7
+> **Versión del Documento:** 1.8
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-26
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -127,7 +127,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.3.2 — Sesión anonimizada (cookie sin PII)**
 
-- [ ] _(realizado, pendiente de validación)_ Cookie de sesión `gaia_session`: valor aleatorio sha256, `HttpOnly`, `SameSite=Lax`, Secure en prod, **sin PII**, TTL 30 días.
+- [x] Cookie de sesión `gaia_session`: valor aleatorio sha256, `HttpOnly`, `SameSite=Lax`, Secure en prod, **sin PII**, TTL 30 días.
 - **Criterio:** login de prueba crea sesión; el valor en BD es hash (no legible); test de atributos de la cookie.
 - **Estimado:** ~2 h.
 
