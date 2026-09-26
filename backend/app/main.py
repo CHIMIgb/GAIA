@@ -5,6 +5,8 @@ El middleware envuelve TODA respuesta en el contrato universal
 """
 
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI, Request
 from fastapi.encoders import jsonable_encoder
@@ -12,12 +14,20 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.cache.redis_client import close_redis
 from app.models.response import CODE_BY_STATUS, APIResponse, ErrorCode
 from app.routers import health
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="GAIA API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    yield
+    await close_redis()
+
+
+app = FastAPI(title="GAIA API", version="0.1.0", lifespan=lifespan)
 
 # Router común de módulos (Paso 0.2.1): cada módulo se registra aquí.
 api_router = APIRouter(prefix="/api")

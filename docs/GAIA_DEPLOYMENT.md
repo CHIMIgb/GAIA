@@ -1,8 +1,8 @@
 # GAIA — Guía de Despliegue
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.3  
-> **Fecha:** 2026-09-23  
+> **Versión del Documento:** 1.4  
+> **Fecha:** 2026-09-26
 
 ---
 
@@ -12,11 +12,11 @@ Documentar cómo se construye, despliega y opera GAIA en distintos entornos (des
 
 El despliegue contempla **tres piezas** que se orquestan de forma independiente:
 
-| Pieza        | Stack                          | Despliegue                   |
-| ------------ | ------------------------------ | ---------------------------- |
-| **Frontend** | Build estático (Vite)             | Vercel / Netlify / Nginx CDN |
-| **Backend**  | FastAPI + Uvicorn              | Railway / Render / Docker VPS |
-| **Datos**    | Redis (caché) + PostgreSQL 18 / TimescaleDB (históricos) | Docker / Redis Cloud |
+| Pieza        | Stack                                                    | Despliegue                    |
+| ------------ | -------------------------------------------------------- | ----------------------------- |
+| **Frontend** | Build estático (Vite)                                    | Vercel / Netlify / Nginx CDN  |
+| **Backend**  | FastAPI + Uvicorn                                        | Railway / Render / Docker VPS |
+| **Datos**    | Redis (caché) + PostgreSQL 18 / TimescaleDB (históricos) | Docker / Redis Cloud          |
 
 ---
 
@@ -53,13 +53,13 @@ Flujo de datos: el frontend consume exclusivamente `/api/*` del backend; el back
 
 ### 3.1 Requisitos Previos
 
-| Herramienta          | Versión mínima | Uso                          |
-| -------------------- | -------------- | ---------------------------- |
-| Node.js              | 22 LTS         | Vite (dev server + build), Vitest |
-| Python               | 3.12           | FastAPI, Uvicorn, tests      |
-| Redis                | 7.x            | Caché (o Docker)             |
-| Docker               | 24+            | Opcional (Redis + backend)   |
-| Git                  | —              | Clonar el repositorio        |
+| Herramienta | Versión mínima | Uso                               |
+| ----------- | -------------- | --------------------------------- |
+| Node.js     | 22 LTS         | Vite (dev server + build), Vitest |
+| Python      | 3.12           | FastAPI, Uvicorn, tests           |
+| Redis       | 7.x            | Caché (o Docker)                  |
+| Docker      | 24+            | Opcional (Redis + backend)        |
+| Git         | —              | Clonar el repositorio             |
 
 ### 3.2 Levantar el Entorno
 
@@ -102,43 +102,45 @@ curl 'http://localhost:8000/api/fires?hours=24'   # contrato universal
 
 ### 4.1 Backend
 
-| Variable            | Obligatoria | Default   | Descripción                                                     |
-| ------------------- | :---------: | --------- | --------------------------------------------------------------- |
-| `REDIS_URL`         | ✅          | `redis://localhost:6379/0` | DSN de Redis (asyncio).         |
-| `DATABASE_URL`      | ✅          | `postgresql+asyncpg://gaia:gaia@localhost:5432/gaia` | DSN SQLAlchemy async (asyncpg) para históricos. |
-| `DB_PASSWORD`       | ❌          | —         | Password de PostgreSQL cuando el DSN se compone por variables. |
-| `FIRMS_MAP_KEY`     | ❌          | —         | API Key de NASA FIRMS. Sin ella, Fuego cae a modo fallback local. |
-| `CORS_ORIGINS`      | ✅          | `http://localhost:8080` | Orígenes permitidos (separados por coma) para el frontend. |
-| `DEBUG`             | ❌          | `false`   | Activa detalles en `INTERNAL_SERVER_ERROR` y logs verbose.       |
-| `LOG_LEVEL`         | ❌          | `INFO`    | Nivel de logging Uvicorn/FastAPI.                                |
-| `PORT`              | ❌          | `8000`    | Puerto de Uvicorn (usado por el contenedor).                     |
-| `PUBLIC_FRONTEND_URL` | ✅        | —         | URL pública del frontend (para CORS en producción y métricas).   |
+| Variable                | Obligatoria | Default                                              | Descripción                                                       |
+| ----------------------- | :---------: | ---------------------------------------------------- | ----------------------------------------------------------------- |
+| `REDIS_URL`             |     ✅      | `redis://localhost:6379/0`                           | DSN de Redis (asyncio).                                           |
+| `REDIS_TIMEOUT_SECONDS` |     ❌      | `5`                                                  | Timeout de conexión y lectura a Redis (s).                        |
+| `DATABASE_URL`          |     ✅      | `postgresql+asyncpg://gaia:gaia@localhost:5432/gaia` | DSN SQLAlchemy async (asyncpg) para históricos.                   |
+| `DB_PASSWORD`           |     ❌      | —                                                    | Password de PostgreSQL cuando el DSN se compone por variables.    |
+| `FIRMS_MAP_KEY`         |     ❌      | —                                                    | API Key de NASA FIRMS. Sin ella, Fuego cae a modo fallback local. |
+| `CORS_ORIGINS`          |     ✅      | `http://localhost:8080`                              | Orígenes permitidos (separados por coma) para el frontend.        |
+| `DEBUG`                 |     ❌      | `false`                                              | Activa detalles en `INTERNAL_SERVER_ERROR` y logs verbose.        |
+| `LOG_LEVEL`             |     ❌      | `INFO`                                               | Nivel de logging Uvicorn/FastAPI.                                 |
+| `PORT`                  |     ❌      | `8000`                                               | Puerto de Uvicorn (usado por el contenedor).                      |
+| `PUBLIC_FRONTEND_URL`   |     ✅      | —                                                    | URL pública del frontend (para CORS en producción y métricas).    |
 
 ### 4.2 TTLs de Caché por Módulo (configurables)
 
-| Módulo     | Clave patrón            | TTL     | Variable              | Default |
-| ---------- | ----------------------- | :-----: | --------------------- | :-----: |
-| Incendios  | `firms:{hours}h`        | 5 min   | `TTL_FIRES_SECONDS`   | `300`   |
-| Sismos     | `usgs:{days}d:{mag}`    | 5 min   | `TTL_QUAKES_SECONDS`  | `300`   |
-| Viento     | `wind:{resolution}`     | 15 min  | `TTL_WIND_SECONDS`    | `900`   |
-| Radiación  | `rad:{lat}:{lon}:{km}`  | 5 min   | `TTL_RADIATION_SECONDS` | `300` |
-| Elevación  | `elev:{lat}:{lon}`      | 5 min   | `TTL_ELEVATION_SECONDS` | `300`  |
+| Módulo    | Clave patrón           |  TTL   | Variable                | Default |
+| --------- | ---------------------- | :----: | ----------------------- | :-----: |
+| Incendios | `firms:{hours}h`       | 5 min  | `TTL_FIRES_SECONDS`     |  `300`  |
+| Sismos    | `usgs:{days}d:{mag}`   | 5 min  | `TTL_QUAKES_SECONDS`    |  `300`  |
+| Viento    | `wind:{resolution}`    | 15 min | `TTL_WIND_SECONDS`      |  `900`  |
+| Radiación | `rad:{lat}:{lon}:{km}` | 5 min  | `TTL_RADIATION_SECONDS` |  `300`  |
+| Elevación | `elev:{lat}:{lon}`     | 5 min  | `TTL_ELEVATION_SECONDS` |  `300`  |
 
 > Los TTLs viven en `backend/app/cache/cache_keys.py`; las variables los sobreescriben sin recompilar.
 
 ### 4.3 Frontend (`.env.local`)
 
-| Variable              | Uso                                         |
-| --------------------- | ------------------------------------------- |
+| Variable                 | Uso                                                                                                                     |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
 | `VITE_GAIA_API_BASE_URL` | Base del backend. Dev: `http://localhost:8000`. Vite expone al cliente solo las variables `VITE_*` (`import.meta.env`). |
-| `VITE_GAIA_PUBLIC_URL`     | URL pública/base de la app (`build.base` de Vite). |
-| `MAPBOX_ACCESS_TOKEN` | **Opcional alt.** Si se sustituyera Esri por tiles Mapbox. |
+| `VITE_GAIA_PUBLIC_URL`   | URL pública/base de la app (`build.base` de Vite).                                                                      |
+| `MAPBOX_ACCESS_TOKEN`    | **Opcional alt.** Si se sustituyera Esri por tiles Mapbox.                                                              |
 
 ### 4.4 Plantilla `.env.example`
 
 ```bash
 # ---- Backend ----
 REDIS_URL=redis://localhost:6379/0
+REDIS_TIMEOUT_SECONDS=5
 DATABASE_URL=postgresql+asyncpg://gaia:gaia@localhost:5432/gaia
 FIRMS_MAP_KEY=
 CORS_ORIGINS=http://localhost:8080
@@ -174,21 +176,21 @@ npm run build          # vite build (build.prod en vite.config.ts)
 
 Optimizaciones de Vite (Rollup) habilitadas en `vite.config.ts` (build):
 
-| Optimización | Detalle                                                              |
-| ------------ | -------------------------------------------------------------------- |
-| Tree-shaking | Eliminación de exports no usados de Three.js y React (esbuild/Rollup). |
-| Code splitting | `build.rollupOptions.output.manualChunks`: chunk de arranque, chunk Three.js (bajo demanda) y chunk de React. |
-| Minificación de shaders | GLSL minificado durante el build vía `vite-plugin-glsl`. |
-| Source maps | `build.sourcemap: 'hidden'` con `minify: 'esbuild'` para origen (non-full). |
-| Hashes deterministas | `chunkFileNames` con hash de contenido para caché HTTP estable de chunks. |
+| Optimización            | Detalle                                                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Tree-shaking            | Eliminación de exports no usados de Three.js y React (esbuild/Rollup).                                        |
+| Code splitting          | `build.rollupOptions.output.manualChunks`: chunk de arranque, chunk Three.js (bajo demanda) y chunk de React. |
+| Minificación de shaders | GLSL minificado durante el build vía `vite-plugin-glsl`.                                                      |
+| Source maps             | `build.sourcemap: 'hidden'` con `minify: 'esbuild'` para origen (non-full).                                   |
+| Hashes deterministas    | `chunkFileNames` con hash de contenido para caché HTTP estable de chunks.                                     |
 
 **Presupuesto de bundle** (verificado en CI con `size-limit`; ver [Plan de Testing](./GAIA_TESTING.md)):
 
-| Asset          | Tamaño objetivo (gzip) |
-| -------------- | ---------------------- |
-| JS inicial total | ≤ 450 KB            |
-| Chunk arranque  | ≤ 180 KB              |
-| Chunk Three.js  | ≤ 250 KB              |
+| Asset            | Tamaño objetivo (gzip) |
+| ---------------- | ---------------------- |
+| JS inicial total | ≤ 450 KB               |
+| Chunk arranque   | ≤ 180 KB               |
+| Chunk Three.js   | ≤ 250 KB               |
 
 ### 5.2 Backend — Dockerfile
 
@@ -259,13 +261,14 @@ volumes:
 
 ### 6.1 Opción A — PaaS (Vercel/Netlify + Railway/Render)
 
-| Pieza       | Proveedor            | Configuración clave                                              |
-| ----------- | -------------------- | ---------------------------------------------------------------- |
-| **Frontend**| Vercel / Netlify     | Build: `npm run build`; output: `frontend/dist`. Env: `VITE_GAIA_API_BASE_URL`. |
-| **Backend** | Railway / Render     | Build: Dockerfile; env del §4.1 (secrets para `FIRMS_MAP_KEY`).  |
-| **Redis**   | Redis Cloud / Upstash| `REDIS_URL` apuntando al servicio gestionado.                     |
+| Pieza        | Proveedor             | Configuración clave                                                             |
+| ------------ | --------------------- | ------------------------------------------------------------------------------- |
+| **Frontend** | Vercel / Netlify      | Build: `npm run build`; output: `frontend/dist`. Env: `VITE_GAIA_API_BASE_URL`. |
+| **Backend**  | Railway / Render      | Build: Dockerfile; env del §4.1 (secrets para `FIRMS_MAP_KEY`).                 |
+| **Redis**    | Redis Cloud / Upstash | `REDIS_URL` apuntando al servicio gestionado.                                   |
 
 Pasos:
+
 1. Subir `backend/` a Railway/Render como servicio Docker (comando `uvicorn app.main:app ...`).
 2. Conectar Redis gestionado y fijar `REDIS_URL`.
 3. Conectar el repo frontend a Vercel/Netlify: `VITE_GAIA_API_BASE_URL` = URL pública del backend; `CORS_ORIGINS` en el backend debe incluir la URL del frontend.
@@ -321,6 +324,7 @@ sudo certbot --nginx -d gaia.example.com      # emite + renueva automáticamente
 ```
 
 **Despliegue**:
+
 ```bash
 docker compose up -d --build        # backend + redis
 sudo rsync -a frontend/dist/ /var/www/gaia/
@@ -358,7 +362,7 @@ jobs:
         run: pip install -r requirements.txt && pytest tests -q
       - name: Budget + draw calls
         working-directory: frontend
-        run: npm run perf:check          # size-limit + assert drawCalls ≤ 8
+        run: npm run perf:check # size-limit + assert drawCalls ≤ 8
       - name: Lighthouse (FCP < 2s)
         working-directory: frontend
         run: npm run lighthouse:ci
@@ -374,7 +378,7 @@ jobs:
       - name: Build frontend
         run: npm ci && npm run build
       - name: Deploy a Vercel/Netlify
-        run: npx vercel --prod --yes      # o netlify deploy --prod
+        run: npx vercel --prod --yes # o netlify deploy --prod
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 ```
@@ -418,20 +422,20 @@ Uso: configurar un **uptime check** (UptimeRobot / Vercel Cron / systemd timer) 
 
 ### 7.3 Métricas de Caché Redis
 
-| Métrica          | Origen                              | Señal de alarma              |
-| ---------------- | ----------------------------------- | ---------------------------- |
-| **Hit rate**     | `INFO commandstats` + conteo propio | < 0.6 sostenido ⇒ revisar TTLs |
-| **TTL expirados**| `SCAN` + `TTL` de claves patrón      | Expiración masiva ⇒ rate-limit upstream |
-| **Latency P95**  | `SLOWLOG` / timing en `/api/health`      | > 50 ms con hit ⇒ red/buffer |
+| Métrica           | Origen                              | Señal de alarma                         |
+| ----------------- | ----------------------------------- | --------------------------------------- |
+| **Hit rate**      | `INFO commandstats` + conteo propio | < 0.6 sostenido ⇒ revisar TTLs          |
+| **TTL expirados** | `SCAN` + `TTL` de claves patrón     | Expiración masiva ⇒ rate-limit upstream |
+| **Latency P95**   | `SLOWLOG` / timing en `/api/health` | > 50 ms con hit ⇒ red/buffer            |
 
 ### 7.4 Alertas
 
-| Alerta                          | Umbral                                        | Acción                                   |
-| ------------------------------- | --------------------------------------------- | ---------------------------------------- |
-| API externa caída sostenida     | 3+ fallos consecutivos en 10 min              | Revisar fixture/rate-limit; verificar fallback activo |
-| Redis desconectado              | `/api/health` → `redis != connected`              | Reiniciar/ampliar instancia Redis        |
-| FPS degradado (informativos)    | Reporte del perf job nightly < 45 FPS         | Revisar draw calls y uso de VRAM         |
-| Disk/CPU del VPS                | CPU > 80 % / disk > 85 % (30 min)             | Escalar droplet/instancia                |
+| Alerta                       | Umbral                                | Acción                                                |
+| ---------------------------- | ------------------------------------- | ----------------------------------------------------- |
+| API externa caída sostenida  | 3+ fallos consecutivos en 10 min      | Revisar fixture/rate-limit; verificar fallback activo |
+| Redis desconectado           | `/api/health` → `redis != connected`  | Reiniciar/ampliar instancia Redis                     |
+| FPS degradado (informativos) | Reporte del perf job nightly < 45 FPS | Revisar draw calls y uso de VRAM                      |
+| Disk/CPU del VPS             | CPU > 80 % / disk > 85 % (30 min)     | Escalar droplet/instancia                             |
 
 ---
 
@@ -441,55 +445,55 @@ Versiones **objetivo** a fijar en `package.json` y `requirements.txt`. Las revis
 
 ### 8.1 Frontend
 
-| Dependencia          | Versión objetivo | Nota                                        |
-| -------------------- | ---------------- | ------------------------------------------- |
-| `three`              | `^0.170.0`       | Motor WebGL 2.0                             |
-| `react`              | `^19.0.0`        | HUD (DOM overlay)                           |
-| `react-dom`          | `^19.0.0`        | `createRoot` para el overlay                |
-| `valtio`             | `^1.13.2`        | Estado Proxy-based (React + Three.js)       |
-| `comlink`            | `^4.4.1`         | Workers tipados                             |
-| `tailwindcss`        | `^3.4.10`        | Tema oscuro del HUD (config `3.x`)          |
-| `typescript`         | `^5.6.2`         | strict mode                                 |
-| `vite`               | `^6.0.0`         | Bundler + dev server (esbuild/Rollup)     |
-| `@vitejs/plugin-react` | `^4.3.0`      | HMR y Fast Refresh para React             |
-| `vite-plugin-glsl`   | `^1.3.0`         | Imports `?raw` de shaders GLSL             |
-| `rollup-plugin-visualizer` | `^5.12.0` | Reporte del bundle (chunks)               |
-| `stats.js`           | `^0.17.0`        | Overlay de FPS (debug)                      |
+| Dependencia                | Versión objetivo | Nota                                  |
+| -------------------------- | ---------------- | ------------------------------------- |
+| `three`                    | `^0.170.0`       | Motor WebGL 2.0                       |
+| `react`                    | `^19.0.0`        | HUD (DOM overlay)                     |
+| `react-dom`                | `^19.0.0`        | `createRoot` para el overlay          |
+| `valtio`                   | `^1.13.2`        | Estado Proxy-based (React + Three.js) |
+| `comlink`                  | `^4.4.1`         | Workers tipados                       |
+| `tailwindcss`              | `^3.4.10`        | Tema oscuro del HUD (config `3.x`)    |
+| `typescript`               | `^5.6.2`         | strict mode                           |
+| `vite`                     | `^6.0.0`         | Bundler + dev server (esbuild/Rollup) |
+| `@vitejs/plugin-react`     | `^4.3.0`         | HMR y Fast Refresh para React         |
+| `vite-plugin-glsl`         | `^1.3.0`         | Imports `?raw` de shaders GLSL        |
+| `rollup-plugin-visualizer` | `^5.12.0`        | Reporte del bundle (chunks)           |
+| `stats.js`                 | `^0.17.0`        | Overlay de FPS (debug)                |
 
 ### 8.2 Backend
 
-| Dependencia        | Versión objetivo | Nota                                          |
-| ------------------ | ---------------- | --------------------------------------------- |
-| `fastapi`          | `^0.115.0`       | Framework asíncrono                           |
-| `uvicorn[standard]`| `^0.30.6`        | Servidor ASGI                                 |
-| `pydantic`         | `^2.9.2`         | Modelos de request/response                   |
-| `sqlalchemy[asyncio]` | (según lockfile)  | ORM asíncrono (asyncpg) para la DB de históricos |
-| `asyncpg`          | (según lockfile)   | Driver PostgreSQL 18 (pool async)             |
-| `alembic`          | (según lockfile)   | Migraciones de esquema de la DB               |
-| `httpx`            | `^0.27.2`        | Cliente HTTP asíncrono (upstreams)            |
-| `redis`            | `^5.0.7`         | Cliente Redis asyncio (`redis>=5`, API async) |
-| `numpy`            | `^2.1.1`         | Procesamiento de rejillas de viento           |
-| `shapely`          | `^2.0.6`         | Operaciones geométricas                       |
-| `geopandas`        | `^1.0.1`         | Análisis geoespacial                          |
-| `python-dotenv`    | `^1.0.1`         | Carga de `.env`                               |
-| `pytest`           | `^8.3.3`         | Tests del backend                             |
-| `pytest-asyncio`   | `^0.24.0`        | Soporte async en tests                        |
-| `fakeredis`        | `^2.24.1`        | Mock de Redis en tests                        |
+| Dependencia           | Versión objetivo | Nota                                             |
+| --------------------- | ---------------- | ------------------------------------------------ |
+| `fastapi`             | `^0.115.0`       | Framework asíncrono                              |
+| `uvicorn[standard]`   | `^0.30.6`        | Servidor ASGI                                    |
+| `pydantic`            | `^2.9.2`         | Modelos de request/response                      |
+| `sqlalchemy[asyncio]` | (según lockfile) | ORM asíncrono (asyncpg) para la DB de históricos |
+| `asyncpg`             | (según lockfile) | Driver PostgreSQL 18 (pool async)                |
+| `alembic`             | (según lockfile) | Migraciones de esquema de la DB                  |
+| `httpx`               | `^0.27.2`        | Cliente HTTP asíncrono (upstreams)               |
+| `redis`               | `^5.0.7`         | Cliente Redis asyncio (`redis>=5`, API async)    |
+| `numpy`               | `^2.1.1`         | Procesamiento de rejillas de viento              |
+| `shapely`             | `^2.0.6`         | Operaciones geométricas                          |
+| `geopandas`           | `^1.0.1`         | Análisis geoespacial                             |
+| `python-dotenv`       | `^1.0.1`         | Carga de `.env`                                  |
+| `pytest`              | `^8.3.3`         | Tests del backend                                |
+| `pytest-asyncio`      | `^0.24.0`        | Soporte async en tests                           |
+| `fakeredis`           | `^2.24.1`        | Mock de Redis en tests                           |
 
 > [!NOTE]
 > El cliente asíncrono es `redis>=5` (API `redis.asyncio`), el sucesor mantenido de `aioredis` (fusionado en `redis-py` ≥ 4.2). El DSN `REDIS_URL` es compatible.
 
 ### 8.3 Runtimes e Infraestructura
 
-| Componente | Versión         | Nota                                   |
-| ---------- | --------------- | -------------------------------------- |
-| Node.js    | 22 LTS          | Runtimes dev/CI.                 |
-| Python     | 3.12            | Imagen del Dockerfile y CI.            |
-| Redis      | 7.x (`redis:7-alpine`) | Modo persistente (`--appendonly`). |
+| Componente | Versión                                  | Nota                                |
+| ---------- | ---------------------------------------- | ----------------------------------- |
+| Node.js    | 22 LTS                                   | Runtimes dev/CI.                    |
+| Python     | 3.12                                     | Imagen del Dockerfile y CI.         |
+| Redis      | 7.x (`redis:7-alpine`)                   | Modo persistente (`--appendonly`).  |
 | PostgreSQL | 18 (`timescale/timescaledb:latest-pg18`) | Históricos + sesiones anonimizadas. |
-| Docker     | 24+ / Compose v2| Orquestación local y VPS.              |
-| Nginx      | 1.24+           | Reverse proxy + TLS (Opción B).        |
+| Docker     | 24+ / Compose v2                         | Orquestación local y VPS.           |
+| Nginx      | 1.24+                                    | Reverse proxy + TLS (Opción B).     |
 
 ---
 
-*Este documento complementa el [Stack Tecnológico](./GAIA_TECH_STACK.md) y la [Estructura del Proyecto](./GAIA_PROJECT_STRUCTURE.md) de GAIA.*
+_Este documento complementa el [Stack Tecnológico](./GAIA_TECH_STACK.md) y la [Estructura del Proyecto](./GAIA_PROJECT_STRUCTURE.md) de GAIA._
