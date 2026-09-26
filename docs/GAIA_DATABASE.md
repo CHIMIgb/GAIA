@@ -1,8 +1,8 @@
 # GAIA — Base de Datos (Históricos + Sesiones)
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.2  
-> **Fecha:** 2026-09-24  
+> **Versión del Documento:** 1.3  
+> **Fecha:** 2026-09-26
 
 ---
 
@@ -11,7 +11,7 @@
 Definir el diseño de la base de datos de GAIA. Su **única responsabilidad** es:
 
 1. **Persistir los datos históricos** obtenidos de las fuentes abiertas (incendios, sismos, viento, radiación, elevación) para que tanto los usuarios como el propio sistema puedan consultarlos cuando las APIs externas ya no los ofrezcan (ventanas históricas 24h/7d/30d y análisis posterior).
-2. — *evaluado en §8* — **registrar metadatos de sesiones anónimas** (cookies), si se concluye que aporta valor frente a su costo de privacidad.
+2. — _evaluado en §8_ — **registrar metadatos de sesiones anónimas** (cookies), si se concluye que aporta valor frente a su costo de privacidad.
 
 > [!IMPORTANT]
 > La DB **no** es la fuente de datos en vivo: el pipeline en caliente sigue siendo Redis (TTLs cortos) → API externa. La DB es el **archivo histórico de abajo** en la cadena: cuando un usuario pide un rango pasado, se consulta la DB; el dato en vivo, cuando existe, siempre gana sobre el histórico.
@@ -35,14 +35,14 @@ Definir el diseño de la base de datos de GAIA. Su **única responsabilidad** es
 
 **PostgreSQL 18 con extensión TimescaleDB** (hipertablas serie temporal).
 
-| Criterio              | PostgreSQL + TimescaleDB                          | Alternativa (no elegida) |
-| --------------------- | ------------------------------------------------- | ------------------------ |
-| Naturaleza de datos   | Series temporales de eventos geoespaciales        | MongoDB (documentos)     |
-| Particionado por tiempo | Hipertablas automáticas (`time` como dimensión) | MySQL/particionado manual |
-| Funciones geoespaciales | `PostGIS` integrable (opcional)                | —                        |
-| Contención geográfica (flood/radiation) | B-tree + GIST en lat/lon                | —                        |
-| Retención/borrado     | `drop_chunks` para purga por antigüedad (medidas de privacidad §8) | — |
-| Madurez               | Operacional, soporte amplio, WAL + backup          | —                        |
+| Criterio                                | PostgreSQL + TimescaleDB                                           | Alternativa (no elegida)  |
+| --------------------------------------- | ------------------------------------------------------------------ | ------------------------- |
+| Naturaleza de datos                     | Series temporales de eventos geoespaciales                         | MongoDB (documentos)      |
+| Particionado por tiempo                 | Hipertablas automáticas (`time` como dimensión)                    | MySQL/particionado manual |
+| Funciones geoespaciales                 | `PostGIS` integrable (opcional)                                    | —                         |
+| Contención geográfica (flood/radiation) | B-tree + GIST en lat/lon                                           | —                         |
+| Retención/borrado                       | `drop_chunks` para purga por antigüedad (medidas de privacidad §8) | —                         |
+| Madurez                                 | Operacional, soporte amplio, WAL + backup                          | —                         |
 
 > [!NOTE]
 > El benchmark de carga es modesto (decenas a cientos de miles de eventos/día, no billones), pero TimescaleDB simplifica mucho el particionado temporal y la purga, que es exactamente el caso de uso "histórico + privacidad". Las imágenes oficiales de la comunidad (`timescale/timescaledb:latest-pg18`) cubren PostgreSQL 18; en entornos gestionados se usa el servicio equivalente (PG nativo + extensión).
@@ -93,7 +93,15 @@ session_events              ← §8 (evaluado)
   ├─ first_seen, last_seen, request_count
   ├─ user_agent_family, country_code (opcional, sin IP)
   └─ UNIQUE (session_hash)
+
+api_log                     ← auditoría de la API (ROADMAP 0.3.3)
+  ├─ PK id
+  ├─ logged_at, method, path, status_code, latency_ms
+  ├─ session_hash (sha256, NO la cookie cruda; NULL si anónimo)
+  └─ INDEX (logged_at)      → purga por antigüedad
 ```
+
+`api_log` es una tabla plana, no una hipertabla: se purga con un `DELETE` por antigüedad desde el comando `app.db.api_log_store` (retención en §4.2). No guarda IP, cookie cruda, query string ni cuerpo de la petición — mismo criterio de privacidad que `session_events` (§8.3).
 
 ### 3.2 DDL de Ejemplo
 
@@ -169,15 +177,18 @@ async def ingest_hotspots(items: list[FireHotspot]):
 
 > **Tabla canónica de retención.** Los días de retención por módulo viven aquí (única fuente de verdad); otros docs los referencian sin repetirlos (patrón del ROADMAP §1.1, criterio en AGENTS.md).
 
-| Módulo      | Filas/día aprox. (alto tráfico) | Retención propuesta |
-| ----------- | ------------------------------- | ------------------- |
-| Incendios   | ~50,000                         | 90 días (bajo)     |
-| Sismos      | ~1,000                          | 365 días            |
-| Radiación   | ~20,000                         | 90 días (bajo)      |
-| Viento      | 96 frames/día (JSONB)          | 30 días (pesado)     |
-| Elevación   | bajo (punto a punto)            | 365 días            |
+| Módulo            | Filas/día aprox. (alto tráfico) | Retención propuesta |
+| ----------------- | ------------------------------- | ------------------- |
+| Incendios         | ~50,000                         | 90 días (bajo)      |
+| Sismos            | ~1,000                          | 365 días            |
+| Radiación         | ~20,000                         | 90 días (bajo)      |
+| Viento            | 96 frames/día (JSONB)           | 30 días (pesado)    |
+| Elevación         | bajo (punto a punto)            | 365 días            |
+| `api_log` (infra) | ~1 fila por petición            | 90 días             |
 
 Se implementa **TTL físico** con `add_retention_policy('fire_hotspot', 90 * interval '1 day')` para que la DB no crezca indefinidamente.
+
+`api_log` es la excepción al TTL físico: no es hipertabla y no usa `add_retention_policy`, se purga con un `DELETE` desde `python -m app.db.api_log_store` (misma cifra de retención, id. §3.1).
 
 ---
 
@@ -185,13 +196,13 @@ Se implementa **TTL físico** con `add_retention_policy('fire_hotspot', 90 * int
 
 El usuario accede a los históricos con los mismos contratos que el resto de la app:
 
-| Endpoint                     | Params                 | Fuente real                 |
-| ---------------------------- | ---------------------- | --------------------------- |
-| `GET /api/history/fires`     | `from`, `to`           | `fire_hotspot`              |
-| `GET /api/history/quakes`    | `from`, `to`           | `earthquake`                |
-| `GET /api/history/wind`      | `from`, `to`           | `wind_frame`                |
-| `GET /api/history/radiation` | `from`, `to`, `bbox`   | `radiation_reading`         |
-| `GET /api/history/elevation` | `lat`, `lon`, `from`, `to` | `elevation_sample`      |
+| Endpoint                     | Params                     | Fuente real         |
+| ---------------------------- | -------------------------- | ------------------- |
+| `GET /api/history/fires`     | `from`, `to`               | `fire_hotspot`      |
+| `GET /api/history/quakes`    | `from`, `to`               | `earthquake`        |
+| `GET /api/history/wind`      | `from`, `to`               | `wind_frame`        |
+| `GET /api/history/radiation` | `from`, `to`, `bbox`       | `radiation_reading` |
+| `GET /api/history/elevation` | `lat`, `lon`, `from`, `to` | `elevation_sample`  |
 
 Respuesta con el [contrato universal](./GAIA_API_CONTRACT.md): `{ success, data: { count, items }, error: null }`. El frontend lo consume igual que el feed en vivo; los módulos Three.js reciben el mismo `Float32Array` del worker (reutilizan todo el renderizado).
 
@@ -233,11 +244,11 @@ volumes:
 
 ### 6.4 Variables de Entorno (backend)
 
-| Variable       | Default                | Uso                    |
-| -------------- | ---------------------- | ---------------------- |
-| `DATABASE_URL` | `postgresql+asyncpg://gaia:gaia@localhost:5432/gaia` | DSN SQLAlchemy (async/asyncpg) |
-| `DB_PASSWORD`  | —                      | Secret del servicio    |
-| `HISTORY_RETENTION_*` | 90/365 días    | TTL físico por tabla   |
+| Variable              | Default                                              | Uso                            |
+| --------------------- | ---------------------------------------------------- | ------------------------------ |
+| `DATABASE_URL`        | `postgresql+asyncpg://gaia:gaia@localhost:5432/gaia` | DSN SQLAlchemy (async/asyncpg) |
+| `DB_PASSWORD`         | —                                                    | Secret del servicio            |
+| `HISTORY_RETENTION_*` | 90/365 días                                          | TTL físico por tabla           |
 
 ---
 
@@ -252,7 +263,7 @@ volumes:
 
 ## 8. Evaluación — ¿Mantener un Registro de Cookies de Sesión?
 
-> Pregunta explícita del diseño: *¿es buena idea guardar las cookies de sesión para saber quién accede a la aplicación?*
+> Pregunta explícita del diseño: _¿es buena idea guardar las cookies de sesión para saber quién accede a la aplicación?_
 
 ### 8.1 Contexto
 
@@ -260,21 +271,21 @@ GAIA no tiene cuentas; las cookies son sesiones anónimas (§3 de Seguridad). "S
 
 ### 8.2 Utilidad de los registros
 
-| Beneficio                                  | Valor |
-| ------------------------------------------ | ----- |
-| Correlacionar requests de un mismo navegador para un rate-limit más justo (por-sesión, no solo por IP) | **Alto** |
-| Métricas de uso agregadas (cuántos visitantes únicos/sesión, duración, módulos usados) sin identificar personas | **Alto** |
-| Depuración de abuso/scraping (patrones de una sesión) | **Medio** |
-| Auditoría de acceso (complementa `data_ingestion_log`) | **Bajo** |
+| Beneficio                                                                                                       | Valor     |
+| --------------------------------------------------------------------------------------------------------------- | --------- |
+| Correlacionar requests de un mismo navegador para un rate-limit más justo (por-sesión, no solo por IP)          | **Alto**  |
+| Métricas de uso agregadas (cuántos visitantes únicos/sesión, duración, módulos usados) sin identificar personas | **Alto**  |
+| Depuración de abuso/scraping (patrones de una sesión)                                                           | **Medio** |
+| Auditoría de acceso (complementa `data_ingestion_log`)                                                          | **Bajo**  |
 
 ### 8.3 Riesgos / costos
 
-| Riesgo                                   | Severidad | Mitigación prevista |
-| ---------------------------------------- | :-------: | ------------------- |
-| Guardar la **cookie cruda** daría capacidad de "robo de sesión" a quien acceda a la DB | **Alta** | Guardar **solo `sha256(token)`**, nunca el valor |
-| Riesgo de **reidentificación** indirecta (IP + user-agent + horario ≈ individuos) | Media     | No guardar IP; guardar solo `country_code` y `user_agent_family`  |
-| Obligaciones **GDPR** (layout de datos, derecho de supresión) en una app que quería "sin cuentas" | Media     | Retención corta (30–90 días) + purga automática (TimescaleDB) |
-| Ruido en los textos de privacidad (aviso de cookies) | Baja      | Aviso discreto en footer/HUD (§9 Seguridad) |
+| Riesgo                                                                                            | Severidad | Mitigación prevista                                              |
+| ------------------------------------------------------------------------------------------------- | :-------: | ---------------------------------------------------------------- |
+| Guardar la **cookie cruda** daría capacidad de "robo de sesión" a quien acceda a la DB            | **Alta**  | Guardar **solo `sha256(token)`**, nunca el valor                 |
+| Riesgo de **reidentificación** indirecta (IP + user-agent + horario ≈ individuos)                 |   Media   | No guardar IP; guardar solo `country_code` y `user_agent_family` |
+| Obligaciones **GDPR** (layout de datos, derecho de supresión) en una app que quería "sin cuentas" |   Media   | Retención corta (30–90 días) + purga automática (TimescaleDB)    |
+| Ruido en los textos de privacidad (aviso de cookies)                                              |   Baja    | Aviso discreto en footer/HUD (§9 Seguridad)                      |
 
 ### 8.4 Veredicto y Decisión Recomendada
 
@@ -283,13 +294,13 @@ GAIA no tiene cuentas; las cookies son sesiones anónimas (§3 de Seguridad). "S
 - ✅ **Mantener**: una tabla `session_events` que guarde, por sesión, solo el **hash** de la cookie, `first_seen/last_seen`, `request_count`, `user_agent_family` y `country_code`. Útil para rate-limit por sesión, métricas de uso y detección de abuso.
 - ❌ **Descartar**: guardar el valor de la cookie, IPs completas, o cualquier intención de **identificar usuarios individuales**.
 
-| Decisión                       | Detalle                                                       |
-| ------------------------------ | ------------------------------------------------------------- |
-| ¿Guardar cookie cruda?         | **NO** — vulnerabilidad de suplantación si se filtra la DB    |
-| ¿Guardar hash de sesión?       | **SÍ** — hash SHA-256, irreversible, sirve para correlación   |
-| ¿Guardar IP?                   | **NO** — por privacidad; usar `country_code` (agregado)       |
-| ¿Retención?                    | 30–90 días con purga automática diaria                        |
-| ¿Objetivo?                     | Métricas de uso agregadas + rate-limit justo por sesión        |
+| Decisión                 | Detalle                                                     |
+| ------------------------ | ----------------------------------------------------------- |
+| ¿Guardar cookie cruda?   | **NO** — vulnerabilidad de suplantación si se filtra la DB  |
+| ¿Guardar hash de sesión? | **SÍ** — hash SHA-256, irreversible, sirve para correlación |
+| ¿Guardar IP?             | **NO** — por privacidad; usar `country_code` (agregado)     |
+| ¿Retención?              | 30–90 días con purga automática diaria                      |
+| ¿Objetivo?               | Métricas de uso agregadas + rate-limit justo por sesión     |
 
 ```python
 # backend/app/db/session_store.py (esquema)
@@ -317,4 +328,4 @@ async def touch_session(req: Request, db):
 
 ---
 
-*Este documento complementa la [Especificación Técnica](./GAIA_SPECIFICATION.md), la [Guía de Despliegue](./GAIA_DEPLOYMENT.md) y la [Seguridad](./GAIA_SECURITY.md) del proyecto GAIA.*
+_Este documento complementa la [Especificación Técnica](./GAIA_SPECIFICATION.md), la [Guía de Despliegue](./GAIA_DEPLOYMENT.md) y la [Seguridad](./GAIA_SECURITY.md) del proyecto GAIA._
