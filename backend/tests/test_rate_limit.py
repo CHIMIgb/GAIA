@@ -73,5 +73,19 @@ async def test_health_exento_al_rate_limit(client, fake_redis):
     for _ in range(5):
         assert client.get("/api/health").status_code == 200
 
-    # Exento = ni siquiera crea bucket en Redis.
-    assert await fake_redis.keys("*") == []
+    # Exento = ni siquiera crea bucket en Redis. Las claves de sesion
+    # (`gaia:session:*`, SECURITY §3.1) no son buckets y no se miran aqui.
+    buckets = [k for k in await fake_redis.keys("*") if not k.startswith(b"gaia:session:")]
+    assert buckets == []
+
+
+async def test_un_429_no_crea_sesion(client, fake_redis, clock):
+    """El rate-limit va por delante de la sesion: un 429 no abre sesion nueva."""
+    for _ in range(240):
+        client.get(PROBE)
+    antes = len([k async for k in fake_redis.scan_iter(match="gaia:session:*")])
+
+    assert client.get(PROBE).status_code == 429
+
+    despues = len([k async for k in fake_redis.scan_iter(match="gaia:session:*")])
+    assert despues == antes

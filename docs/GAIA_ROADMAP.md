@@ -127,7 +127,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.3.2 — Sesión anonimizada (cookie sin PII)**
 
-- [ ] Cookie de sesión `gaia_session`: valor aleatorio sha256, `HttpOnly`, `SameSite=Lax`, Secure en prod, **sin PII**, TTL 30 días.
+- [ ] _(realizado, pendiente de validación)_ Cookie de sesión `gaia_session`: valor aleatorio sha256, `HttpOnly`, `SameSite=Lax`, Secure en prod, **sin PII**, TTL 30 días.
 - **Criterio:** login de prueba crea sesión; el valor en BD es hash (no legible); test de atributos de la cookie.
 - **Estimado:** ~2 h.
 

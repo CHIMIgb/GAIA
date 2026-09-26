@@ -41,12 +41,23 @@ def test_timeout_llega_al_cliente(monkeypatch):
     assert kwargs["socket_timeout"] == 1.5
 
 
-def test_health_no_falla_si_redis_cae(client):
+def test_health_no_falla_si_redis_cae(client, monkeypatch):
     class DeadRedis:
-        async def ping(self) -> bool:
-            raise RedisConnectionError("redis caído")
+        """Redis caído: cualquier comando lanza RedisConnectionError.
+
+        El middleware de sesión usa get_redis() directo (no la dependencia
+        inyectada), así que Redis tiene que estar muerto también para él.
+        """
+
+        def __getattr__(self, _name):
+            async def _fail(*_args, **_kwargs):
+                raise RedisConnectionError("redis caído")
+
+            return _fail
 
     app.dependency_overrides[get_redis] = lambda: DeadRedis()
+    monkeypatch.setattr(redis_client, "_redis", DeadRedis())
+    monkeypatch.setattr(redis_client, "_redis_loop", redis_client._LOOP_ANY)
     try:
         res = client.get("/api/health")
     finally:

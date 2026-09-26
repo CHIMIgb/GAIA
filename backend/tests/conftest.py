@@ -17,4 +17,8 @@ def fake_redis(monkeypatch):
     """Redis simulado en el sitio del singleton (PROJECT_STRUCTURE §5.11)."""
     redis = aioredis.FakeRedis()
     monkeypatch.setattr(redis_client, "_redis", redis)
+    # El cliente inyectado no pertenece a ningún loop: get_redis() lo respeta y no
+    # lo reemplaza por uno real (el pool de redis.asyncio se ata al loop, y aquí
+    # conviven el loop del TestClient y el del propio test).
+    monkeypatch.setattr(redis_client, "_redis_loop", redis_client._LOOP_ANY)
     return redis

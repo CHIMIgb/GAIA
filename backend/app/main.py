@@ -18,6 +18,7 @@ from app.cache.redis_client import close_redis
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.models.response import CODE_BY_STATUS, APIResponse, ErrorCode
 from app.routers import health
+from app.services.session import SessionMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,8 @@ api_router = APIRouter(prefix="/api")
 api_router.include_router(health.router)
 app.include_router(api_router)
 
-app.add_middleware(RateLimitMiddleware)
+app.add_middleware(SessionMiddleware)  # interior: la sesión envuelve al handler
+app.add_middleware(RateLimitMiddleware)  # exterior: un 429 no crea sesión
 
 
 @app.exception_handler(RequestValidationError)
