@@ -1,7 +1,7 @@
 # GAIA — Guía de Despliegue
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.6  
+> **Versión del Documento:** 1.7  
 > **Fecha:** 2026-09-26
 
 ---
@@ -134,6 +134,16 @@ cd backend
 cd backend
 & C:\Users\chimi\.venvs\gaia-backend\Scripts\alembic.exe upgrade head
 ```
+
+**Job de limpieza del log de peticiones** (ROADMAP 0.3.3, retención 90 días):
+
+```bash
+# Linux / WSL
+cd backend && uv run python -m app.db.api_log_store
+# api_log: 37 entradas de más de 90 días borradas; 1289 restantes.
+```
+
+Borra por antigüedad y es idempotente, así que se puede programar a diario con `cron` (o con el Programador de tareas de Windows) sin miedo a repetirla. En un despliegue con WSL, el backend corre en WSL y este comando usará `uv run`; si la BD está en Windows, la BD no es alcanzable desde WSL y hay que lanzarlo desde Windows con el venv de la sección anterior.
 
 ---
 

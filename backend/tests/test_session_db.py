@@ -12,10 +12,10 @@ import uuid
 
 import pytest
 
-# Un solo event loop para todo el módulo: `app.db.engine` cachea el engine en el
-# proceso, y el pool de asyncpg queda atado al loop que lo abrió (por eso los
-# tests de la app usan el cliente de redis en vez del singleton global).
-pytestmark = pytest.mark.asyncio(loop_scope="module")
+# Un solo event loop para toda la sesion: `app.db.engine` cachea el engine en el
+# proceso y su pool queda atado al loop que lo abrio. Con un loop por modulo, el
+# segundo fichero que lo usa heredaria un pool de un loop ya cerrado.
+pytestmark = pytest.mark.asyncio(loop_scope="session")
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import create_async_engine

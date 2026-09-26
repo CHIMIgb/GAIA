@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.cache.redis_client import close_redis
+from app.middleware.access_log import AccessLogMiddleware
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.models.response import CODE_BY_STATUS, APIResponse, ErrorCode
 from app.routers import health
@@ -36,8 +37,11 @@ api_router = APIRouter(prefix="/api")
 api_router.include_router(health.router)
 app.include_router(api_router)
 
-app.add_middleware(SessionMiddleware)  # interior: la sesión envuelve al handler
-app.add_middleware(RateLimitMiddleware)  # exterior: un 429 no crea sesión
+# El último `add_middleware` es el más externo: el access log va fuera de todo
+# para registrar también los 429 que corta el rate-limit.
+app.add_middleware(SessionMiddleware)  # más interna: envuelve al handler
+app.add_middleware(RateLimitMiddleware)  # en medio: un 429 no crea sesión
+app.add_middleware(AccessLogMiddleware)  # más externa: ve el estado real que sale
 
 
 @app.exception_handler(RequestValidationError)

@@ -46,6 +46,10 @@ _UA_FAMILIES = (
     ("Version/", "Safari"),
 )
 
+# Clave en `scope["state"]` donde se deja el hash resuelto, para que el access
+# log (ROADMAP 0.3.3) pueda correlacionar la peticion con la sesion.
+STATE_SESSION_HASH = "session_hash"
+
 # Inyectable en tests.
 _DB_FLUSH_EVERY = settings.SESSION_DB_FLUSH_EVERY
 
@@ -152,10 +156,12 @@ class SessionMiddleware(BaseHTTPMiddleware):
             requests = await _touch_redis_session(digest)
             if requests % max(_DB_FLUSH_EVERY, 1) == 0:
                 await _register(digest, requests, user_agent)
+            request.state.session_hash = digest
             return token
 
         token = new_token()
         digest = session_key(token)
         await _create_redis_session(digest, user_agent)
         await _register(digest, 1, user_agent)
+        request.state.session_hash = digest
         return token
