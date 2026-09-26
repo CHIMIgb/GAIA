@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.cache.redis_client import close_redis
+from app.middleware.rate_limit import RateLimitMiddleware
 from app.models.response import CODE_BY_STATUS, APIResponse, ErrorCode
 from app.routers import health
 
@@ -33,6 +34,8 @@ app = FastAPI(title="GAIA API", version="0.1.0", lifespan=lifespan)
 api_router = APIRouter(prefix="/api")
 api_router.include_router(health.router)
 app.include_router(api_router)
+
+app.add_middleware(RateLimitMiddleware)
 
 
 @app.exception_handler(RequestValidationError)
