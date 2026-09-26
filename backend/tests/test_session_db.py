@@ -1,8 +1,11 @@
-"""Criterio ROADMAP 0.3.2: el registro en `session_events` guarda el hash, no la cookie.
+r"""Criterio ROADMAP 0.3.2: el registro en `session_events` guarda el hash, no la cookie.
 
 Va contra la BD real (el store no se simula). Se omite si no hay PostgreSQL
 alcanzable: desde WSL el firewall de Windows descarta el inbound, así que este
-test se ejecuta con el Python de Windows (igual que `test_migrations.py`).
+test se ejecuta con el Python de Windows (mismo motivo y mismo comando que
+`test_migrations.py`, cuyo docstring lo detalla):
+
+    & C:\Users\chimi\.venvs\gaia-backend\Scripts\python.exe -m pytest tests/test_session_db.py -q --noconftest -o asyncio_mode=auto
 """
 
 import uuid

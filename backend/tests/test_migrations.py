@@ -1,8 +1,13 @@
-"""Criterio ROADMAP 0.3.1: la migración crea el esquema y es idempotente.
+r"""Criterio ROADMAP 0.3.1: la migración crea el esquema y es idempotente.
 
 Corre contra la BD real de `DATABASE_URL` (no se simula: el criterio es que
 `migrate` cree el esquema en Postgres de verdad). Se omite —no falla— si no hay
 PostgreSQL alcanzable, para que `pytest` siga siendo verde donde no hay BD.
+
+En Windows (PowerShell, desde `backend\`) `uv` no está instalado y `backend/.venv`
+tiene binarios de Linux, así que se usa el venv de Windows:
+
+    & C:\Users\chimi\.venvs\gaia-backend\Scripts\python.exe -m pytest tests/test_migrations.py -q --noconftest -o asyncio_mode=auto
 """
 
 import asyncio
