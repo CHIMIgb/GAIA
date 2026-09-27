@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.37
+> **Versión del Documento:** 1.38
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -223,7 +223,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.6.6 — Test de sesión anónima**
 
-- [ ] Test de cookie/token: atributos y ausencia de PII. _*(realizado, pendiente de validación: los atributos de la cookie, el sha256 y el token opaco ya los cubrían los tests de 0.2.3; faltaba la ausencia de PII, y ahora el hash de sesión se comprueba campo a campo y el UA solo se guarda como familia.)*_
+- [x] Test de cookie/token: atributos y ausencia de PII. _*(validado: los atributos de la cookie, el sha256 y el token opaco ya los cubrían los tests de 0.2.3; se añadió el conjunto exacto de campos del hash de sesión y que el user-agent se guarde solo como familia. Meter una IP o el UA crudo tumba el test y ninguno de los otros once.)*_
 - **Criterio:** cookie con sha256, sin datos personales.
 - **Estimado:** ~1 h.
 
