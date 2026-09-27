@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.36
+> **Versión del Documento:** 1.37
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -229,7 +229,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.6.7 — Test de API log**
 
-- [ ] Test de escritura/consulta de `api_log` y retención.
+- [ ] Test de escritura/consulta de `api_log` y retención. _*(realizado, pendiente de validación: escritura, consulta SQL, purga e idempotencia ya los cubrían los tests de 0.3.3 contra PostgreSQL real —4 en verde ejecutados con el Python de Windows—; faltaban el comando que programa el cron de DEPLOYMENT §3.2 y el valor de retención, ambos ahora con test sin BD para que también corran en el CI.)*_
 - **Criterio:** logs correctos y limpieza programada.
 - **Estimado:** ~1 h.
 
