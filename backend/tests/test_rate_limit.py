@@ -8,17 +8,12 @@ import pytest
 
 from app.main import app
 from app.middleware import rate_limit
-
-PROBE = "/api/_rl-probe"
+from tests.conftest import PROBE
 
 
 @pytest.fixture
 def probe(fake_redis):
-    """Endpoint de prueba: los módulos reales (F2-F6) aún no existen."""
-    @app.get(PROBE)
-    async def _rl_probe():
-        return {"success": True, "data": {"ok": True}, "error": None}
-
+    """Redis simulado + la ruta normal compartida de conftest."""
     return PROBE
 
 

@@ -5,17 +5,24 @@
 - La recarga y el drenaje ocurren en un único script LUA atómico.
 - `/api/health` está exento (uptime checks). Los límites por módulo de la tabla de
   §4.1 se añaden con cada módulo (F2-F6).
+- Si Redis no responde, el limitador **degrada y deja pasar** (fail-open), con aviso en
+  el log: la API se queda de pie y `/api/health` reporta `redis: "disconnected"`. El
+  límite global se revisa con el diseño de resiliencia de F8.
 """
 
+import logging
 import math
 import time
 from typing import Any
 
 from fastapi import status
 from fastapi.responses import JSONResponse
+from redis.exceptions import RedisError
 
 from app.cache.redis_client import get_redis
 from app.models.response import APIResponse, ErrorCode
+
+logger = logging.getLogger(__name__)
 
 GLOBAL_LIMIT: dict[str, int] = {"capacity": 240, "refill_per_min": 120}
 EXEMPT_PATHS = frozenset({"/api/health"})
@@ -75,15 +82,25 @@ class RateLimitMiddleware:
         # Bucket por IP y endpoint: el límite "global" es el fallback de los endpoints
         # sin límite propio.
         key = f"{_client_ip(scope)}:{path}"
-        allowed = await redis.eval(
-            LUA_ALLOW,
-            1,
-            key,
-            self.limit["capacity"],
-            self.limit["refill_per_min"],
-            _now(),
-            self.limit["refill_per_min"] * 2,
-        )
+        try:
+            allowed = await redis.eval(
+                LUA_ALLOW,
+                1,
+                key,
+                self.limit["capacity"],
+                self.limit["refill_per_min"],
+                _now(),
+                self.limit["refill_per_min"] * 2,
+            )
+        except (RedisError, OSError, TimeoutError) as exc:
+            # Fail-open, igual que la sesión: si Redis no responde, la petición se
+            # sirve igual y sin límite. Servir de más durante una caída de Redis es
+            # mejor que no servir nada, y el corte no es silencioso —`/api/health`
+            # ya reporta `redis: disconnected` y esto avisa por log—. El precio es
+            # que el rate-limit queda apagado mientras Redis esté caído.
+            logger.warning("Rate-limit no disponible (Redis): %s", exc)
+            await self.app(scope, receive, send)
+            return
         if allowed:
             await self.app(scope, receive, send)
             return

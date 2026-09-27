@@ -9,6 +9,18 @@ from app.cache import redis_client
 from app.main import app
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
+PROBE = "/api/_rl-probe"
+
+
+@app.get(PROBE)
+async def _rl_probe() -> dict[str, object]:
+    """Ruta normal (no exenta) para el rate-limit: los módulos F2-F6 aún no existen.
+
+    Se registra al importar el módulo y no en una fixture porque `app` es global: una
+    ruta añadida después de que el TestClient arrancara el lifespan no existe para él
+    (404), y registrada dos veces solo cuenta la primera.
+    """
+    return {"success": True, "data": {"ok": True}, "error": None}
 
 
 @pytest.fixture

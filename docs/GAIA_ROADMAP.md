@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.38
+> **Versión del Documento:** 1.39
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -235,7 +235,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.6.8 — Test de helpers de Redis**
 
-- [ ] Test de get/set/TTL y de fallback local.
+- [ ] Test de get/set/TTL y de fallback local. _*(realizado, pendiente de validación: el get/set lo cubría 0.2.1 con PING, TTL y timeout, pero faltaba el roundtrip; y con Redis caído toda ruta /api/* daba 500 porque el rate-limit no capturaba el error —la sesión ya degradaba con aviso—, así que el limitador ahora degrada igual (fail-open con warning, decisión del usuario 2026-09-27). La cadena completa Redis → API → local sigue siendo de 2.1.3 y F8.)*_
 - **Criterio:** TTL respetado y fallback funciona.
 - **Estimado:** ~1 h.
 
