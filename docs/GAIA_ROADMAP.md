@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.19
+> **Versión del Documento:** 1.20
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -165,7 +165,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.4.5 — Seguridad esencial (CORS, headers, cookie en prod)**
 
-- [ ] _(realizado, pendiente de validación)_ CORS con orígenes permitidos, headers de seguridad (Helmet o manual: CSP base, HSTS, X-Content-Type-Options), cookie segura.
+- [x] CORS con orígenes permitidos, headers de seguridad (Helmet o manual: CSP base, HSTS, X-Content-Type-Options), cookie segura.
 - **Criterio:** `curl -i` muestra los headers; origen no permitido recibe bloqueo CORS.
 - **Estimado:** ~2 h.
 
