@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.22
+> **Versión del Documento:** 1.23
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -179,8 +179,8 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.5.2 — Actualizar docs y estado**
 
-- [ ] Actualizar el test de cobertura del ROADMAP (sección 16) y el estado en el README (versión).
-- **Criterio:** la Matriz de Trazabilidad marca F0 como cubierta; README refleja la fase actual.
+- [ ] Actualizar el test de cobertura del ROADMAP (sección 16) y el estado en el README (versión). _*(realizado, pendiente de validación: §16 gana columna «Estado» con el estado real de F0; README con sección de estado.)*_
+- **Criterio:** la Matriz de Trazabilidad refleja el estado real de F0; README refleja la fase actual.
 - **Estimado:** ~0.75 h.
 
 **Paso 0.5.3 — Commit del hito `feat/fase-0`**
@@ -2383,22 +2383,27 @@ Cada fase se divide jerárquicamente así:
 
 ## 16. Matriz de Trazabilidad Fase ↔ RF/RNF
 
-| Fase | RF / RNF cubiertos                       |
-| ---- | ---------------------------------------- |
-| F0   | RNF-01 (baseline), RNF-07 (base headers) |
-| F1   | RF-01, RF-02, RNF-06, RNF-07 (globo)     |
-| F2   | RF-03, RF-04, RNF-02, RNF-03, RNF-05     |
-| F3   | RF-07, RF-08, RNF-02, RNF-03             |
-| F4   | RF-05, RF-06, RNF-01, RNF-03             |
-| F5   | RF-09, RF-10, RNF-01                     |
-| F6   | RF-13, RF-14, RNF-02, RNF-03, RNF-04     |
-| F7   | RF-11, RF-12, RNF-04                     |
-| F8   | RNF-03, RNF-05                           |
-| F9   | RNF-07 (parcial), GDPR/privacidad        |
-| F10  | RNF-01, RNF-02, RNF-04                   |
-| F11  | RNF-06, RNF-07                           |
-| F12  | operaciones, despliegue                  |
-| F13  | cierre y demostración                    |
+| Fase | RF / RNF cubiertos                       | Estado                         |
+| ---- | ---------------------------------------- | ------------------------------ |
+| F0   | RNF-01 (baseline), RNF-07 (base headers) | En curso — 0.1 a 0.5 validados |
+| F1   | RF-01, RF-02, RNF-06, RNF-07 (globo)     | Pendiente                      |
+| F2   | RF-03, RF-04, RNF-02, RNF-03, RNF-05     | Pendiente                      |
+| F3   | RF-07, RF-08, RNF-02, RNF-03             | Pendiente                      |
+| F4   | RF-05, RF-06, RNF-01, RNF-03             | Pendiente                      |
+| F5   | RF-09, RF-10, RNF-01                     | Pendiente                      |
+| F6   | RF-13, RF-14, RNF-02, RNF-03, RNF-04     | Pendiente                      |
+| F7   | RF-11, RF-12, RNF-04                     | Pendiente                      |
+| F8   | RNF-03, RNF-05                           | Pendiente                      |
+| F9   | RNF-07 (parcial), GDPR/privacidad        | Pendiente                      |
+| F10  | RNF-01, RNF-02, RNF-04                   | Pendiente                      |
+| F11  | RNF-06, RNF-07                           | Pendiente                      |
+| F12  | operaciones, despliegue                  | Pendiente                      |
+| F13  | cierre y demostración                    | Pendiente                      |
+
+F0 se marca como **cubierta** al cerrar su último grupo, el 0.8 (Paso 0.8.15 —
+Actualizar Matriz de Trazabilidad); hasta entonces la columna refleja el estado
+real: los grupos 0.6 (testing), 0.7 (benchmark) y 0.8 (documentación) siguen
+pendientes.
 
 Los valores técnicos y la definición de RF/RNF viven en [GAIA_SPECIFICATION.md](./GAIA_SPECIFICATION.md).
 
