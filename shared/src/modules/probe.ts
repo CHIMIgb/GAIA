@@ -21,7 +21,10 @@ export const probeModule: DataModule<ProbeResult> = {
   worker: 1,
 
   async fetchRaw() {
-    // TODO(0.4.2): sustituir por el cliente API tipado (timeout + reintentos).
+    // Sigo con fetch a pelo: el cliente tipado de 0.4.2 vive en
+    // `frontend/src/services/api.ts` (lo fija PROJECT_STRUCTURE §5.7) y `shared`
+    // no puede importarlo sin crear un ciclo de paquetes (`frontend` -> `shared`
+    // -> `frontend`). Este módulo es andamiaje y lo sustituye F2.
     const res = await fetch(this.endpoint);
     return res.json();
   },

@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.12
+> **Versión del Documento:** 1.13
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-26
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -147,7 +147,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.4.2 — Cliente API tipado**
 
-- [ ] Wrapper `fetch` con timeout, reintentos y manejo de errores del contrato (`{success, data, error}`).
+- [ ] _(realizado, pendiente de validación)_ Wrapper `fetch` con timeout, reintentos y manejo de errores del contrato (`{success, data, error}`).
 - **Criterio:** fallo de red → estado `error` tipado; reintento configurable; test unitario.
 - **Estimado:** ~1.25 h.
 

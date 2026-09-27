@@ -2,6 +2,7 @@
  * Catálogo de acciones de `GAIA_STATE.md` §6.1. Toda escritura al store pasa por
  * aquí: las reglas de quién escribe qué (Three.js vs React) están en §4.
  */
+import { GaiaAPIError } from "../services/api";
 import { state } from "./index";
 import {
   SEA_LEVEL_MAX,
@@ -51,4 +52,33 @@ export function setConnectionStatus(
   patch: Partial<ModuleStatus>,
 ): void {
   Object.assign(state.connectionStatus[module], patch);
+}
+
+/**
+ * Escribe el resultado de una petición en `connectionStatus`: `loading` mientras
+ * vuela, `live` con la hora al resolverse y `error` con el código del contrato si
+ * falla. Es el write path del orquestador de datos que nombra STATE §6.4.
+ *
+ * `lastError: null` va explícito porque `setConnectionStatus` es merge parcial
+ * (§6.1) y no limpia campos sola.
+ */
+export async function runDataRequest<T>(
+  module: ModuleId,
+  request: () => Promise<T>,
+): Promise<T> {
+  setConnectionStatus(module, { state: "loading" });
+  try {
+    const data = await request();
+    setConnectionStatus(module, {
+      state: "live",
+      lastUpdate: Date.now(),
+      lastError: null,
+    });
+    return data;
+  } catch (error) {
+    const lastError =
+      error instanceof GaiaAPIError ? error.code : "INTERNAL_SERVER_ERROR";
+    setConnectionStatus(module, { state: "error", lastError });
+    throw error;
+  }
 }

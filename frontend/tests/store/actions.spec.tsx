@@ -13,10 +13,12 @@ import {
 } from "@testing-library/react";
 import { useSnapshot } from "valtio";
 import { snapshot } from "valtio/vanilla";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { GaiaAPIError, fetchAPI } from "../../src/services/api";
 import {
   clearSelection,
+  runDataRequest,
   selectObject,
   setConnectionStatus,
   setSeaLevel,
@@ -51,6 +53,7 @@ function StatusBadge() {
 }
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   // Sin `globals: true`, @testing-library/react no registra su cleanup automático
   // y el DOM del test anterior se acumula.
   cleanup();
@@ -63,12 +66,14 @@ afterEach(() => {
   state.layers.fire = false;
   state.flood.seaLevel = 0;
   state.filters.timeRange = "24h";
-  Object.assign(state.connectionStatus.fires, {
-    state: "error",
-    lastUpdate: null,
-    cachedAt: null,
-    lastError: "Sin respuesta inicial de fires",
-  });
+  for (const module of ["fires", "quakes", "wind"] as const) {
+    Object.assign(state.connectionStatus[module], {
+      state: "error",
+      lastUpdate: null,
+      cachedAt: null,
+      lastError: `Sin respuesta inicial de ${module}`,
+    });
+  }
 });
 
 describe("estado compartido entre componentes", () => {
@@ -157,6 +162,62 @@ describe("acciones async actualizan los flags", () => {
     expect(snapshot(state).connectionStatus.fires.lastUpdate).toBe(
       1_700_000_000_000,
     );
+  });
+});
+
+describe("el cliente escribe su resultado en el store (criterio 0.4.2)", () => {
+  it("un fallo de red deja el módulo en error con el código del contrato", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new TypeError("Failed to fetch")),
+    );
+
+    await expect(
+      runDataRequest("fires", () =>
+        fetchAPI("/api/fires", { retries: 0, backoffMs: 0 }),
+      ),
+    ).rejects.toThrow(GaiaAPIError);
+
+    const status = snapshot(state).connectionStatus.fires;
+    expect(status.state).toBe("error");
+    expect(status.lastError).toBe("UPSTREAM_UNAVAILABLE");
+    expect(status.lastUpdate).toBeNull();
+  });
+
+  it("una respuesta ok deja el módulo en live con la hora", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ success: true, data: { items: [] }, error: null }),
+      }),
+    );
+
+    await runDataRequest("quakes", () =>
+      fetchAPI("/api/earthquakes", { retries: 0, timeoutMs: 50 }),
+    );
+
+    const status = snapshot(state).connectionStatus.quakes;
+    expect(status.state).toBe("live");
+    expect(status.lastUpdate).toBeGreaterThan(0);
+    expect(status.lastError).toBeNull();
+  });
+
+  it("el módulo queda en loading mientras la petición vuela", async () => {
+    let seen: string | null = null;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new TypeError("Failed to fetch")),
+    );
+
+    const promesa = runDataRequest("wind", () =>
+      fetchAPI("/api/wind", { retries: 0 }),
+    ).catch(() => undefined);
+    seen = snapshot(state).connectionStatus.wind.state;
+    await promesa;
+
+    expect(seen).toBe("loading");
   });
 });
 
