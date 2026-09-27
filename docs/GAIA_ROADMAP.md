@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.23
+> **Versión del Documento:** 1.24
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -179,7 +179,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.5.2 — Actualizar docs y estado**
 
-- [ ] Actualizar el test de cobertura del ROADMAP (sección 16) y el estado en el README (versión). _*(realizado, pendiente de validación: §16 gana columna «Estado» con el estado real de F0; README con sección de estado.)*_
+- [x] Actualizar el test de cobertura del ROADMAP (sección 16) y el estado en el README (versión). _*(validado: §16 con columna «Estado» y el estado real de F0; README con sección de estado.)*_
 - **Criterio:** la Matriz de Trazabilidad refleja el estado real de F0; README refleja la fase actual.
 - **Estimado:** ~0.75 h.
 
