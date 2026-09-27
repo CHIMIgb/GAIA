@@ -619,6 +619,9 @@ export function setConnectionStatus(
 | `live/cached/fallback → error` | Cadena de resiliencia completa falló             | `lastError` poblado, badge `ERROR`          |
 | `* → live`                     | Siguiente poll exitoso (recuperación automática) | `lastError = null`                          |
 
+> [!NOTE]
+> La columna "Efecto" describe **qué debe pasar el dato quien dispara la transición**, no qué limpia la acción: `setConnectionStatus()` es un merge parcial (§6.1) y no toca campos que no reciba. Por eso quien pasa a `live` tiene que enviar `lastError: null` explícitamente; si lo omite, el badge queda en `live` con el mensaje de error viejo, que es justo el estado que hay que evitar.
+
 Toda transición la aplica el **orquestador de datos** (hilo principal) vía `setConnectionStatus()`, tras integrar la respuesta del contrato universal (`cached: true` / `fallback: true`) y los resultados de los workers.
 
 ### 6.4 Contratos de Entrada

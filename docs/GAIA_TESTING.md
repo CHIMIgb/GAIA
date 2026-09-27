@@ -1,8 +1,8 @@
 # GAIA — Plan de Testing y Métricas de Rendimiento
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.2  
-> **Fecha:** 2026-09-23  
+> **Versión del Documento:** 1.3  
+> **Fecha:** 2026-09-26
 
 ---
 
@@ -33,34 +33,34 @@ Objetivo de cobertura: **≥ 80 %** en `frontend/src/utils/` y `store/actions.ts
 
 ### 2.1 Herramientas de Medición
 
-| Herramienta | Dónde se integra | Qué mide |
-| ----------- | ---------------- | -------- |
-| `stats.js`  | `core/Stats.ts` (overlay debug) | FPS en vivo, frame time |
-| `renderer.info` | `core/Stats.ts` (mismo loop) | `render.calls` (draw calls), `render.triangles`, `memory.geometries`, `memory.textures` |
-| Chrome DevTools → Performance | Instrumentación manual | Timeline de frames, main thread jank, voids |
-| Chrome DevTools → Rendering | Throttling de CPU 6× | Degradación bajo CPU limits |
-| WebGL Inspector / Spector.js | Opcional (debug avanzado) | Draw calls por pase, estados GL |
+| Herramienta                   | Dónde se integra                | Qué mide                                                                                |
+| ----------------------------- | ------------------------------- | --------------------------------------------------------------------------------------- |
+| `stats.js`                    | `core/Stats.ts` (overlay debug) | FPS en vivo, frame time                                                                 |
+| `renderer.info`               | `core/Stats.ts` (mismo loop)    | `render.calls` (draw calls), `render.triangles`, `memory.geometries`, `memory.textures` |
+| Chrome DevTools → Performance | Instrumentación manual          | Timeline de frames, main thread jank, voids                                             |
+| Chrome DevTools → Rendering   | Throttling de CPU 6×            | Degradación bajo CPU limits                                                             |
+| WebGL Inspector / Spector.js  | Opcional (debug avanzado)       | Draw calls por pase, estados GL                                                         |
 
 ### 2.2 Umbrales de Aceptación
 
-| Métrica              | Objetivo              | Presupuesto de frame |
-| -------------------- | --------------------- | -------------------- |
-| **FPS**              | ≥ 60 estables         | ≤ 16.67 ms / frame   |
-| **Datos simultáneos**| > 20,000 combinados   | con todas las capas  |
-| **Draw calls**       | ≤ 8 por frame (RNF-02)| 1–2 por módulo       |
-| **Frame time (p95)** | ≤ 18 ms               | sin caídas sostenidas |
+| Métrica               | Objetivo               | Presupuesto de frame  |
+| --------------------- | ---------------------- | --------------------- |
+| **FPS**               | ≥ 60 estables          | ≤ 16.67 ms / frame    |
+| **Datos simultáneos** | > 20,000 combinados    | con todas las capas   |
+| **Draw calls**        | ≤ 8 por frame (RNF-02) | 1–2 por módulo        |
+| **Frame time (p95)**  | ≤ 18 ms                | sin caídas sostenidas |
 
 Presupuesto de draw calls derivado de la [Estructura del Proyecto](./GAIA_PROJECT_STRUCTURE.md):
 
-| Módulo    | Geometría GPU         | Draw calls |
-| --------- | --------------------- | :--------: |
-| globo     | Sphere + Atmosphere   | 2 |
-| fire      | InstancedMesh         | 1 |
-| wind      | Points + TF feedback  | 1 |
-| seismic   | InstancedMesh + anillo| 1–2 |
-| flood     | WaterMesh             | 1 |
-| radiation | InstancedMesh/heatmap | 1 |
-| **Total** |                       | **7–8** |
+| Módulo    | Geometría GPU          | Draw calls |
+| --------- | ---------------------- | :--------: |
+| globo     | Sphere + Atmosphere    |     2      |
+| fire      | InstancedMesh          |     1      |
+| wind      | Points + TF feedback   |     1      |
+| seismic   | InstancedMesh + anillo |    1–2     |
+| flood     | WaterMesh              |     1      |
+| radiation | InstancedMesh/heatmap  |     1      |
+| **Total** |                        |  **7–8**   |
 
 ### 2.3 Procedimiento de Prueba
 
@@ -83,12 +83,12 @@ Presupuesto de draw calls derivado de la [Estructura del Proyecto](./GAIA_PROJEC
 
 ### 2.4 Escenarios de Estrés
 
-| Escenario                    | Carga                      | Resultado esperado                 |
-| ---------------------------- | -------------------------- | ---------------------------------- |
-| Baseline                     | Globo solo (sin capas)     | 60+ FPS, 2 draw calls              |
-| Nominal (aceptación)         | 20,000 datos, todas capas  | ≥ 60 FPS, ≤ 8 draw calls           |
-| **Estrés (degradación)**     | 50,000 datos combinados    | Se documenta la degradación (FPS/ms) |
-| Cambio de filtro repetido    | 24h → 7d → 30d → 24h × 50  | Reacomodación < 200 ms sin jank     |
+| Escenario                 | Carga                     | Resultado esperado                   |
+| ------------------------- | ------------------------- | ------------------------------------ |
+| Baseline                  | Globo solo (sin capas)    | 60+ FPS, 2 draw calls                |
+| Nominal (aceptación)      | 20,000 datos, todas capas | ≥ 60 FPS, ≤ 8 draw calls             |
+| **Estrés (degradación)**  | 50,000 datos combinados   | Se documenta la degradación (FPS/ms) |
+| Cambio de filtro repetido | 24h → 7d → 30d → 24h × 50 | Reacomodación < 200 ms sin jank      |
 
 > [!NOTE]
 > En el escenario de estrés no se exige cumplir 60 FPS, pero **debe documentarse** el FPS resultante y los draw calls si supera 8. El objetivo es conocer el punto de degradación para: (a) fijar el tope real de datos, y (b) justificar LOD/prescindibilidad de ingredientes (RNF-02).
@@ -100,10 +100,10 @@ Presupuesto de draw calls derivado de la [Estructura del Proyecto](./GAIA_PROJEC
 
 Los presupuestos de rendimiento (60 FPS, p95 ≤ 18 ms, ≤ 8 draw calls) son **objetivos medibles** y se validan contra este perfil, no contra hardware arbitrario:
 
-| Perfil                    | Descripción                                                                 | Uso                             |
-| ------------------------- | --------------------------------------------------------------------------- | ------------------------------- |
-| **CI (headless)**         | Node + SwiftShader/ANGLE sin GPU física; `devicePixelRatio` = 1.0            | Gate determinista de draw calls y FPS nominal (RNF-01) |
-| **Cliente objetivo**      | Portátil/escritorio gama media, 1080p, GPU integrada o discreta básica, `devicePixelRatio` capado a 2.0 | Validación de p95 ≤ 18 ms y 60 FPS reales con todas las capas |
+| Perfil               | Descripción                                                                                             | Uso                                                           |
+| -------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| **CI (headless)**    | Node + SwiftShader/ANGLE sin GPU física; `devicePixelRatio` = 1.0                                       | Gate determinista de draw calls y FPS nominal (RNF-01)        |
+| **Cliente objetivo** | Portátil/escritorio gama media, 1080p, GPU integrada o discreta básica, `devicePixelRatio` capado a 2.0 | Validación de p95 ≤ 18 ms y 60 FPS reales con todas las capas |
 
 Los números solo son comparables dentro del mismo perfil; al publicar resultados de rendimiento se indica siempre el perfil usado (doc de referencia: `GAIA_DEPLOYMENT.md` §7.3 para el job de rendimiento).
 
@@ -121,36 +121,36 @@ Los números solo son comparables dentro del mismo perfil; al publicar resultado
 
 ```typescript
 // frontend/src/main.ts
-performance.mark('gaia:boot');
+performance.mark("gaia:boot");
 // ... creación de renderer, cargando texturas/heightmap en paralelo con workers ...
-performance.mark('gaia:globe-ready');   // globo interactivo (RF-01)
-performance.measure('fcp', 'gaia:boot', 'gaia:globe-ready');
+performance.mark("gaia:globe-ready"); // globo interactivo (RF-01)
+performance.measure("fcp", "gaia:boot", "gaia:globe-ready");
 ```
 
-| Hito                        | Objetivo | Medición |
-| --------------------------- | -------- | -------- |
+| Hito                             | Objetivo    | Medición                |
+| -------------------------------- | ----------- | ----------------------- |
 | **FCP** (First Contentful Paint) | **< 2.0 s** | Lighthouse / web-vitals |
-| **Globo interactivo funcional**   | **< 3.5 s** | `gaia:globe-ready` |
-| LCP (opcional, informativo)       | < 3.0 s    | web-vitals |
+| **Globo interactivo funcional**  | **< 3.5 s** | `gaia:globe-ready`      |
+| LCP (opcional, informativo)      | < 3.0 s     | web-vitals              |
 
 ### 3.3 Condiciones de Red Simuladas
 
-| Perfil      | RTT      | Throughput down | Applica a |
-| ----------- | -------- | --------------- | --------- |
-| Cable       | 0 ms     | 100 Mbps        | Budget estricto |
-| **4G**      | 40 ms    | 9 Mbps          | Referencia de CI |
-| 3G Fast     | 150 ms   | 1.6 Mbps        | Caso límite (RNF-06) |
+| Perfil  | RTT    | Throughput down | Applica a            |
+| ------- | ------ | --------------- | -------------------- |
+| Cable   | 0 ms   | 100 Mbps        | Budget estricto      |
+| **4G**  | 40 ms  | 9 Mbps          | Referencia de CI     |
+| 3G Fast | 150 ms | 1.6 Mbps        | Caso límite (RNF-06) |
 
 > La referencia oficial de CI es **4G** (perfil equivalente a Lighthouse throttling). El caso 3G es informativo y solo informa al diseño de carga (tiles, code splitting).
 
 ### 3.4 Presupuesto de Bundle
 
-| Asset                    | Tamaño objetivo (gzip) | Nota                                   |
-| ------------------------ | ---------------------- | -------------------------------------- |
-| Chunk de arranque (main) | ≤ 180 KB               | App mínima + React core                 |
-| Chunk Three.js           | ≤ 250 KB               | Cargado bajo demanda (code splitting)   |
-| React + HUD              | ≤ 120 KB               | Vía `build.rollupOptions.output.manualChunks`
-| Texturas / heightmap     | *streaming por tiles*  | TileManager de GLOBOTextures (Esri/Terrarium) |
+| Asset                    | Tamaño objetivo (gzip) | Nota                                                           |
+| ------------------------ | ---------------------- | -------------------------------------------------------------- |
+| Chunk de arranque (main) | ≤ 180 KB               | App mínima + React core                                        |
+| Chunk Three.js           | ≤ 250 KB               | Cargado bajo demanda (code splitting)                          |
+| React + HUD              | ≤ 120 KB               | Vía `build.rollupOptions.output.manualChunks`                  |
+| Texturas / heightmap     | _streaming por tiles_  | TileManager de GLOBOTextures (Esri/Terrarium)                  |
 | **Total JS inicial**     | **≤ 450 KB**           | Verificado en CI con `size-limit` o `rollup-plugin-visualizer` |
 
 > [!IMPORTANT]
@@ -176,11 +176,11 @@ Se alternan capas y filtros **100 veces consecutivas** verificando que no haya f
 async function runToggleStress(count = 100) {
   const before = dumpGPUInfo(); // geometries, textures, programs
 
-  const layers = ['fire', 'wind', 'seismic', 'flood', 'radiation'] as const;
-  const filters = ['24h', '7d', '30d'] as const;
+  const layers = ["fire", "wind", "seismic", "flood", "radiation"] as const;
+  const filters = ["24h", "7d", "30d"] as const;
 
   for (let i = 0; i < count; i++) {
-    toggleLayer(layers[i % layers.length]);   // on/off
+    toggleLayer(layers[i % layers.length]); // on/off
     await nextFrame();
     if (i % 3 === 0) setTimeFilter(filters[i % filters.length]) ?? null;
     await nextFrame();
@@ -217,12 +217,12 @@ function dumpGPUInfo() {
 
 Se simulan fallos de APIs externas con **mock de `httpx`** (fixtures en `tests/conftest.py`):
 
-| Fixture / Test | Simula                        | Verifica                                  |
-| -------------- | ----------------------------- | ----------------------------------------- |
+| Fixture / Test            | Simula                   | Verifica                                        |
+| ------------------------- | ------------------------ | ----------------------------------------------- |
 | `mocked_upstream_timeout` | `httpx.TimeoutException` | Respuesta `UPSTREAM_TIMEOUT`, luego caché/local |
-| `mocked_upstream_5xx`     | HTTP 500/502 externo     | Respuesta `UPSTREAM_UNAVAILABLE`          |
-| `mocked_upstream_429`     | HTTP 429 (rate-limit)    | Respuesta `UPSTREAM_RATE_LIMITED`         |
-| `test_fallback.py`        | Fallo total de la API    | Cadena completa **Redis → API → Local**   |
+| `mocked_upstream_5xx`     | HTTP 500/502 externo     | Respuesta `UPSTREAM_UNAVAILABLE`                |
+| `mocked_upstream_429`     | HTTP 429 (rate-limit)    | Respuesta `UPSTREAM_RATE_LIMITED`               |
+| `test_fallback.py`        | Fallo total de la API    | Cadena completa **Redis → API → Local**         |
 
 ```python
 # backend/tests/test_fallback.py (esquema)
@@ -256,6 +256,7 @@ expect(screen.getByText('MODO RESGUARDO')).toBeInTheDocument();
 ```
 
 Se verifica que:
+
 1. El orquestador degrada `connectionStatus.fires.state` → `cached`/`fallback` (contrato `cached: true | fallback: true`).
 2. `StatusIndicator` muestra el badge correcto (`CACHÉ`/`RESGUARDO`).
 3. La experiencia 3D **no se rompe**: la capa sigue renderizándose con el dataset de respaldo.
@@ -270,15 +271,15 @@ Se verifica que:
 
 ### 6.1 Backend — pytest + httpx.AsyncClient
 
-| Archivo                 | Qué verifica                                                                 |
-| ----------------------- | ---------------------------------------------------------------------------- |
-| `test_fires.py`         | `/api/fires`: 200, caché hit, fallback local, validación de `hours` (1–72)   |
-| `test_quakes.py`        | `/api/earthquakes`: 200, validación de `days` (1–30) y `min_magnitude`, fallback |
-| `test_wind.py`          | `/api/wind`: 200, formato de rejilla, metadata de componentes binarios       |
-| `test_radiation.py`     | `/api/radiation`: **normalización CPM→µSv/h**, umbrales de alerta            |
-| `test_elevation.py`     | `/api/elevation`: metros, caché de 24h                                       |
-| `test_contract.py`      | Formato `{ success, data, error }` en **toda** respuesta                     |
-| `test_fallback.py`      | Cadena Redis → API → local (RNF-05)                                          |
+| Archivo             | Qué verifica                                                                     |
+| ------------------- | -------------------------------------------------------------------------------- |
+| `test_fires.py`     | `/api/fires`: 200, caché hit, fallback local, validación de `hours` (1–72)       |
+| `test_quakes.py`    | `/api/earthquakes`: 200, validación de `days` (1–30) y `min_magnitude`, fallback |
+| `test_wind.py`      | `/api/wind`: 200, formato de rejilla, metadata de componentes binarios           |
+| `test_radiation.py` | `/api/radiation`: **normalización CPM→µSv/h**, umbrales de alerta                |
+| `test_elevation.py` | `/api/elevation`: metros, caché de 24h                                           |
+| `test_contract.py`  | Formato `{ success, data, error }` en **toda** respuesta                         |
+| `test_fallback.py`  | Cadena Redis → API → local (RNF-05)                                              |
 
 Casos críticos de normalización radiológica:
 
@@ -296,27 +297,33 @@ Ejecución: `pytest backend/tests -q` en CI y local.
 
 Se prioriza **Vitest** (misma cadena TS/ESM que Vite/esbuild) sobre Jest. Casos clave:
 
-| Archivo / Módulo          | Pruebas                                                                 |
-| ------------------------- | ----------------------------------------------------------------------- |
-| `utils/coordinates.ts`    | `geodesicToCartesian(lat, lon, R)`: ecuador, polos, valores de muestra   |
-| `utils/terrarium.ts`      | `decodeTerrarium(r, g, b)`: ceros, negativos (−100 m), picos             |
-| `utils/colorScales.ts`    | FRP → color/tamaño (4 bandas), gradiente de magnitud, umbrales µSv/h     |
-| `utils/dispose.ts`        | `disposeObject3D` libera geometry+material+textura (mock de `dispose`)   |
-| `store/actions.ts`        | `toggleLayer`, `setSeaLevel` (clamping 0–10), `selectObject`/`clearSelection`, `setConnectionStatus` (assert sobre snapshot) |
-| `services/*.service.ts`   | Con msw: payload correcto + manejo de `success:false` → `GaiaAPIError`   |
+| Archivo / Módulo        | Pruebas                                                                                                                      |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `utils/coordinates.ts`  | `geodesicToCartesian(lat, lon, R)`: ecuador, polos, valores de muestra                                                       |
+| `utils/terrarium.ts`    | `decodeTerrarium(r, g, b)`: ceros, negativos (−100 m), picos                                                                 |
+| `utils/colorScales.ts`  | FRP → color/tamaño (4 bandas), gradiente de magnitud, umbrales µSv/h                                                         |
+| `utils/dispose.ts`      | `disposeObject3D` libera geometry+material+textura (mock de `dispose`)                                                       |
+| `store/actions.ts`      | `toggleLayer`, `setSeaLevel` (clamping 0–10), `selectObject`/`clearSelection`, `setConnectionStatus` (assert sobre snapshot) |
+| `services/*.service.ts` | Con msw: payload correcto + manejo de `success:false` → `GaiaAPIError`                                                       |
 
 ```typescript
 // frontend/tests/store/actions.spec.ts
-it('clampa el nivel del mar a [0, 10]', () => {
+it("clampa el nivel del mar a [0, 10]", () => {
   setSeaLevel(-3);
   expect(state.flood.seaLevel).toBe(0);
   setSeaLevel(15);
   expect(state.flood.seaLevel).toBe(10);
 });
 
-it('abre y cierra la selección', () => {
-  selectObject({ type: 'fire', instanceId: 12, lat: -12.4, lon: -54.3, data: fakeHotspot });
-  expect(state.selectedObject?.type).toBe('fire');
+it("abre y cierra la selección", () => {
+  selectObject({
+    type: "fire",
+    instanceId: 12,
+    lat: -12.4,
+    lon: -54.3,
+    data: fakeHotspot,
+  });
+  expect(state.selectedObject?.type).toBe("fire");
   expect(state.telemetry.open).toBe(true);
   clearSelection();
   expect(state.selectedObject).toBeNull();
@@ -324,15 +331,28 @@ it('abre y cierra la selección', () => {
 });
 ```
 
+Fuera de un componente se lee con `snapshot()` de `valtio/vanilla`, no con `useSnapshot()`: este último es un hook y llamarlo en el cuerpo de un test lanza _Invalid hook call_.
+
+#### Trampas al testear componentes que leen el store
+
+Solo afectan a los tests que **montan componentes** (no a las unidades puras de arriba). Las dos se encontraron implementando el paso 0.4.1:
+
+| Trampa                                                               | Síntoma                                                                        | Arreglo                                                              |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| `subscribe()` de Valtio agrupa la notificación en un **microtask**   | El store cambia pero el DOM no: el re-render ocurre **después** de la aserción | `await act(async () => { fireEvent.click(btn) })`, no `act` síncrono |
+| Sin `globals: true`, `@testing-library/react` no registra su cleanup | El DOM del test anterior se acumula: _Found multiple elements_                 | `afterEach(cleanup)` explícito o `globals: true` en la config        |
+
+Que el store sí cambie y el DOM no se puede diagnosticar así: `useState` re-renderiza bien en el mismo test, así que el problema es la suscripción de Valtio, no el render de React. `unstable_enableOp()` no es la solución.
+
 ### 6.3 Tests de Web Workers (con mocks de `postMessage`)
 
 Los workers no se ejecutan directamente (Comlink los envuelve); se testea la **lógica pura exportada** con el mensaje `Transferable` esperado:
 
 ```typescript
 // frontend/tests/workers/ingestion.spec.ts
-import { parseFIRMSData } from '../src/workers/ingestion.worker';
+import { parseFIRMSData } from "../src/workers/ingestion.worker";
 
-it('empaca Float32Array de 7 campos (x,y,z,r,g,b,scale)', () => {
+it("empaca Float32Array de 7 campos (x,y,z,r,g,b,scale)", () => {
   const buffer = parseFIRMSData(mockCSV, GLOBE_RADIUS);
   expect(buffer).toBeInstanceOf(Float32Array);
   expect(buffer.length % 7).toBe(0);
@@ -348,12 +368,12 @@ Verificación clave: **los buffers son `Transferable`** (cero-copia) y los campo
 
 ### 7.1 Navegadores Objetivo
 
-| Navegador | Versión mínima | WebGL 2.0 | Web Workers |
-| --------- | -------------- | :-------: | :---------: |
-| Chrome    | última 2       | ✅        | ✅          |
-| Firefox   | última 2       | ✅        | ✅          |
-| Safari    | 15+            | ✅        | ✅          |
-| Edge      | última 2 (Chromium) | ✅    | ✅          |
+| Navegador | Versión mínima      | WebGL 2.0 | Web Workers |
+| --------- | ------------------- | :-------: | :---------: |
+| Chrome    | última 2            |    ✅     |     ✅      |
+| Firefox   | última 2            |    ✅     |     ✅      |
+| Safari    | 15+                 |    ✅     |     ✅      |
+| Edge      | última 2 (Chromium) |    ✅     |     ✅      |
 
 ### 7.2 Detección de Capacidades
 
@@ -361,8 +381,8 @@ El arranque verifica WebGL 2.0 y muestra un aviso si falta (sin crash):
 
 ```typescript
 const supportsWebGL2 = (() => {
-  const canvas = document.createElement('canvas');
-  return !!canvas.getContext('webgl2');
+  const canvas = document.createElement("canvas");
+  return !!canvas.getContext("webgl2");
 })();
 
 if (!supportsWebGL2) {
@@ -388,15 +408,15 @@ if (!supportsWebGL2) {
 
 ## 8. Matriz de Verificación: RNF ↔ Método de Prueba
 
-| Requisito | Herramienta / Test                | Umbral de aceptación                     | Frecuencia               |
-| --------- | --------------------------------- | ---------------------------------------- | ------------------------ |
-| **RNF-01** FPS estable | `stats.js` + `perf/fps.spec.ts` + DevTools Performance | ≥ 60 FPS (p95 ≤ 18 ms) con > 20,000 datos | CI (perf job) + pre-deploy manual |
-| **RNF-02** Draw calls ≤ 8 | `renderer.info.render.calls` (assert en perf test) | max drawCalls ≤ 8 por frame              | CI + pre-deploy          |
-| **RNF-03** Cómputo en workers | Revisión de arquitectura + DevTools (main thread idle) | 0 parseos/interpolaciones en hilo principal | CI (lint/audit) + manual |
-| **RNF-04** Cero fugas VRAM | `memory/vram-leak.spec.ts` + DevTools Memory | Crecimiento neto **cero** tras 100 toggles | Pre-deploy + nightly     |
-| **RNF-05** Modo fallback | pytest (`test_fallback.py`) + msw (UI) | Cadena Redis→API→local + badge `RESGUARDO` | CI                      |
-| **RNF-06** FCP / globo | Lighthouse CI + `performance.mark` | FCP < 2.0 s, globo < 3.5 s (perfil 4G)   | CI (PR) + pre-deploy     |
-| **RNF-07** Navegadores | Playwright + BrowserStack | 4 browsers: render + workers + sin errores | CI (smoke) + manual pre-release |
+| Requisito                     | Herramienta / Test                                     | Umbral de aceptación                        | Frecuencia                        |
+| ----------------------------- | ------------------------------------------------------ | ------------------------------------------- | --------------------------------- |
+| **RNF-01** FPS estable        | `stats.js` + `perf/fps.spec.ts` + DevTools Performance | ≥ 60 FPS (p95 ≤ 18 ms) con > 20,000 datos   | CI (perf job) + pre-deploy manual |
+| **RNF-02** Draw calls ≤ 8     | `renderer.info.render.calls` (assert en perf test)     | max drawCalls ≤ 8 por frame                 | CI + pre-deploy                   |
+| **RNF-03** Cómputo en workers | Revisión de arquitectura + DevTools (main thread idle) | 0 parseos/interpolaciones en hilo principal | CI (lint/audit) + manual          |
+| **RNF-04** Cero fugas VRAM    | `memory/vram-leak.spec.ts` + DevTools Memory           | Crecimiento neto **cero** tras 100 toggles  | Pre-deploy + nightly              |
+| **RNF-05** Modo fallback      | pytest (`test_fallback.py`) + msw (UI)                 | Cadena Redis→API→local + badge `RESGUARDO`  | CI                                |
+| **RNF-06** FCP / globo        | Lighthouse CI + `performance.mark`                     | FCP < 2.0 s, globo < 3.5 s (perfil 4G)      | CI (PR) + pre-deploy              |
+| **RNF-07** Navegadores        | Playwright + BrowserStack                              | 4 browsers: render + workers + sin errores  | CI (smoke) + manual pre-release   |
 
 ### 8.1 Pipeline CI (GitHub Actions)
 
@@ -416,4 +436,4 @@ Frecuencia recomendada: pasos 1–3 en **cada PR**; 4–6 en PRs a `main` (o pro
 
 ---
 
-*Este documento complementa la [Especificación Técnica](./GAIA_SPECIFICATION.md) del proyecto GAIA.*
+_Este documento complementa la [Especificación Técnica](./GAIA_SPECIFICATION.md) del proyecto GAIA._
