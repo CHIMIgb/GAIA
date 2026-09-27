@@ -12,7 +12,7 @@
     "build": "npm run build -w frontend",
     "lint": "npm run lint -w frontend",
     "typecheck": "npm run typecheck -w shared",
-    "prepare": "husky",
+    "prepare": "husky || true",
     "test:front": "npm run test -w frontend"
   },
   "devDependencies": {
