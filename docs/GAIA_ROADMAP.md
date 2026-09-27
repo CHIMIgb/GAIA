@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.15
+> **Versión del Documento:** 1.16
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-26
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -153,7 +153,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.4.3 — Base de Web Worker**
 
-- [ ] _(realizado, pendiente de validación)_ Worker genérico con protocolo `postMessage` (in/out tipados) que sirva de plantilla a Workers 1-3.
+- [x] Worker genérico con protocolo `postMessage` (in/out tipados) que sirva de plantilla a Workers 1-3.
 - **Criterio:** mensaje de prueba ida/vuelta sin bloquear main thread.
 - **Estimado:** ~0.75 h.
 
