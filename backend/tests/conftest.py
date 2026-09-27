@@ -1,3 +1,5 @@
+from collections.abc import Iterator
+
 import pytest
 from fakeredis import aioredis
 from fastapi.testclient import TestClient
@@ -7,9 +9,14 @@ from app.main import app
 
 
 @pytest.fixture
-def client() -> TestClient:
+def client() -> Iterator[TestClient]:
     # raise_server_exceptions=False: deja que el handler global de 500 se pruebe de verdad.
-    return TestClient(app, raise_server_exceptions=False)
+    # El `with` no es cosmético: sin lifespan no corre `close_redis()` al final del
+    # test, el pool de Redis sobrevive al loop que lo creó y la petición siguiente
+    # muere con "Event loop is closed" → 500. Dentro del `with` hay un solo loop por
+    # test y el lifespan lo cierra limpio.
+    with TestClient(app, raise_server_exceptions=False) as test_client:
+        yield test_client
 
 
 @pytest.fixture
