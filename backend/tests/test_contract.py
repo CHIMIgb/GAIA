@@ -3,7 +3,10 @@
 from fastapi import Query
 
 
-def test_unknown_route_is_wrapped(client):
+def test_unknown_route_is_wrapped(client, fake_redis):
+    # `fake_redis` es imprescindible aquí y no por casualidad: `/api/...` pasa por
+    # el rate-limit, que sin Redis real revienta con 500. La suite corre sin servicios
+    # externos (DEPLOYMENT §3.4), igual que en el CI.
     res = client.get("/api/does-not-exist")
 
     assert res.status_code == 404
