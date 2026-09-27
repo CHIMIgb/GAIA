@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.25
+> **Versión del Documento:** 1.26
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -185,7 +185,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.5.3 — Commit del hito `feat/fase-0`**
 
-- [ ] Commit con mensaje estándar y tags de las RF/RNF implicadas. _*(realizado, pendiente de validación: PR `feat/fase-0` → `main` con RNF-01 y RNF-07 en el título; CI en verde tras arreglar tres causas de que el job Frontend no llegara a compilar.)*_
+- [x] Commit con mensaje estándar y tags de las RF/RNF implicadas. _*(validado: PR #1 `feat(fase-0): fundación de la plataforma (grupos 0.1 a 0.5) — RNF-01, RNF-07` mergeada en `main` con CI en verde.)*_
 - **Criterio:** CI pasa; se puede revisar el diff de la fase como unidad.
 - **Estimado:** ~0.75 h.
 
