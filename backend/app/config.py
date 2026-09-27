@@ -23,6 +23,15 @@ class Settings(BaseSettings):
     # Peticiones entre refrescos del registro en `session_events`: Redis lleva la
     # cuenta caliente y la BD se actualiza de tanto en tanto, no en cada request.
     SESSION_DB_FLUSH_EVERY: int = 10
+    # Orígenes permitidos del frontend, separados por coma (DEPLOYMENT §4.1).
+    # Allowlist explícita, nunca `*`: la API lleva cookie de sesión, y con
+    # credenciales el navegador rechaza un `*` (SECURITY §5.2). El default es el
+    # puerto del dev server de Vite (ROADMAP 0.1.1).
+    CORS_ORIGINS: str = "http://localhost:5173"
+    # Modo desarrollo (DEPLOYMENT §4.1): detalles en INTERNAL_SERVER_ERROR y logs
+    # verbose. Aquí además monta `/docs` y cambia la CSP a la variante con
+    # `'unsafe-inline'` de la NOTA de SECURITY §6.2, que Swagger UI necesita.
+    DEBUG: bool = False
 
 
 settings = Settings()
