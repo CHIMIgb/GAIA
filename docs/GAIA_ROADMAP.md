@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.26
+> **Versión del Documento:** 1.27
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -193,7 +193,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.6.1 — Harness de test (pytest + TestClient)**
 
-- [ ] Configurar pytest y el `TestClient` de FastAPI para el HTTP universal.
+- [ ] Configurar pytest y el `TestClient` de FastAPI para el HTTP universal. _*(realizado, pendiente de validación: ya lo cubría el trabajo de 0.2.1/0.2.2 — `tool.pytest.ini_options` con `testpaths`/`pythonpath`/`asyncio_mode`, fixtures `client` y `fake_redis` en `conftest.py`, y `test_health.py` contra `GET /api/health`. Criterio verificado, sin cambios de código.)*_
 - **Criterio:** un test de `GET /api/health` pasa; runner se integra a `pytest` y al CI.
 - **Estimado:** ~1 h.
 
