@@ -21,7 +21,10 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run build
-      - run: npm test -- --run 2>/dev/null || true
+      # Presupuesto de bundle: falla el CI si dist/ se pasa de los límites de
+      # RNF-01. Sin `|| true`, que es justo lo que se quita abajo.
+      - run: npm run perf:check
+      - run: npm test
 
   backend:
     name: Backend (pytest)
@@ -38,4 +41,4 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync --frozen
-      - run: uv run pytest -q 2>/dev/null || true
+      - run: uv run pytest -q
