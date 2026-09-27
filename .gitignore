@@ -1,2 +1,30 @@
 .env
 opencode.json
+.agents/
+skills-lock.json
+
+# Node / frontend / shared
+node_modules/
+dist/
+dist-ssr/
+*.local
+*.log
+npm-debug.log*
+coverage/
+.vite/
+
+# Python / backend
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store

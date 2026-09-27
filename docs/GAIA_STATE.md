@@ -1,8 +1,8 @@
 # GAIA — Especificación del Estado Global (Valtio)
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.1  
-> **Fecha:** 2026-09-21  
+> **Versión del Documento:** 1.2  
+> **Fecha:** 2026-09-26
 
 ---
 
@@ -78,31 +78,44 @@ export interface GaiaState {
 
 ```typescript
 // frontend/src/store/index.ts
-import { proxy } from 'valtio';
+import { proxy } from "valtio";
 
 const pending = (module: ModuleId): ModuleStatus => ({
-  state: 'error',
+  state: "error",
   lastUpdate: null,
   cachedAt: null,
   lastError: `Sin respuesta inicial de ${module}`,
 });
 
 export const state = proxy<GaiaState>({
-  layers: { fire: false, wind: false, seismic: false, flood: false, radiation: false },
-  filters: { timeRange: '24h' },
+  layers: {
+    fire: false,
+    wind: false,
+    seismic: false,
+    flood: false,
+    radiation: false,
+  },
+  filters: { timeRange: "24h" },
   flood: { seaLevel: 0, waterShaderActive: true, waveAnimation: true },
   selectedObject: null,
   telemetry: { open: false, pinned: false, anchorX: 0, anchorY: 0 },
   connectionStatus: {
-    fires: pending('fires'),
-    quakes: pending('quakes'),
-    wind: pending('wind'),
-    radiation: pending('radiation'),
-    elevation: pending('elevation'),
-    backend: pending('backend'),
-    workers: pending('workers'),
+    fires: pending("fires"),
+    quakes: pending("quakes"),
+    wind: pending("wind"),
+    radiation: pending("radiation"),
+    elevation: pending("elevation"),
+    backend: pending("backend"),
+    workers: pending("workers"),
   },
-  performance: { fps: 0, frameTimeMs: 0, drawCalls: 0, triangles: 0, geometries: 0, textures: 0 },
+  performance: {
+    fps: 0,
+    frameTimeMs: 0,
+    drawCalls: 0,
+    triangles: 0,
+    geometries: 0,
+    textures: 0,
+  },
   wind: { speedKnots: 0, particleCount: 18000 },
   seismic: { recentQuakeId: null, shockwaveActive: false },
   radiation: { criticalCount: 0 },
@@ -120,15 +133,21 @@ export const state = proxy<GaiaState>({
 ### 3.1 `LayerVisibility` — Toggles de capas
 
 ```typescript
-export const GLOBE_LAYERS = ['fire', 'wind', 'seismic', 'flood', 'radiation'] as const;
+export const GLOBE_LAYERS = [
+  "fire",
+  "wind",
+  "seismic",
+  "flood",
+  "radiation",
+] as const;
 export type LayerId = (typeof GLOBE_LAYERS)[number];
 
 export interface LayerVisibility {
-  fire: boolean;       // NASA FIRMS — InstancedMesh
-  wind: boolean;       // Open-Meteo — sistema de partículas GPU
-  seismic: boolean;    // USGS — columnas cilíndricas + ondas
-  flood: boolean;      // GEBCO — water shader + mascarado costero
-  radiation: boolean;  // Safecast/EURDEP/RadNet — InstancedMesh/heatmap
+  fire: boolean; // NASA FIRMS — InstancedMesh
+  wind: boolean; // Open-Meteo — sistema de partículas GPU
+  seismic: boolean; // USGS — columnas cilíndricas + ondas
+  flood: boolean; // GEBCO — water shader + mascarado costero
+  radiation: boolean; // Safecast/EURDEP/RadNet — InstancedMesh/heatmap
 }
 ```
 
@@ -137,9 +156,9 @@ Regla asociada: desactivar una capa **no libera** su dataset en memoria, solo de
 ### 3.2 `TimeFilter` — Rango temporal activo
 
 ```typescript
-export type TimeFilter = '24h' | '7d' | '30d';
+export type TimeFilter = "24h" | "7d" | "30d";
 
-export const TIME_FILTER_OPTIONS: TimeFilter[] = ['24h', '7d', '30d'];
+export const TIME_FILTER_OPTIONS: TimeFilter[] = ["24h", "7d", "30d"];
 ```
 
 La propiedad viva es `state.filters.timeRange`. Al mutarla se dispara un **re-filtrado asíncrono** en los workers (efecto lateral orquestado desde `setTimeFilter()`), no una mutación síncrona de datos.
@@ -180,30 +199,27 @@ export interface SelectionBase {
 }
 
 export interface FireSelection extends SelectionBase {
-  type: 'fire';
-  data: FireHotspot;        // brightness, frp, instrument, confidence, acq_date
+  type: "fire";
+  data: FireHotspot; // brightness, frp, instrument, confidence, acq_date
 }
 
 export interface QuakeSelection extends SelectionBase {
-  type: 'quake';
-  data: Earthquake;         // depth_km, magnitude, place, time
+  type: "quake";
+  data: Earthquake; // depth_km, magnitude, place, time
 }
 
 export interface WindSelection extends SelectionBase {
-  type: 'wind';
-  data: WindVector;         // u, v, speed_knots, direction_deg
+  type: "wind";
+  data: WindVector; // u, v, speed_knots, direction_deg
 }
 
 export interface RadiationSelection extends SelectionBase {
-  type: 'radiation';
-  data: RadiationReading;    // value_usvh, raw_value, raw_unit, station_id, alert_level
+  type: "radiation";
+  data: RadiationReading; // value_usvh, raw_value, raw_unit, station_id, alert_level
 }
 
 export type SelectedObject =
-  | FireSelection
-  | QuakeSelection
-  | WindSelection
-  | RadiationSelection;
+  FireSelection | QuakeSelection | WindSelection | RadiationSelection;
 ```
 
 Reglas de la selección:
@@ -215,12 +231,19 @@ Reglas de la selección:
 ### 3.5 `ConnectionStatus` — Estado por fuente de datos
 
 ```typescript
-export type ConnectionState = 'live' | 'cached' | 'fallback' | 'error';
+export type ConnectionState =
+  "loading" | "live" | "cached" | "fallback" | "error";
 
-export const DATA_MODULES = ['fires', 'quakes', 'wind', 'radiation', 'elevation'] as const;
+export const DATA_MODULES = [
+  "fires",
+  "quakes",
+  "wind",
+  "radiation",
+  "elevation",
+] as const;
 export type DataModuleId = (typeof DATA_MODULES)[number];
 
-export const INFRA_MODULES = ['backend', 'workers'] as const;
+export const INFRA_MODULES = ["backend", "workers"] as const;
 export type InfraModuleId = (typeof INFRA_MODULES)[number];
 
 export type ModuleId = DataModuleId | InfraModuleId;
@@ -238,12 +261,15 @@ export interface ModuleStatus {
 export type ConnectionStatus = Record<ModuleId, ModuleStatus>;
 ```
 
-| `state`      | Significado                                                          | Badge HUD  |
-| ------------ | ------------------------------------------------------------------- | ---------- |
-| `live`       | Datos frescos de la API externa (fetch OK).                        | `LIVE`     |
-| `cached`     | API caída/cuota agotada, se sirvió caché Redis.                    | `CACHÉ`    |
-| `fallback`   | Sin caché, se sirvió dataset local estático.                       | `RESGUARDO`|
-| `error`      | Cadena de resiliencia completa falló o falta la primera respuesta. | `ERROR`    |
+| `state`    | Significado                                                        | Badge HUD   |
+| ---------- | ------------------------------------------------------------------ | ----------- |
+| `loading`  | Petición en vuelo, aún sin respuesta.                              | `CARGANDO`  |
+| `live`     | Datos frescos de la API externa (fetch OK).                        | `LIVE`      |
+| `cached`   | API caída/cuota agotada, se sirvió caché Redis.                    | `CACHÉ`     |
+| `fallback` | Sin caché, se sirvió dataset local estático.                       | `RESGUARDO` |
+| `error`    | Cadena de resiliencia completa falló o falta la primera respuesta. | `ERROR`     |
+
+`loading` **no es un estado de alarma**: se pinta con `--gaia-text-dim` (VISUAL_DESIGN §5.1, uso "etiqueta secundaria"), no con los tokens de estado `--gaia-ok` / `--gaia-warning` / `--gaia-error` (§5.3), que quedan reservados para `live` / `cached` / `fallback` / `error`. Evita que un refresco periódico de 15 s haga parpadear el HUD en ámbar o rojo.
 
 Los módulos de infraestructura (`backend`, `workers`) reflejan salud general del proxy y de los 3 Web Workers, e informan al `StatusIndicator` incluso sin capa activa.
 
@@ -272,12 +298,12 @@ División de responsabilidades clara:
 
 ```typescript
 export interface PerformanceCounters {
-  fps: number;              // media móvil de los últimos 60 frames (Clock.ts)
-  frameTimeMs: number;      // delta del último frame
-  drawCalls: number;        // renderer.info.render.calls (objetivo ≤ 8, RNF-02)
-  triangles: number;        // renderer.info.render.triangles
-  geometries: number;       // renderer.info.memory.geometries (VRAM)
-  textures: number;         // renderer.info.memory.textures (VRAM)
+  fps: number; // media móvil de los últimos 60 frames (Clock.ts)
+  frameTimeMs: number; // delta del último frame
+  drawCalls: number; // renderer.info.render.calls (objetivo ≤ 8, RNF-02)
+  triangles: number; // renderer.info.render.triangles
+  geometries: number; // renderer.info.memory.geometries (VRAM)
+  textures: number; // renderer.info.memory.textures (VRAM)
 }
 ```
 
@@ -343,7 +369,7 @@ React muta exclusivamente dentro de **handlers de eventos** (nunca durante el re
 
 ```typescript
 // hud/SeaLevelSlider.tsx — evento onChange
-state.flood.seaLevel = nextValue;              // mutación directa
+state.flood.seaLevel = nextValue; // mutación directa
 // o mejor, centralizado:
 setSeaLevel(nextValue);
 ```
@@ -358,21 +384,21 @@ Lo que React **posee** (puede escribir):
 
 ### 4.3 Tabla de Propiedad → Dueño
 
-| Propiedad                     | Escriben (quién)                | Leen (quién)                          | Vía              |
-| ----------------------------- | ------------------------------- | ------------------------------------- | ---------------- |
-| `layers.*`                    | React — `LayerControls`         | Three.js — módulos (`setVisible`)     | Acción / directa |
-| `filters.timeRange`           | React — `TimeScrubber`          | Orquestador (workers), módulos        | Acción           |
-| `flood.seaLevel`              | React — `SeaLevelSlider`        | Three.js — uniform `u_seaLevel`       | Acción / directa |
-| `flood.waterShaderActive`     | React — controles avanzados     | Three.js — `WaterMesh`                | Directa          |
-| `flood.waveAnimation`         | React — controles avanzados     | Three.js — vertex shader de agua      | Directa          |
-| `selectedObject`              | Three.js — raycasting           | React — `TelemetryPanel` + Three.js — highlight | Acción |
-| `selectedObject = null`       | React (botón ✕) o Three.js (clic en vacío) | —                         | `clearSelection` |
-| `telemetry.*`                 | React — `TelemetryPanel`        | React — `HUDLayout` (posicionamiento) | Directa          |
-| `connectionStatus.*`          | Orquestador de datos (hilo principal, tras fetch/worker) | React — `StatusIndicator` | Acción |
-| `performance.*`               | Three.js — render loop (`Stats`) | React — overlay debug (dev, throttled)| Directa          |
-| `wind.speedKnots`             | Three.js — muestreo del campo   | React — `WindDetail`                  | Directa          |
-| `seismic.shockwaveActive`     | Three.js — `SeismicModule`      | React — badge de sismo reciente       | Directa          |
-| `radiation.criticalCount`     | Orquestador — resultado Worker 1| React — alerta HUD (`Badge critical`) | Directa          |
+| Propiedad                 | Escriben (quién)                                         | Leen (quién)                                    | Vía              |
+| ------------------------- | -------------------------------------------------------- | ----------------------------------------------- | ---------------- |
+| `layers.*`                | React — `LayerControls`                                  | Three.js — módulos (`setVisible`)               | Acción / directa |
+| `filters.timeRange`       | React — `TimeScrubber`                                   | Orquestador (workers), módulos                  | Acción           |
+| `flood.seaLevel`          | React — `SeaLevelSlider`                                 | Three.js — uniform `u_seaLevel`                 | Acción / directa |
+| `flood.waterShaderActive` | React — controles avanzados                              | Three.js — `WaterMesh`                          | Directa          |
+| `flood.waveAnimation`     | React — controles avanzados                              | Three.js — vertex shader de agua                | Directa          |
+| `selectedObject`          | Three.js — raycasting                                    | React — `TelemetryPanel` + Three.js — highlight | Acción           |
+| `selectedObject = null`   | React (botón ✕) o Three.js (clic en vacío)               | —                                               | `clearSelection` |
+| `telemetry.*`             | React — `TelemetryPanel`                                 | React — `HUDLayout` (posicionamiento)           | Directa          |
+| `connectionStatus.*`      | Orquestador de datos (hilo principal, tras fetch/worker) | React — `StatusIndicator`                       | Acción           |
+| `performance.*`           | Three.js — render loop (`Stats`)                         | React — overlay debug (dev, throttled)          | Directa          |
+| `wind.speedKnots`         | Three.js — muestreo del campo                            | React — `WindDetail`                            | Directa          |
+| `seismic.shockwaveActive` | Three.js — `SeismicModule`                               | React — badge de sismo reciente                 | Directa          |
+| `radiation.criticalCount` | Orquestador — resultado Worker 1                         | React — alerta HUD (`Badge critical`)           | Directa          |
 
 ### 4.4 Reglas Transversales
 
@@ -395,11 +421,11 @@ Lo que React **posee** (puede escribir):
 
 Ejemplos sueltos de la documentación previa se consolidan en este shape:
 
-| Referencia previa          | Propiedad oficial              |
-| -------------------------- | ------------------------------ |
+| Referencia previa           | Propiedad oficial                    |
+| --------------------------- | ------------------------------------ |
 | `state.selectedQuake.depth` | `state.selectedObject.data.depth_km` |
-| `state.windSpeed`          | `state.wind.speedKnots`        |
-| `state.seaLevel`           | `state.flood.seaLevel`         |
+| `state.windSpeed`           | `state.wind.speedKnots`              |
+| `state.seaLevel`            | `state.flood.seaLevel`               |
 
 ---
 
@@ -411,8 +437,8 @@ Los componentes React leen el estado con `useSnapshot(state)` y **solo se re-ren
 
 ```typescript
 // frontend/src/store/hooks.ts
-import { useSnapshot } from 'valtio';
-import { state } from './index';
+import { useSnapshot } from "valtio";
+import { state } from "./index";
 
 export const useGaiaState = () => useSnapshot(state);
 export const useLayerVisibility = () => useSnapshot(state.layers);
@@ -447,16 +473,16 @@ state.seismic.shockwaveActive = this.shockwave.isAnimating();
 
 ### 5.3 Tabla de Suscripción
 
-| Componente                    | Lee                        | Se re-renderiza cuando...           |
-| ----------------------------- | -------------------------- | ----------------------------------- |
-| `LayerControls`               | `state.layers`             | cambia cualquier toggle de capa    |
-| `TimeScrubber`                | `state.filters.timeRange`  | cambia el rango temporal           |
-| `SeaLevelSlider`              | `state.flood.seaLevel`     | se desliza el nivel del mar (0–10m)|
-| `StatusIndicator`             | `state.connectionStatus`   | cambia el estado de algún módulo   |
-| `TelemetryPanel`              | `state.selectedObject.type`| se selecciona/limpia un objeto     |
-| `FireDetail/QuakeDetail/...`  | `state.selectedObject.data`| cambian los datos de la selección  |
-| Overlay debug (dev)           | `state.performance`        | cada commit de métricas (~2 Hz)    |
-| Badge de alerta radiación     | `state.radiation.criticalCount` | cambia el contador crítico   |
+| Componente                   | Lee                             | Se re-renderiza cuando...           |
+| ---------------------------- | ------------------------------- | ----------------------------------- |
+| `LayerControls`              | `state.layers`                  | cambia cualquier toggle de capa     |
+| `TimeScrubber`               | `state.filters.timeRange`       | cambia el rango temporal            |
+| `SeaLevelSlider`             | `state.flood.seaLevel`          | se desliza el nivel del mar (0–10m) |
+| `StatusIndicator`            | `state.connectionStatus`        | cambia el estado de algún módulo    |
+| `TelemetryPanel`             | `state.selectedObject.type`     | se selecciona/limpia un objeto      |
+| `FireDetail/QuakeDetail/...` | `state.selectedObject.data`     | cambian los datos de la selección   |
+| Overlay debug (dev)          | `state.performance`             | cada commit de métricas (~2 Hz)     |
+| Badge de alerta radiación    | `state.radiation.criticalCount` | cambia el contador crítico          |
 
 ### 5.4 Trampas y Advertencias
 
@@ -464,8 +490,8 @@ state.seismic.shockwaveActive = this.shockwave.isAnimating();
 
    ```typescript
    const snap = useSnapshot(state);
-   snap.layers.fire = true;          // ❌ no surte efecto
-   toggleLayer('fire');               // ✅ mutar el proxy, nunca el snapshot
+   snap.layers.fire = true; // ❌ no surte efecto
+   toggleLayer("fire"); // ✅ mutar el proxy, nunca el snapshot
    ```
 
 2. **Desestructurar solo lo necesario.** `const { layers } = useSnapshot(state)` suscribe a `layers`; `const snap = useSnapshot(state)` sin desestructurar suscribe a todo lo que el render toque → re-renders más amplios. Para paneles de telemetría usa los hooks de sub-estado (`useSelectedObject`, etc.).
@@ -475,7 +501,7 @@ state.seismic.shockwaveActive = this.shockwave.isAnimating();
 4. **Suscripciones no-React.** Para reaccionar al estado sin renderizar un componente (por ejemplo: disparar el re-filtrado de workers al cambiar `filters.timeRange`), usa `subscribe()` de Valtio:
 
    ```typescript
-   import { subscribe } from 'valtio';
+   import { subscribe } from "valtio";
 
    subscribe(state.filters, () => {
      requestRefilter(state.filters.timeRange); // efecto lateral, sin DOM
@@ -490,11 +516,15 @@ state.seismic.shockwaveActive = this.shockwave.isAnimating();
 
 ```typescript
 // frontend/src/store/actions.ts
-import { state } from './index';
+import { state } from "./index";
 import type {
-  LayerId, TimeFilter, SelectedObject, ModuleId, ModuleStatus,
-} from './state.types';
-import { SEA_LEVEL_MIN, SEA_LEVEL_MAX } from './state.types';
+  LayerId,
+  TimeFilter,
+  SelectedObject,
+  ModuleId,
+  ModuleStatus,
+} from "./state.types";
+import { SEA_LEVEL_MIN, SEA_LEVEL_MAX } from "./state.types";
 
 /** Activa/desactiva una capa. Dueño: React (LayerControls). */
 export function toggleLayer(layer: LayerId): void {
@@ -510,7 +540,10 @@ export function setTimeFilter(range: TimeFilter): void {
 
 /** Actualiza el nivel del mar con clamping a [0, 10] m. Dueño: React (slider). */
 export function setSeaLevel(meters: number): void {
-  state.flood.seaLevel = Math.min(SEA_LEVEL_MAX, Math.max(SEA_LEVEL_MIN, meters));
+  state.flood.seaLevel = Math.min(
+    SEA_LEVEL_MAX,
+    Math.max(SEA_LEVEL_MIN, meters),
+  );
 }
 
 /** Selecciona un objeto por raycasting y abre el panel de telemetría. */
@@ -528,7 +561,10 @@ export function clearSelection(): void {
 }
 
 /** Actualiza el estado de conexión de un módulo (merge parcial). */
-export function setConnectionStatus(module: ModuleId, patch: Partial<ModuleStatus>): void {
+export function setConnectionStatus(
+  module: ModuleId,
+  patch: Partial<ModuleStatus>,
+): void {
   Object.assign(state.connectionStatus[module], patch);
 }
 ```
@@ -567,31 +603,38 @@ export function setConnectionStatus(module: ModuleId, patch: Partial<ModuleStatu
       error ◄────────────────────────────────────────── cached
         ▲                                                   │
         │  cadena completa falla                           │ sin caché → GeoJSON local
-        └────────────────────────────────────────────────── ▼
-                                                          fallback
+        │                                                   ▼
+        └─────────────────────────────────────────────  fallback
+
+  Todo módulo empieza en `loading` al pedir datos y solo sale al resolverse:
+       loading → live | cached | fallback | error
 ```
 
-| Transición                     | Disparador                                        | Effecto                                  |
-| ------------------------------ | ------------------------------------------------- | ---------------------------------------- |
-| `error → live`                 | Respuesta exitosa de la API externa               | `lastUpdate = now`                       |
-| `live → cached`                | Timeout / HTTP 5xx / 429, con caché Redis         | `cachedAt = now`, badge `CACHÉ`          |
-| `cached → fallback`            | Sin caché Redis, dataset local cargado            | badge `RESGUARDO` (RNF-05)               |
-| `live/cached/fallback → error` | Cadena de resiliencia completa falló              | `lastError` poblado, badge `ERROR`       |
-| `* → live`                     | Siguiente poll exitoso (recuperación automática)  | `lastError = null`                       |
+| Transición                     | Disparador                                       | Effecto                                     |
+| ------------------------------ | ------------------------------------------------ | ------------------------------------------- |
+| `* → loading`                  | El orquestador lanza una petición a la fuente    | Sin efecto colateral: solo marca "en vuelo" |
+| `loading → live`               | Respuesta exitosa de la API externa              | `lastUpdate = now`                          |
+| `live → cached`                | Timeout / HTTP 5xx / 429, con caché Redis        | `cachedAt = now`, badge `CACHÉ`             |
+| `cached → fallback`            | Sin caché Redis, dataset local cargado           | badge `RESGUARDO` (RNF-05)                  |
+| `live/cached/fallback → error` | Cadena de resiliencia completa falló             | `lastError` poblado, badge `ERROR`          |
+| `* → live`                     | Siguiente poll exitoso (recuperación automática) | `lastError = null`                          |
+
+> [!NOTE]
+> La columna "Efecto" describe **qué debe pasar el dato quien dispara la transición**, no qué limpia la acción: `setConnectionStatus()` es un merge parcial (§6.1) y no toca campos que no reciba. Por eso quien pasa a `live` tiene que enviar `lastError: null` explícitamente; si lo omite, el badge queda en `live` con el mensaje de error viejo, que es justo el estado que hay que evitar.
 
 Toda transición la aplica el **orquestador de datos** (hilo principal) vía `setConnectionStatus()`, tras integrar la respuesta del contrato universal (`cached: true` / `fallback: true`) y los resultados de los workers.
 
 ### 6.4 Contratos de Entrada
 
-| Invocada por...               | Acciones permitidas                        |
-| ----------------------------- | ------------------------------------------ |
+| Invocada por...                                                                         | Acciones permitidas                                             |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
 | Componentes React (`LayerControls`, `TimeScrubber`, `SeaLevelSlider`, `TelemetryPanel`) | `toggleLayer`, `setTimeFilter`, `setSeaLevel`, `clearSelection` |
-| Handlers de clic en el canvas (Three.js / `Engine.ts`) | `selectObject`, `clearSelection` |
-| Orquestador de datos (`main.ts` / servicios + worker results) | `setConnectionStatus` |
+| Handlers de clic en el canvas (Three.js / `Engine.ts`)                                  | `selectObject`, `clearSelection`                                |
+| Orquestador de datos (`main.ts` / servicios + worker results)                           | `setConnectionStatus`                                           |
 
 > [!IMPORTANT]
 > `selectedObject` tiene **dos** escritores válidos (Three.js al clicar, React/Three.js al limpiar), pero ambos pasan por la misma acción. Esta es la única propiedad con doble entrada; el resto respeta la tabla de dueños de la sección 4.3.
 
 ---
 
-*Este documento complementa el [Stack Tecnológico](./GAIA_TECH_STACK.md) y los [Workflows](./GAIA_WORKFLOWS.md) del proyecto GAIA.*
+_Este documento complementa el [Stack Tecnológico](./GAIA_TECH_STACK.md) y los [Workflows](./GAIA_WORKFLOWS.md) del proyecto GAIA._
