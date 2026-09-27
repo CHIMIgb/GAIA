@@ -1,8 +1,8 @@
 # GAIA — Estructura del Proyecto
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.3  
-> **Fecha:** 2026-09-26
+> **Versión del Documento:** 1.4  
+> **Fecha:** 2026-09-27
 
 ---
 
@@ -270,6 +270,9 @@ backend/
 │   ├── test_contract.py               ← Verifica que TODA respuesta cumple el schema { success, data, error }
 │   └── test_fallback.py               ← Simula fallo de API externa → verifica cadena de resiliencia
 │
+├── scripts/                            ← Utilidades de verificación (solo stdlib)
+│   └── smoke.py                        ← Smoke test E2E: /api/health + rate-limit + carga mínima del frontend (ROADMAP 0.5.1)
+│
 ├── requirements.txt                   ← Dependencias Python (pip)
 ├── pyproject.toml                     ← Metadata del proyecto Python + configuración de herramientas
 ├── Dockerfile                         ← Imagen Docker para producción (python:3.12-slim + uvicorn)
@@ -501,6 +504,14 @@ Mapeo por tabla: hipertabla por tiempo para datos de eventos; TTL físico vía r
 | `bundle-budget.mjs` | Mide el tamaño **gzip** de cada chunk de `dist/assets/` y falla con `exit 1` si el JS inicial, el chunk de arranque o el de Three.js se pasan del presupuesto. Sin dependencias: `node:zlib`. Los límites y su procedencia están en `GAIA_DEPLOYMENT.md` §5.1 (RNF-01), no aquí. |
 
 Se ejecuta con `npm run perf:check` tras `npm run build`, y es el paso `perf:check` del CI.
+
+### 5.14 `backend/scripts/` — Verificaciones de la Plataforma
+
+| Archivo    | Contenido                                                                                                                                                                                                                                                                                                                                    |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `smoke.py` | Smoke test E2E (ROADMAP 0.5.1): recorre `/api/health` con Redis conectado, un burst que debe acabar en `429 UPSTREAM_RATE_LIMITED` y la carga mínima del frontend (su HTML y el bundle de JS que ese HTML carga). Falla con `exit 1`. Sin dependencias: `urllib` + `json`. Se ejecuta con el entorno de `GAIA_DEPLOYMENT.md` §3.2 levantado. |
+
+Lo que exige un navegador de verdad (consola, canvas, workers) es el smoke de Playwright del paso 0.6.9, no este script.
 
 #### Baseline medido del bundle (ROADMAP 0.4.4, 2026-09-26)
 

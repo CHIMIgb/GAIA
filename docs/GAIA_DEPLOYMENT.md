@@ -1,7 +1,7 @@
 # GAIA — Guía de Despliegue
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.8  
+> **Versión del Documento:** 1.9  
 > **Fecha:** 2026-09-27
 
 ---
@@ -103,6 +103,21 @@ curl http://localhost:8000/api/health
 
 curl 'http://localhost:8000/api/fires?hours=24'   # contrato universal
 ```
+
+Con el entorno de §3.2 levantado, el smoke test del paso 0.5.1 del
+[ROADMAP](./GAIA_ROADMAP.md) recorre ese flujo(base de datos incluida) y sale con
+código 1 si algo falla, para poder encadenarlo en el CI:
+
+```bash
+python backend/scripts/smoke.py --api http://localhost:8000 --frontend http://localhost:5173
+```
+
+> [!NOTE]
+> Recorre `/api/health` (contrato universal + Redis conectado), un burst que debe
+> acabar en `429 UPSTREAM_RATE_LIMITED` y la carga mínima del frontend (su HTML y el
+> bundle de JS que ese HTML carga). Es solo stdlib: no necesita `requests` ni las
+> dependencias del backend. Lo que exige un navegador de verdad (consola, canvas,
+> workers) es el smoke de Playwright del paso 0.6.9.
 
 ### 3.4 Ejecutar los Tests
 
