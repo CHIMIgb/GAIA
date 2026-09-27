@@ -22,6 +22,7 @@ from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.models.response import CODE_BY_STATUS, APIResponse, ErrorCode
 from app.routers import health
+from app.services.http_client import build_client
 from app.services.session import SessionMiddleware
 
 logger = logging.getLogger(__name__)
@@ -29,7 +30,9 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    app.state.http = build_client()
     yield
+    await app.state.http.aclose()
     await close_redis()
 
 

@@ -1,7 +1,7 @@
 # GAIA — Estructura del Proyecto
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.4  
+> **Versión del Documento:** 1.5  
 > **Fecha:** 2026-09-27
 
 ---
@@ -233,7 +233,7 @@ backend/
 │   │   ├── safecast_client.py         ← Fetch asíncrono a Safecast API (radiación global)
 │   │   ├── eurdep_client.py           ← Fetch asíncrono a EURDEP / JRC REMON (radiación Europa)
 │   │   ├── radiation_normalizer.py    ← Conversión de unidades: CPM → µSv/h, nSv/h → µSv/h
-│   │   └── http_client.py             ← httpx.AsyncClient compartido: timeouts, reintentos, headers comunes
+│   │   └── http_client.py             ← httpx2.AsyncClient compartido: timeouts, reintentos, headers comunes
 │   │
 │   ├── cache/                         ← Integración con Redis
 │   │   ├── __init__.py
@@ -438,15 +438,15 @@ Todos retornan el [formato de contrato universal](./GAIA_API_CONTRACT.md): `{ su
 
 ### 5.9 `backend/app/services/` — Clientes de APIs Externas
 
-| Archivo                   | API Externa     | Operación                                                                        |
-| ------------------------- | --------------- | -------------------------------------------------------------------------------- |
-| `firms_client.py`         | NASA FIRMS      | Fetch asíncrono de anomalías térmicas (VIIRS/MODIS). Acepta `MAP_KEY`.           |
-| `usgs_client.py`          | USGS Earthquake | Fetch de feeds GeoJSON precompilados (por magnitud y rango temporal).            |
-| `openmeteo_client.py`     | Open-Meteo      | Fetch de viento (U,V) y elevación puntual. Sin API Key.                          |
-| `safecast_client.py`      | Safecast        | Fetch de mediciones radiológicas por lat/lon/distancia. Sin API Key.             |
-| `eurdep_client.py`        | EURDEP / JRC    | Fetch de dosis radiológicas europeas. Sin API Key.                               |
-| `radiation_normalizer.py` | —               | Conversión de unidades: `CPM / 334 → µSv/h`, `nSv/h / 1000 → µSv/h`.             |
-| `http_client.py`          | —               | `httpx.AsyncClient` singleton con timeout de 5s, 3 reintentos y headers comunes. |
+| Archivo                   | API Externa     | Operación                                                                         |
+| ------------------------- | --------------- | --------------------------------------------------------------------------------- |
+| `firms_client.py`         | NASA FIRMS      | Fetch asíncrono de anomalías térmicas (VIIRS/MODIS). Acepta `MAP_KEY`.            |
+| `usgs_client.py`          | USGS Earthquake | Fetch de feeds GeoJSON precompilados (por magnitud y rango temporal).             |
+| `openmeteo_client.py`     | Open-Meteo      | Fetch de viento (U,V) y elevación puntual. Sin API Key.                           |
+| `safecast_client.py`      | Safecast        | Fetch de mediciones radiológicas por lat/lon/distancia. Sin API Key.              |
+| `eurdep_client.py`        | EURDEP / JRC    | Fetch de dosis radiológicas europeas. Sin API Key.                                |
+| `radiation_normalizer.py` | —               | Conversión de unidades: `CPM / 334 → µSv/h`, `nSv/h / 1000 → µSv/h`.              |
+| `http_client.py`          | —               | `httpx2.AsyncClient` singleton con timeout de 5s, 3 reintentos y headers comunes. |
 
 ---
 
@@ -471,7 +471,7 @@ Todos retornan el [formato de contrato universal](./GAIA_API_CONTRACT.md): `{ su
 
 | Archivo             | Qué verifica                                                                    |
 | ------------------- | ------------------------------------------------------------------------------- |
-| `conftest.py`       | Fixtures: `TestClient` de FastAPI, mock de Redis (fakeredis), mock de httpx.    |
+| `conftest.py`       | Fixtures: `TestClient` de FastAPI, mock de Redis (fakeredis), mock de httpx2.   |
 | `test_fires.py`     | Endpoint `/api/fires`: respuesta exitosa, caché hit, fallback local.            |
 | `test_quakes.py`    | Endpoint `/api/earthquakes`: respuesta exitosa, validación de params, fallback. |
 | `test_wind.py`      | Endpoint `/api/wind`: respuesta exitosa, formato de rejilla.                    |
@@ -568,7 +568,7 @@ El bundle es hoy un único chunk porque el grafo es React + Valtio + el cliente 
 | `fastapi`             | Framework web asíncrono                          |
 | `uvicorn[standard]`   | Servidor ASGI de alto rendimiento                |
 | `pydantic`            | Validación de datos y modelos de respuesta       |
-| `httpx`               | Cliente HTTP asíncrono (fetch a APIs externas)   |
+| `httpx2`              | Cliente HTTP asíncrono (fetch a APIs externas)   |
 | `redis`               | Cliente Redis asíncrono (`redis>=5`, API async)  |
 | `numpy`               | Procesamiento de matrices (viento GRIB2)         |
 | `shapely`             | Operaciones geométricas espaciales               |

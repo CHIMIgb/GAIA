@@ -1,7 +1,7 @@
 # GAIA — Guía de Despliegue
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.9  
+> **Versión del Documento:** 1.10  
 > **Fecha:** 2026-09-27
 
 ---
@@ -547,7 +547,7 @@ Versiones **objetivo** a fijar en `package.json` y `backend/pyproject.toml`. Las
 | `sqlalchemy[asyncio]` | (según lockfile) | ORM asíncrono (asyncpg) para la DB de históricos |
 | `asyncpg`             | (según lockfile) | Driver PostgreSQL 18 (pool async)                |
 | `alembic`             | (según lockfile) | Migraciones de esquema de la DB                  |
-| `httpx`               | `^0.27.2`        | Cliente HTTP asíncrono (upstreams)               |
+| `httpx2`              | `^2.13.1`        | Cliente HTTP asíncrono (upstreams)               |
 | `redis`               | `^5.0.7`         | Cliente Redis asyncio (`redis>=5`, API async)    |
 | `numpy`               | `^2.1.1`         | Procesamiento de rejillas de viento              |
 | `shapely`             | `^2.0.6`         | Operaciones geométricas                          |

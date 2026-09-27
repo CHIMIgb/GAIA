@@ -1,7 +1,7 @@
 # GAIA — Plan de Testing y Métricas de Rendimiento
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.3  
+> **Versión del Documento:** 1.4  
 > **Fecha:** 2026-09-26
 
 ---
@@ -215,14 +215,14 @@ function dumpGPUInfo() {
 
 ### 5.1 Backend (pytest) — Cadena de Fallback
 
-Se simulan fallos de APIs externas con **mock de `httpx`** (fixtures en `tests/conftest.py`):
+Se simulan fallos de APIs externas con **mock de `httpx2`** (fixtures en `tests/conftest.py`):
 
-| Fixture / Test            | Simula                   | Verifica                                        |
-| ------------------------- | ------------------------ | ----------------------------------------------- |
-| `mocked_upstream_timeout` | `httpx.TimeoutException` | Respuesta `UPSTREAM_TIMEOUT`, luego caché/local |
-| `mocked_upstream_5xx`     | HTTP 500/502 externo     | Respuesta `UPSTREAM_UNAVAILABLE`                |
-| `mocked_upstream_429`     | HTTP 429 (rate-limit)    | Respuesta `UPSTREAM_RATE_LIMITED`               |
-| `test_fallback.py`        | Fallo total de la API    | Cadena completa **Redis → API → Local**         |
+| Fixture / Test            | Simula                    | Verifica                                        |
+| ------------------------- | ------------------------- | ----------------------------------------------- |
+| `mocked_upstream_timeout` | `httpx2.TimeoutException` | Respuesta `UPSTREAM_TIMEOUT`, luego caché/local |
+| `mocked_upstream_5xx`     | HTTP 500/502 externo      | Respuesta `UPSTREAM_UNAVAILABLE`                |
+| `mocked_upstream_429`     | HTTP 429 (rate-limit)     | Respuesta `UPSTREAM_RATE_LIMITED`               |
+| `test_fallback.py`        | Fallo total de la API     | Cadena completa **Redis → API → Local**         |
 
 ```python
 # backend/tests/test_fallback.py (esquema)
@@ -269,7 +269,7 @@ Se verifica que:
 
 ## 6. Tests Unitarios y de Integración
 
-### 6.1 Backend — pytest + httpx.AsyncClient
+### 6.1 Backend — pytest + httpx2.AsyncClient
 
 | Archivo             | Qué verifica                                                                     |
 | ------------------- | -------------------------------------------------------------------------------- |

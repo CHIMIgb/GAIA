@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.29
+> **Versión del Documento:** 1.30
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -205,7 +205,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.6.3 — Mock de fuentes externas**
 
-- [ ] Abstracción para mockear las llamadas HTTP a fuentes (FIRMS, USGS, Open-Meteo, etc.) en los tests de backend (httpx MockTransport / respx).
+- [ ] Abstracción para mockear las llamadas HTTP a fuentes (FIRMS, USGS, Open-Meteo, etc.) en los tests de backend (httpx2 MockTransport). _*(realizado, pendiente de validación: `app/services/http_client.py` con el seam `build_client(transport=...)` y 4 tests con `MockTransport` que no tocan red. Los fixtures con nombre de TESTING §5 —`mocked_upstream_429` y compañía— llegan con los módulos de F2.)*_
 - **Criterio:** un módulo de prueba se testea sin red real.
 - **Estimado:** ~1.25 h.
 
