@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.34
+> **Versión del Documento:** 1.35
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -217,7 +217,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.6.5 — Test de rate-limit global**
 
-- [ ] Test que supera 120 r/m y verifica 429 + burst hasta 240. _*(realizado, pendiente de validación: el burst 240, la sostenida 120/min, el techo de capacidad, la exención de `/api/health` y el 429 antes que la sesión ya los cubrían los tests de 0.2.3; faltaba la dimensión real del bucket `{IP}:{endpoint}`, que es la que se ha añadido.)*_
+- [x] Test que supera 120 r/m y verifica 429 + burst hasta 240. _*(validado: el burst 240, la sostenida 120/min, el techo de capacidad, la exención de `/api/health` y el 429 antes que la sesión ya los cubrían los tests de 0.2.3; se añadió la dimensión real del bucket `{IP}:{endpoint}`, que sin ella un solo cliente podía dejar sin servicio a los demás sin que ningún test se enterara.)*_
 - **Criterio:** el test documenta el comportamiento real del límite.
 - **Estimado:** ~1.25 h.
 
