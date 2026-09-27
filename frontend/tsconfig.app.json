@@ -20,7 +20,14 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+
+    /* El paquete interno se consume como fuente (su `main` es `src/index.ts`, sin
+       paso de build). El symlink del workspace solo existe si se instala desde la
+       raíz, y el CI hace `npm ci` dentro de `frontend/`: sin esto, TS2307. */
+    "paths": {
+      "@gaia/shared": ["../shared/src/index.ts"]
+    }
   },
   "include": ["src"]
 }
