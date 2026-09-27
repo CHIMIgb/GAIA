@@ -1,4 +1,5 @@
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
+from pathlib import Path
 
 import pytest
 from fakeredis import aioredis
@@ -6,6 +7,8 @@ from fastapi.testclient import TestClient
 
 from app.cache import redis_client
 from app.main import app
+
+FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 
 @pytest.fixture
@@ -29,3 +32,21 @@ def fake_redis(monkeypatch):
     # conviven el loop del TestClient y el del propio test).
     monkeypatch.setattr(redis_client, "_redis_loop", redis_client._LOOP_ANY)
     return redis
+
+
+@pytest.fixture
+def sample() -> Callable[[str], str]:
+    """Gestor de fixtures (ROADMAP 0.6.4): texto crudo de una muestra de
+    `tests/fixtures`, que es lo que devuelve una respuesta de verdad.
+
+    Falla ruidosamente si el nombre no existe, porque un `open()` tolerante
+    convierte un typo en un test que pasa sin comprobar nada.
+    """
+
+    def _read(name: str) -> str:
+        path = FIXTURES_DIR / name
+        if not path.is_file():
+            raise FileNotFoundError(f"no hay fixture {name!r} en {FIXTURES_DIR}")
+        return path.read_text(encoding="utf-8")
+
+    return _read

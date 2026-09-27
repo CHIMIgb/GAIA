@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.31
+> **Versión del Documento:** 1.32
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -211,7 +211,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.6.4 — Gestor de fixtures**
 
-- [ ] Carpeta `backend/tests/fixtures` con muestras JSON/CSV por fuente (y `shared/test-fixtures` cuando el worker las necesite).
+- [ ] Carpeta `backend/tests/fixtures` con muestras JSON/CSV por fuente (y `shared/test-fixtures` cuando el worker las necesite). _*(realizado, pendiente de validación: `backend/tests/fixtures/fires_viirs_nrt_sample.csv` es la cabecera y la fila que documenta DATA_SOURCES, tal cual; la fixture `sample` de `conftest.py` devuelve el texto crudo y falla si el nombre no existe. La usan 2 tests. `shared/test-fixtures` espera a que el worker necesite muestras.)*_
 - **Criterio:** fixtures versionados y usados por varios tests.
 - **Estimado:** ~1 h.
 
