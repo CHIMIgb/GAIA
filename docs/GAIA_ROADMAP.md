@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.73
+> **Versión del Documento:** 1.74
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-28
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -362,7 +362,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.8.5 — CHANGELOG y versionado**
 
-- [x] CHANGELOG semántico y etiquetado de releases. _(realizado, pendiente de validación: `docs/GAIA_CHANGELOG.md` v1.0, con `Unreleased` para F0 y el `v0.1.0` al cerrar la fase)_
+- [x] CHANGELOG semántico y etiquetado de releases. _(validado: `docs/GAIA_CHANGELOG.md` v1.0, con `Unreleased` para F0 y el `v0.1.0` al cerrar la fase)_
 - **Criterio:** cada fase añade su entrada.
 - **Estimado:** ~0.75 h.
 
