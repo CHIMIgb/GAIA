@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.70
+> **Versión del Documento:** 1.71
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-28
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -350,7 +350,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.8.3 — Guía de contribución**
 
-- [x] CONTRIBUTING con setup, tests y pre-commit. _(realizado, pendiente de validación: `docs/GAIA_CONTRIBUTING.md` v1.0)_
+- [x] CONTRIBUTING con setup, tests y pre-commit. _(validado: `docs/GAIA_CONTRIBUTING.md` v1.0)_
 - **Criterio:** un nuevo dev sigue la guía sin dudas.
 - **Estimado:** ~0.75 h.
 
