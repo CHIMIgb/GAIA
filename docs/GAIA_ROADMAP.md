@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.52
+> **Versión del Documento:** 1.53
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -309,7 +309,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.8 — Docs de presupuestos**
 
-- [x] Sección de presupuestos en `GAIA_PERFORMANCE` (o SPEC). _*(realizado, pendiente de validación: creado `docs/GAIA_PERFORMANCE.md` v1.0 con §2 presupuestos canónicos referenciados a su doc de origen (SPEC RNF-01/RNF-02/RNF-06, TESTING §3.2-§3.4, ROADMAP §17), §3 assets por módulo, §4 baselines, §5 herramientas reales y §6 trazabilidad; fila en el README. Consistente con §17: los valores se citan, no se repiten.)*_
+- [ ] Sección de presupuestos en `GAIA_PERFORMANCE` (o SPEC). _*(realizado, pendiente de validación: creado `docs/GAIA_PERFORMANCE.md` v1.0 con §2 presupuestos canónicos referenciados a su doc de origen (SPEC RNF-01/RNF-02/RNF-06, TESTING §3.2-§3.4, ROADMAP §17), §3 assets por módulo, §4 baselines, §5 herramientas reales y §6 trazabilidad; fila en el README. Consistente con §17: los valores se citan, no se repiten.)*_
 - **Criterio:** documentado y consistente con §17 del ROADMAP.
 - **Estimado:** ~0.75 h.
 
