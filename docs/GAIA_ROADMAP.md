@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.48
+> **Versión del Documento:** 1.49
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -273,7 +273,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.2 — Timing de respuestas de API**
 
-- [ ] Log de duración por endpoint (nominal/p95) en dev.
+- [ ] Log de duración por endpoint (nominal/p95) en dev. _*(realizado, pendiente de validación: `app/services/timing.py` acumula por ruta `/api/*` una ventana de 100 muestras y escribe una línea INFO por petición con `avg` y `p95`; nominal = promedio (decidido por el usuario, la doc no lo fijaba). Reutiliza el `perf_counter` que `AccessLogMiddleware` ya calculaba, sin segundo timer, y solo con `DEBUG` (DEPLOYMENT §4.1), que ya existía. Dos topes deliberados: ventana de 100 muestras y 64 endpoints, porque las claves salen de la URL y un escáner de rutas inventadas crecería la memoria. Criterio verificado: con `DEBUG` la petición a `/api/_rl-probe` deja una línea `duración GET /api/_rl-probe avg=… p95=… n=1` en el log, y sin `DEBUG` ninguna. Mutaciones: p95→mediana tumba 2 tests; quitar la puerta `DEBUG` tumba 2. Verde: 73 passed / 8 skipped al 96.50 %.)*_
 - **Criterio:** tiempos visibles en logs del backend.
 - **Estimado:** ~1 h.
 
