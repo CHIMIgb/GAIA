@@ -81,6 +81,38 @@ test("el overlay de dev muestra FPS y se oculta con la tecla d", async ({
   await expect(overlay).toBeVisible();
 });
 
+test("el overlay detecta el frame largo al bloquear el main thread", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  const overlay = page.getByTestId("dev-overlay");
+  await expect(overlay).toBeVisible();
+
+  // Bloqueo deliberado de ~180 ms. Tiene que pasar del techo de 50 ms de LoAF: por debajo
+  // de ese umbral el navegador no emite entrada y no hay nada que atribuir.
+  await page.evaluate(() => {
+    const fin = performance.now() + 180;
+    while (performance.now() < fin) {
+      /* bloquear a propósito */
+    }
+  });
+
+  // Las dos detecciones de 0.7.7: el frame que se pasó de presupuesto y el frame largo
+  // que el navegador atribuyó. `toContainText` reintenta solo, así que cubre el refresco
+  // de 250 ms sin meter esperas a mano.
+  await expect(overlay).toContainText(/lframe [1-9]/);
+  await expect(overlay).toContainText(/loaf   [1-9]/);
+  await expect(overlay).not.toContainText("loaf   0");
+
+  // La duración es el dato que sirve para buscar el culpable: tiene que ser del orden del
+  // bloqueo, no un resto.
+  const peor = await overlay.locator("xpath=.").innerText();
+  const duracion = Number(peor.match(/loaf\s+[1-9]\d*\s+peor ([\d.]+)/)?.[1]);
+  expect(duracion).toBeGreaterThan(50);
+  expect(duracion).toBeLessThan(400);
+});
+
 test("un dato mock deja el módulo en live", async ({ page }) => {
   // Sobre del contrato con un solo hotspot (`docs/GAIA_API_CONTRACT.md` §2).
   const mockDato: MockDato = {

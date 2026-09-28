@@ -12,6 +12,7 @@ import {
   WINDOW_FRAMES,
   computeStats,
   registerDrawCallsSource,
+  summarizeLongTasks,
 } from "../../src/utils/frameStats";
 
 /** `frames` de duración constante: el FPS es la inversa de la media. */
@@ -69,5 +70,33 @@ describe("ventana de muestras", () => {
   it("es de 2 s a 60 FPS", () => {
     // 120 frames ≈ 2 s: la ventana que se muestra en el overlay.
     expect(WINDOW_FRAMES).toBe(120);
+  });
+});
+
+describe("frames largos y LoAF (0.7.7)", () => {
+  it("cuenta los frames que pasan de 18 ms, y solo esos", () => {
+    // 18 ms es el p95 de `TESTING` §3.2: 18 clavado todavía entra, 18.1 se pasa. Y 33
+    // es el frame perdido de manual, el que el usuario nota de verdad.
+    const stats = computeStats([17, 18, 17, 33, 18.1]);
+
+    expect(stats.longFrames).toBe(2);
+  });
+
+  it("una ventana a 60 FPS da 0 frames largos, no n/d", () => {
+    // Aquí el 0 sí es una medida: se observaron todos los frames y ninguno pasó.
+    expect(computeStats(aFrames(16.67, 30)).longFrames).toBe(0);
+  });
+
+  it("resume los frames largos atribuidos con el peor de la ventana", () => {
+    expect(summarizeLongTasks([58, 121, 60])).toEqual({
+      tasks: 3,
+      worstMs: 121,
+    });
+  });
+
+  it("sin frames atribuidos muestra n/d en vez de un 0 inventado", () => {
+    // Igual que las draw calls: `0` parecería "se midió y valió 0 ms", que es
+    // mentira, y además en Firefox/Safari es la API entera la que no existe.
+    expect(summarizeLongTasks([])).toEqual({ tasks: 0, worstMs: null });
   });
 });

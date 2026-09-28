@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.56
+> **Versión del Documento:** 1.57
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-28
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -303,7 +303,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.7 — Perfilador dev overlay**
 
-- [ ] Overlay para perfilar frames (long tasks) en dev.
+- [ ] Overlay para perfilar frames (long tasks) en dev. _*(realizado, pendiente de validación: el overlay de 0.7.1 suma dos detecciones, porque el criterio de "> 16 ms" y la API que el doc nombraba no pueden cumplirse a la vez. `lframe` cuenta los frames de la ventana que pasan de **18 ms** (el p95 de `TESTING` §3.2, no los 16.67 ms del frame budget: a 60 Hz todo frame dura eso y el contador marcaba 30 de 46 frames en una app sana), y `loaf` atribuye el bloqueo con `PerformanceObserver('long-animation-frame')`, que solo entrega frames de ≥ 50 ms. Sin atribución, el contador dice cuántos frames se pasaron de presupuesto pero no cuánto duró el culpable; con ella, ambos datos. Criterio verificado: el E2E bloquea el main thread 180 ms y ve subir `lframe` y `loaf` con la duración del bloqueo, dentro de rango (50–400 ms); donde la API no existe (Firefox, Safari) el overlay muestra `n/d` y no un 0. Desviación de herramienta registrada en `GAIA_PERFORMANCE.md` §5.1: se usa LoAF y no `longtask` porque en Chromium headless este último no emite entrada ni con un bloqueo de 1200 ms (`getEntriesByType('longtask')` = 0), medido, mientras LoAF reporta 182 ms por 180. Mutaciones: `>` por `>=` en el umbral tumba 1 test; `n/d` por `0` en la peor duración tumba 1; cambiar LoAF por `longtask` tumba el E2E. Verde: lint 0 warnings, `tsc -b` limpio, 59 unit, 5 E2E.)*_
 - **Criterio:** se detectan tareas > 16 ms.
 - **Estimado:** ~1 h.
 

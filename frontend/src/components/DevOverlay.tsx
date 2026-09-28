@@ -17,8 +17,11 @@ import { useEffect, useRef, useState } from "react";
 
 import {
   WINDOW_FRAMES,
+  WINDOW_LONG_TASKS,
   computeStats,
+  summarizeLongTasks,
   type FrameStats,
+  type LongTaskStats,
 } from "../utils/frameStats";
 
 /** Cuántas veces por segundo se refrescan los números (no en cada frame). */
@@ -47,13 +50,40 @@ const styles: Record<string, React.CSSProperties> = {
 
 export function DevOverlay(): React.JSX.Element | null {
   const [stats, setStats] = useState<FrameStats | null>(null);
+  const [longTasks, setLongTasks] = useState<LongTaskStats>({
+    tasks: 0,
+    worstMs: null,
+  });
   const [visible, setVisible] = useState(true);
   const samples = useRef<number[]>([]);
+  const loafDurations = useRef<number[]>([]);
 
   useEffect(() => {
     let raf = 0;
     let previous = performance.now();
     let lastRefresh = previous;
+
+    // Frames largos atribuidos (ROADMAP 0.7.7). Se observan con
+    // `long-animation-frame` (LoAF) y no con `longtask`: medido en este repo, `longtask`
+    // no emite ninguna entrada en Chromium headless ni con un bloqueo de 1200 ms
+    // (`getEntriesByType('longtask')` = 0), mientras LoAF reporta 182 ms por un bloqueo
+    // de 180 ms. `supportedEntryTypes` decide si la API existe: en Firefox y Safari no
+    // existe y el overlay se queda en `n/d` en vez de fingir que no hubo bloqueos.
+    let observer: PerformanceObserver | null = null;
+    if (
+      typeof PerformanceObserver !== "undefined" &&
+      PerformanceObserver.supportedEntryTypes?.includes("long-animation-frame")
+    ) {
+      observer = new PerformanceObserver((lista) => {
+        for (const entry of lista.getEntries()) {
+          loafDurations.current.push(entry.duration);
+          if (loafDurations.current.length > WINDOW_LONG_TASKS) {
+            loafDurations.current.shift();
+          }
+        }
+      });
+      observer.observe({ type: "long-animation-frame" });
+    }
 
     const tick = (now: number): void => {
       const delta = now - previous;
@@ -66,6 +96,7 @@ export function DevOverlay(): React.JSX.Element | null {
       if (now - lastRefresh >= REFRESH_MS) {
         lastRefresh = now;
         setStats(computeStats(samples.current));
+        setLongTasks(summarizeLongTasks(loafDurations.current));
       }
       raf = requestAnimationFrame(tick);
     };
@@ -86,6 +117,7 @@ export function DevOverlay(): React.JSX.Element | null {
 
     return () => {
       cancelAnimationFrame(raf);
+      observer?.disconnect();
       window.removeEventListener("keydown", onKey);
     };
   }, []);
@@ -93,9 +125,11 @@ export function DevOverlay(): React.JSX.Element | null {
   if (!visible) return null;
   if (!stats) return null;
 
+  const peor = longTasks.worstMs === null ? "n/d" : `${longTasks.worstMs} ms`;
+
   return (
     <div style={styles.overlay} data-testid="dev-overlay" aria-hidden="true">
-      {`fps  ${stats.fps.toFixed(1)}\np95  ${stats.p95Ms.toFixed(1)} ms\ndraw ${stats.drawCalls ?? "n/d"}\nvent  ${stats.frames}`}
+      {`fps    ${stats.fps.toFixed(1)}\np95    ${stats.p95Ms.toFixed(1)} ms\ndraw   ${stats.drawCalls ?? "n/d"}\nvent   ${stats.frames}\nlframe ${stats.longFrames}\nloaf   ${longTasks.tasks} peor ${peor}`}
       <div style={styles.hint}>d oculta</div>
     </div>
   );

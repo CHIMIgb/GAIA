@@ -1,6 +1,6 @@
 # GAIA — Performance
 
-> **Versión del Documento:** 1.1
+> **Versión del Documento:** 1.2
 > **Fecha:** 2026-09-28
 > **Propósito:** presupuestos, umbrales y baselines de rendimiento de GAIA. Referencia, no fuente: los valores canónicos viven en su doc de origen y aquí solo se citan.
 
@@ -108,14 +108,42 @@ comparan las siguientes. Sirve para distinguir "ha ido mal" de "ya iba mal".
 
 ## 5. Herramientas de medición (estado real, no la prescripción)
 
-| Qué                      | Herramienta                                        | Estado                                                                                                                 |
-| ------------------------ | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Presupuesto de bundle    | `npm run perf:check` + `bundle-budget.mjs`         | En uso desde 0.6.x                                                                                                     |
-| Métricas de frame en dev | `DevOverlay` (FPS, p95, draw calls)                | Desde 0.7.1                                                                                                            |
-| Duración por endpoint    | Línea `duración …avg=…p95=…` con `DEBUG`           | Desde 0.7.2                                                                                                            |
-| Tareas largas (> 16 ms)  | `PerformanceObserver('longtask')`                  | Pendiente (0.7.7)                                                                                                      |
-| FCP                      | `npm run fcp` (Playwright + `PerformanceObserver`) | Desde 0.7.4 — baseline en §4.2                                                                                         |
-| Análisis por chunk       | `rollup-plugin-visualizer` o `size-limit`          | Pendiente (0.7.6); `TESTING` §3.4 lo menciona, `PROJECT_STRUCTURE` §2 lo presupone en `vite.plugins.ts`, que no existe |
+| Qué                      | Herramienta                                                             | Estado                                                                                                                 |
+| ------------------------ | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Presupuesto de bundle    | `npm run perf:check` + `bundle-budget.mjs`                              | En uso desde 0.6.x                                                                                                     |
+| Métricas de frame en dev | `DevOverlay` (FPS, p95, draw calls)                                     | Desde 0.7.1                                                                                                            |
+| Duración por endpoint    | Línea `duración …avg=…p95=…` con `DEBUG`                                | Desde 0.7.2                                                                                                            |
+| Frames largos            | `DevOverlay` (contador) + `PerformanceObserver('long-animation-frame')` | Desde 0.7.7 — ver la nota de dos umbrales                                                                              |
+| FCP                      | `npm run fcp` (Playwright + `PerformanceObserver`)                      | Desde 0.7.4 — baseline en §4.2                                                                                         |
+| Análisis por chunk       | `rollup-plugin-visualizer` o `size-limit`                               | Pendiente (0.7.6); `TESTING` §3.4 lo menciona, `PROJECT_STRUCTURE` §2 lo presupone en `vite.plugins.ts`, que no existe |
+
+### 5.1 Los dos umbrales de los frames largos (0.7.7)
+
+El criterio de 0.7.7 pide detectar tareas de más de 16 ms, pero el presupuesto por frame
+de 60 Hz es 16.67 ms (`TESTING` §3.2): a 60 Hz _todo_ frame dura eso, así que un umbral
+de 16 contaría el 100 % de los frames. El contador usa por eso el otro umbral del mismo
+doc, **p95 ≤ 18 ms**, que además es el que no se llena de ruido: medido en este repo, con
+16.67 ms una app sana marcaba 30 de 46 frames sin un solo tirón.
+
+Y hay un techo que ningún umbral de GAIA puede bajar por sí solo: las APIs del navegador
+que atribuyen el bloqueo solo existen a partir de **50 ms** (`PerformanceLongTaskTiming`
+en MDN). Por eso el overlay lleva dos detecciones que no se solapan:
+
+| Señal               | Umbral | Qué contesta                                              |
+| ------------------- | ------ | --------------------------------------------------------- |
+| `lframe` (contador) | 18 ms  | ¿cuántos frames se pasaron de presupuesto?                |
+| `loaf` (atribución) | 50 ms  | ¿cuánto duró el frame bloqueado? (el contador no lo sabe) |
+
+**Desviación de herramienta, medida no supuesta:** la atribución se hace con
+`long-animation-frame` (LoAF) y no con `longtask`, que es lo que daba la primera versión de
+esta tabla. La razón está medida en el repo, no es una preferencia: en Chromium headless
+`longtask` no emite ninguna entrada ni con un bloqueo de 1 200 ms
+(`performance.getEntriesByType('longtask')` devuelve 0), mientras LoAF reporta 182 ms por
+un bloqueo de 180 ms, 610 por 600 y 1 217 por 1 200. Con `longtask` la mitad de la
+detección sería inverificable y saldría siempre en `0`.
+
+LoAF es Chromium-only, como lo era `longtask`: en Firefox y Safari `supportedEntryTypes`
+no lo lista y el overlay muestra `n/d` en vez de un 0 que parecería una medición.
 
 ## 6. Trazabilidad
 

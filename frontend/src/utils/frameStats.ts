@@ -9,6 +9,23 @@
 /** Muestras de frame que se guardan; a 60 FPS son los últimos ~2 s. */
 export const WINDOW_FRAMES = 120;
 
+/**
+ * Presupuesto por frame: `TESTING` §3.2 fija p95 ≤ 18 ms, y es el umbral con el que se
+ * cuenta un frame largo.
+ *
+ * No se usa el 16.67 ms del frame budget de 60 Hz: el vsync real jitterea y una app sana
+ * a 60 FPS se pasa de 16.67 ms en dos de cada tres frames, así que con ese umbral el
+ * contador marcaba 30 de 46 frames sin que hubiera un solo tirón. 18 ms sigue
+ * capturando los frames perdidos de verdad (33, 50, 66 ms) sin contar ruido.
+ */
+export const LONG_FRAME_MS = 18;
+
+/**
+ * Frames largos que se guardan. Solo las entradas que el navegador reporta (≥ 50 ms, ver
+ * `summarizeLongTasks`), así que 20 es de sobra para leer la ventana.
+ */
+export const WINDOW_LONG_TASKS = 20;
+
 export interface FrameStats {
   /** Fotogramas por segundo medios de la ventana. */
   fps: number;
@@ -16,8 +33,17 @@ export interface FrameStats {
   p95Ms: number;
   /** Cuántas muestras hay en la ventana. */
   frames: number;
+  /** Frames de la ventana que pasaron de `LONG_FRAME_MS`. */
+  longFrames: number;
   /** Draw calls del último frame, o `null` si todavía no hay renderer. */
   drawCalls: number | null;
+}
+
+export interface LongTaskStats {
+  /** Cuántas tareas largas hay en la ventana. */
+  tasks: number;
+  /** La peor de ellas en ms, o `null` si no se observó ninguna. */
+  worstMs: number | null;
 }
 
 /**
@@ -44,7 +70,13 @@ export function registerDrawCallsSource(source: DrawCallsSource | null): void {
  */
 export function computeStats(samples: number[]): FrameStats {
   if (samples.length === 0) {
-    return { fps: 0, p95Ms: 0, frames: 0, drawCalls: readDrawCalls() };
+    return {
+      fps: 0,
+      p95Ms: 0,
+      frames: 0,
+      longFrames: 0,
+      drawCalls: readDrawCalls(),
+    };
   }
   const mean = samples.reduce((acc, ms) => acc + ms, 0) / samples.length;
   const sorted = [...samples].sort((a, b) => a - b);
@@ -54,8 +86,24 @@ export function computeStats(samples: number[]): FrameStats {
     fps: mean > 0 ? 1000 / mean : 0,
     p95Ms: p95,
     frames: samples.length,
+    longFrames: samples.filter((ms) => ms > LONG_FRAME_MS).length,
     drawCalls: readDrawCalls(),
   };
+}
+
+/**
+ * Resume las duraciones que reporta `PerformanceObserver('long-animation-frame')`.
+ *
+ * Ojo al umbral: LoAF solo entrega frames de **50 ms o más**, así que esta función no ve
+ * nada entre 18 y 50 ms — esa franja la cuenta `computeStats` en el bucle de rAF. Por eso
+ * las dos detecciones son complementarias y no dos formas de medir lo mismo: el contador
+ * de frames no sabe *por qué* el frame fue largo, y aquí sí se ve cuánto duró.
+ */
+export function summarizeLongTasks(durations: number[]): LongTaskStats {
+  if (durations.length === 0) {
+    return { tasks: 0, worstMs: null };
+  }
+  return { tasks: durations.length, worstMs: Math.max(...durations) };
 }
 
 function readDrawCalls(): number | null {
