@@ -26,6 +26,7 @@ import {
   toggleLayer,
 } from "../../src/store/actions";
 import { state } from "../../src/store/index";
+
 import type { SelectedObject } from "../../src/store/state.types";
 
 const fire: SelectedObject = {

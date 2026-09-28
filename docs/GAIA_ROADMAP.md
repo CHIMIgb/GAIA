@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.58
+> **Versión del Documento:** 1.59
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-28
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -315,7 +315,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.9 — Reglas de orden de imports**
 
-- [ ] ESLint de import order y boundaries (`shared`). _(hueco de doc: el paso nombra ESLint, pero el lint del proyecto es oxlint desde 0.6.11 y no existe `.eslintrc.js`, aunque el árbol de `GAIA_PROJECT_STRUCTURE.md` §2 lo lista y el paso 0.1.x del ROADMAP lo da por hecho. Además `GAIA_TESTING.md` §9 dice `tsc --noEmit` y el código usa `tsc -b`. `shared/` sí existe (0.2.x), así que la boundary esa es real. Hay que decidir si la regla se aplica con oxlint o si se reintroduce ESLint.)_
+- [ ] ESLint de import order y boundaries (`shared`). _(realizado, pendiente de validación: el paso dice ESLint y el resultado es que hay dos linters, porque oxlint 1.85 no implementa `import/order` y —peor— ignora en silencio las reglas que no conoce: medido, `--deny import/order` y `--deny import/regla-inventada` dan el mismo 116 rules y 0 errores, así que poner esa regla en `.oxlintrc.json` habría parecido configurada sin cumplir nada. Reparto: oxlint sigue con react/typescript/oxc (`npm run lint`, intacto) y ESLint se queda solo con las dos reglas de este paso, en `eslint.config.mjs` de la raíz, que es lo único que alcanza a `frontend/` y `shared/` a la vez. Se usa `eslint-plugin-import-x` porque el `eslint-plugin-import` original no acepta ESLint 10 (9.39.5 ya está en `maintenance`); no se fuerza el árbol con `--legacy-peer-deps`. Orden: builtin → externo → padre → hermano, alfabético y con línea en blanco entre grupos, que es la convención que ya seguían la mayoría de los ficheros (`always` costaba 11 líneas en blanco, `never` 14). Boundary: `shared/` no puede importar de `frontend/` ni de `backend/` (es la base del grafo, cerrar un ciclo ahí no lo ven ni tsc ni Vite), y el `shared/` se consume siempre por su índice, nunca por un archivo suelto. Para lo segundo hizo falta `no-restricted-imports` de core y no `import-x/no-restricted-paths`: esta última resuelve la ruta antes de comparar y, sin `eslint-import-resolver-typescript`, no resuelve imports `.ts` (medido: 0 errores con un import directo a `store/state.types`). Verificado con cuatro sondas que luego se borran: import desordenado, import profundo a `shared/`, subpath `@gaia/shared/dates` y ciclo `shared/` → `frontend/`: las cuatro muerden. `npm run lint:imports` sale en 0 sobre el repo, y CI lo ejecuta. Verde: oxlint 0/0, build, 59 unit + 5 E2E, `perf:check` 66.8/450 KB, `shared` 12 test.)_
 - **Criterio:** imports consistentes en todo el repo.
 - **Estimado:** ~0.75 h.
 

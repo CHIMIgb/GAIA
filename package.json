@@ -11,11 +11,15 @@
     "dev": "npm run dev -w frontend",
     "build": "npm run build -w frontend",
     "lint": "npm run lint -w frontend",
+    "lint:imports": "eslint .",
     "typecheck": "npm run typecheck -w shared",
     "prepare": "husky || true",
     "test:front": "npm run test -w frontend"
   },
   "devDependencies": {
+    "@typescript-eslint/parser": "^8.71.0",
+    "eslint": "^10.11.0",
+    "eslint-plugin-import-x": "^4.17.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "prettier": "^3.9.9"

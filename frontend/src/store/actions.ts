@@ -3,7 +3,7 @@
  * aquí: las reglas de quién escribe qué (Three.js vs React) están en §4.
  */
 import { GaiaAPIError } from "../services/api";
-import { state } from "./index";
+
 import {
   SEA_LEVEL_MAX,
   SEA_LEVEL_MIN,
@@ -13,6 +13,8 @@ import {
   type SelectedObject,
   type TimeFilter,
 } from "./state.types";
+
+import { state } from "./index";
 
 /** Activa/desactiva una capa. Dueño: React (LayerControls). */
 export function toggleLayer(layer: LayerId): void {

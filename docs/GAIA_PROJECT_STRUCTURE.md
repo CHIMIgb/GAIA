@@ -1,7 +1,7 @@
 # GAIA — Estructura del Proyecto
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.5  
+> **Versión del Documento:** 1.6  
 > **Fecha:** 2026-09-27
 
 ---
@@ -192,7 +192,10 @@ frontend/
 ├── tailwind.config.js                 ← Configuración Tailwind CSS (tema oscuro, colores custom)
 ├── postcss.config.js                  ← PostCSS: autoprefixer + tailwindcss
 ├── package.json                       ← Dependencias y scripts npm
-└── .eslintrc.js                       ← Reglas de linting TypeScript + React
+└── .oxlintrc.json                    ← Lint del frontend: oxlint con reglas react/typescript/oxc
+                                      (`npm run lint`, con --deny-warnings). El orden de imports y
+                                      la boundary de `shared/` están en el `eslint.config.mjs` de la
+                                      raíz (§4), que es lo único que alcanza a los dos workspaces
 ```
 
 ---
@@ -287,6 +290,10 @@ backend/
 GAIA/
 ├── docker-compose.yml                 ← Orquesta: backend (FastAPI) + redis (Redis 7) + db (PostgreSQL 18)
 ├── .env.example                       ← Plantilla de variables de entorno para el monorepo
+├── package.json                       ← Workspaces npm (frontend, shared) + husky + prettier
+├── eslint.config.mjs                  ← Orden de imports y boundary de `shared/` (0.7.9): ESLint
+│                                      con `import-x/order` y `no-restricted-imports`. Vive en la
+│                                      raíz porque la boundary atraviesa `frontend/` y `shared/`
 ├── .gitignore                         ← Ignora node_modules, __pycache__, .env, dist/, build/
 └── README.md                          ← Punto de entrada: descripción + enlaces a docs/
 ```

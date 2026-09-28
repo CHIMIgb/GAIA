@@ -24,6 +24,11 @@ jobs:
       # runner. `oxlint --deny-warnings` es lo que hace que un aviso tumbe el job;
       # sin ese flag oxlint sale con 0 aunque reporte.
       - run: npm run lint
+      # Orden de imports y boundary de `shared/` (0.7.9). ESLint solo para esas
+      # dos reglas: oxlint no tiene `import/order` y 1.85 ignora en silencio la
+      # regla si no la conoce. Vive en la raíz porque la boundary atraviesa los
+      # dos workspaces.
+      - run: npm run lint:imports
       - run: npm run build
       # Presupuesto de bundle: falla el CI si dist/ se pasa de los límites de
       # RNF-01. Sin `|| true`, que es justo lo que se quita abajo.
