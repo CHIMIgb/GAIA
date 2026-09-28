@@ -1,14 +1,28 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useEffect, useState } from "react";
+import heroImg from "./assets/hero.png";
+import reactLogo from "./assets/react.svg";
+import viteLogo from "./assets/vite.svg";
+import "./App.css";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
+  // Overlay de desarrollo (ROADMAP 0.7.1). Importación dinámica detrás de
+  // `import.meta.env.DEV`: en el build de producción la rama es código muerto, Vite la
+  // elimina y el overlay no entra ni en el grafo ni en el bundle.
+  const [DevOverlay, setDevOverlay] = useState<null | React.ComponentType>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    void import("./components/DevOverlay").then((m) =>
+      setDevOverlay(() => m.DevOverlay),
+    );
+  }, []);
 
   return (
     <>
+      {DevOverlay ? <DevOverlay /> : null}
       <section id="center">
         <div className="hero">
           <img src={heroImg} className="base" width="170" height="179" alt="" />
@@ -116,7 +130,7 @@ function App() {
       <div className="ticks"></div>
       <section id="spacer"></section>
     </>
-  )
+  );
 }
 
-export default App
+export default App;

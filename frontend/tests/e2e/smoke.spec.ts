@@ -53,6 +53,34 @@ test("health responde con el sobre del contrato", async ({ request }) => {
   expect(body.data.status).toBe("ok");
 });
 
+test("el overlay de dev muestra FPS y se oculta con la tecla d", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  const overlay = page.getByTestId("dev-overlay");
+  await expect(overlay).toBeVisible();
+
+  // Números en vivo: tras un refresco (250 ms) ya hay muestras de frame.
+  await expect(overlay).toContainText("fps");
+  await expect(overlay).toContainText("p95");
+  // Sin renderer todavía (la escena base es 1.1.1), así que `n/d` y no un 0 inventado.
+  await expect(overlay).toContainText("draw n/d");
+  await expect(overlay).not.toContainText("draw 0");
+
+  // El FPS es real: en un navegador con rAF activo sale de 0 y es plausible.
+  const fps = await overlay.locator("xpath=.").innerText();
+  const valor = Number(fps.match(/fps\s+([\d.]+)/)?.[1]);
+  expect(valor).toBeGreaterThan(0);
+  expect(valor).toBeLessThan(500);
+
+  await page.keyboard.press("d");
+  await expect(overlay).toBeHidden();
+
+  await page.keyboard.press("d");
+  await expect(overlay).toBeVisible();
+});
+
 test("un dato mock deja el módulo en live", async ({ page }) => {
   // Sobre del contrato con un solo hotspot (`docs/GAIA_API_CONTRACT.md` §2).
   const mockDato: MockDato = {
