@@ -53,6 +53,29 @@ Detalle de fases, criterios de aceptación y trazabilidad RF/RNF en el
 | Workers  | Web Workers + Comlink                         |
 | Backend  | FastAPI + Redis + PostgreSQL 18 / TimescaleDB |
 
+## Rendimiento
+
+Cifras medidas hoy sobre el scaffold, no objetivos. El detalle, el método y la
+fecha de cada medición están en [Performance](docs/GAIA_PERFORMANCE.md) §4, que es
+donde viven los números: aquí se copian para que se vean de entrada, y cada
+columna dice de qué doc sale cada una.
+
+| Medida                   | Baseline | Objetivo          | Fuente del baseline | Fuente del objetivo           |
+| ------------------------ | -------- | ----------------- | ------------------- | ----------------------------- |
+| JS inicial (gzip)        | 66.8 KiB | ≤ 450 KB          | `PERFORMANCE` §4.1  | `TESTING` §3.4                |
+| Chunk de arranque (gzip) | 66.8 KiB | ≤ 180 KB          | `PERFORMANCE` §4.1  | `TESTING` §3.4                |
+| CSS (gzip)               | 1.47 KiB | sin límite fijado | `PERFORMANCE` §4.1  | —                             |
+| FCP (mediana de 3)       | 352 ms   | < 2 s             | `PERFORMANCE` §4.2  | `SPEC` RNF-06, `TESTING` §3.1 |
+
+- **Cómo se reproducen:** `npm run perf:check` para el bundle, `npm run fcp` para el
+  FCP. El bundle se comprueba en cada CI; el FCP se mide cuando se toca lo que le
+  afecta.
+- **Baseline no es presupuesto.** El presupuesto dice si se pasa; el baseline dice
+  si se ha empeorado. Cuando se mida otra vez se anota la diferencia contra esta
+  cifra, no contra el objetivo.
+- **Sin baseline todavía:** FPS, p95 de frame y draw calls dan `n/d` hasta que exista
+  la escena (fase 1). Sus objetivos ya están fijados en `PERFORMANCE` §2.
+
 ## Fuentes de Datos
 
 NASA FIRMS · USGS Earthquakes · Open-Meteo · AWS Terrarium · Esri World Imagery · Safecast · EURDEP · EPA RadNet · GMCMap · GEBCO · Natural Earth
