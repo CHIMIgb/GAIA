@@ -1,8 +1,8 @@
 # GAIA — Especificación Técnica y Requisitos del Sistema
 
 > **Nombre del Proyecto:** GAIA  
-> **Versión del Documento:** 1.3  
-> **Fecha:** 2026-09-23  
+> **Versión del Documento:** 1.4  
+> **Fecha:** 2026-09-28
 
 ---
 
@@ -17,6 +17,9 @@ El sistema está diseñado para ofrecer una experiencia analítica táctica: un 
 ## 2. Bases Arquitectónicas del Sistema
 
 La arquitectura de GAIA se divide en **cuatro capas** acopladas mediante **eventos asíncronos** y **estructuras de datos binarias**.
+
+> Esta sección dice cómo **debe** ser la arquitectura. Lo que hay montado de F0 a F1,
+> módulo a módulo, está en [GAIA_ARCHITECTURE.md](./GAIA_ARCHITECTURE.md).
 
 ### 2.1 Diagrama de Capas
 
@@ -53,14 +56,14 @@ La arquitectura de GAIA se divide en **cuatro capas** acopladas mediante **event
 
 ### 2.2 Capa de Datos Abiertos
 
-| Fuente         | Tipo de Dato            | Formato             | Protocolo        |
-| -------------- | ----------------------- | -------------------- | ---------------- |
-| NASA FIRMS     | Anomalías térmicas      | CSV / GeoJSON        | REST API (HTTPS) |
-| USGS           | Actividad sísmica       | GeoJSON              | REST API (HTTPS) |
-| Open-Meteo     | Vectores de viento (U,V)| JSON / FlatBuffers   | REST API (HTTPS) |
-| GEBCO          | Batimetría / Elevación  | GeoTIFF / Heightmap  | Descarga estática|
-| Safecast       | Radiación ambiental     | JSON / REST          | REST API (HTTPS) |
-| EURDEP / RadNet| Dosis radiológica gamma | GeoJSON / WFS / XML  | REST API (HTTPS) |
+| Fuente          | Tipo de Dato             | Formato             | Protocolo         |
+| --------------- | ------------------------ | ------------------- | ----------------- |
+| NASA FIRMS      | Anomalías térmicas       | CSV / GeoJSON       | REST API (HTTPS)  |
+| USGS            | Actividad sísmica        | GeoJSON             | REST API (HTTPS)  |
+| Open-Meteo      | Vectores de viento (U,V) | JSON / FlatBuffers  | REST API (HTTPS)  |
+| GEBCO           | Batimetría / Elevación   | GeoTIFF / Heightmap | Descarga estática |
+| Safecast        | Radiación ambiental      | JSON / REST         | REST API (HTTPS)  |
+| EURDEP / RadNet | Dosis radiológica gamma  | GeoJSON / WFS / XML | REST API (HTTPS)  |
 
 Esta capa es el punto de entrada de todos los datos al sistema. Las consultas se realizan mediante `fetch()` con reintentos y caché local como mecanismo de fallback.
 
@@ -68,11 +71,11 @@ Esta capa es el punto de entrada de todos los datos al sistema. Las consultas se
 
 Todo el procesamiento pesado se delega a **hilos secundarios (Web Workers)** para no bloquear el hilo principal de renderizado:
 
-| Worker    | Responsabilidad                                                                                     |
-| --------- | --------------------------------------------------------------------------------------------------- |
-| Worker 1  | **Ingesta y Normalización:** Parseo de GeoJSON/CSV masivos, conversión de coordenadas y Spatial Hashing.|
-| Worker 2  | **Particionado Espacial:** Construcción de un Octree 3D para detección de proximidad y alertas.       |
-| Worker 3  | **Interpolación de Viento:** Interpolación en GPU de las rejillas de vectores $(U, V)$ ya normalizadas por el backend. |
+| Worker   | Responsabilidad                                                                                                        |
+| -------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Worker 1 | **Ingesta y Normalización:** Parseo de GeoJSON/CSV masivos, conversión de coordenadas y Spatial Hashing.               |
+| Worker 2 | **Particionado Espacial:** Construcción de un Octree 3D para detección de proximidad y alertas.                        |
+| Worker 3 | **Interpolación de Viento:** Interpolación en GPU de las rejillas de vectores $(U, V)$ ya normalizadas por el backend. |
 
 La comunicación entre workers y el hilo principal utiliza **Transferable Objects** (transferencia sin copia / zero-copy). No se requiere `SharedArrayBuffer` (que exigiría los headers `Cross-Origin-Opener-Policy` y `Cross-Origin-Embedder-Policy`), evitando restricciones sobre recursos cross-origin (teselas, APIs externas).
 
@@ -128,12 +131,12 @@ El sistema debe consumir la **API de NASA FIRMS** (instrumentos VIIRS y MODIS) y
 
 Cada instancia de fuego debe mapear su tamaño y color según la **Potencia Radiativa del Fuego** ($MW/km^2$) proporcionada en la telemetría:
 
-| FRP              | Color                | Tamaño  |
-| ---------------- | -------------------- | ------- |
-| Baja             | Amarillo tenue       | Pequeño |
-| Media            | Naranja              | Medio   |
-| Alta             | Rojo incandescente   | Grande  |
-| Extrema          | Blanco               | Máximo  |
+| FRP     | Color              | Tamaño  |
+| ------- | ------------------ | ------- |
+| Baja    | Amarillo tenue     | Pequeño |
+| Media   | Naranja            | Medio   |
+| Alta    | Rojo incandescente | Grande  |
+| Extrema | Blanco             | Máximo  |
 
 ---
 
@@ -207,11 +210,11 @@ El sistema debe consumir feeds OSINT y oficiales de monitoreo radiológico en ti
 
 El sistema debe renderizar los puntos de lectura o capas de calor radiológico sobre la corteza 3D del globo utilizando `InstancedMesh` o shaders de mapa de calor. La GPU asignará colores e indicadores dinámicos según los umbrales de seguridad:
 
-| Tasa de Dosis ($\mu\text{Sv/h}$) | Categoría / Estado                      | Color GLSL / Efecto                    |
-| -------------------------------- | --------------------------------------- | -------------------------------------- |
-| $< 0.20$                         | Radiación de fondo natural (seguro)     | Azul / Verde tenue                     |
-| $0.20 - 1.00$                    | Niveles elevados / anómalos             | Amarillo / Naranja                     |
-| $> 1.00$                         | Umbral de alerta / Evento radiológico   | Rojo incandescente con parpadeo GLSL   |
+| Tasa de Dosis ($\mu\text{Sv/h}$) | Categoría / Estado                    | Color GLSL / Efecto                  |
+| -------------------------------- | ------------------------------------- | ------------------------------------ |
+| $< 0.20$                         | Radiación de fondo natural (seguro)   | Azul / Verde tenue                   |
+| $0.20 - 1.00$                    | Niveles elevados / anómalos           | Amarillo / Naranja                   |
+| $> 1.00$                         | Umbral de alerta / Evento radiológico | Rojo incandescente con parpadeo GLSL |
 
 ---
 
@@ -221,10 +224,10 @@ El sistema debe renderizar los puntos de lectura o capas de calor radiológico s
 
 #### RNF-01 — Tasa de Refresco Fluida
 
-| Métrica                  | Objetivo          |
-| ------------------------ | ----------------- |
-| FPS objetivo             | **60 FPS estables** |
-| Datos simultáneos máximos| **> 20,000** datos combinados (partículas de viento, focos de fuego y sismos) |
+| Métrica                   | Objetivo                                                                      |
+| ------------------------- | ----------------------------------------------------------------------------- |
+| FPS objetivo              | **60 FPS estables**                                                           |
+| Datos simultáneos máximos | **> 20,000** datos combinados (partículas de viento, focos de fuego y sismos) |
 
 #### RNF-02 — Presupuesto Estricto de Draw Calls
 
@@ -269,10 +272,10 @@ Si las APIs públicas (NASA, USGS, Open-Meteo) no responden o agotan sus cuotas,
 
 #### RNF-06 — Tiempo de Carga Inicial (FCP)
 
-| Métrica                     | Objetivo              |
-| --------------------------- | --------------------- |
-| First Contentful Paint (FCP)| **< 2.0 segundos**    |
-| Globo interactivo funcional | **< 3.5 segundos**    |
+| Métrica                      | Objetivo           |
+| ---------------------------- | ------------------ |
+| First Contentful Paint (FCP) | **< 2.0 segundos** |
+| Globo interactivo funcional  | **< 3.5 segundos** |
 
 > Medido en conexiones estándar de red.
 
@@ -291,36 +294,36 @@ La aplicación debe ser **100% compatible** con navegadores modernos que soporte
 
 ## 5. Matriz de Trazabilidad: Subsistemas ↔ Capas
 
-| Subsistema              | Datos Abiertos | Workers | Renderizado GPU | HUD |
-| ----------------------- | :------------: | :-----: | :-------------: | :-: |
-| 1. Globo y Elevación    |    GEBCO       |    —    |    ✅           |  —  |
-| 2. Incendios (FIRMS)    |    NASA        |   W1    |    ✅           |  ✅ |
-| 3. Viento               |    Open-Meteo  |   W3    |    ✅           |  ✅ |
-| 4. Sismos (USGS)        |    USGS        |   W1,W2 |    ✅           |  ✅ |
-| 5. Inundación           |    GEBCO       |    —    |    ✅           |  ✅ |
-| 6. HUD y Filtros        |      —         |    —    |      —          |  ✅ |
-| 7. Radiación Ambiental  | Safecast / EURDEP / RadNet / GMCMap | W1 | ✅ | ✅ |
+| Subsistema             |           Datos Abiertos            | Workers | Renderizado GPU | HUD |
+| ---------------------- | :---------------------------------: | :-----: | :-------------: | :-: |
+| 1. Globo y Elevación   |                GEBCO                |    —    |       ✅        |  —  |
+| 2. Incendios (FIRMS)   |                NASA                 |   W1    |       ✅        | ✅  |
+| 3. Viento              |             Open-Meteo              |   W3    |       ✅        | ✅  |
+| 4. Sismos (USGS)       |                USGS                 |  W1,W2  |       ✅        | ✅  |
+| 5. Inundación          |                GEBCO                |    —    |       ✅        | ✅  |
+| 6. HUD y Filtros       |                  —                  |    —    |        —        | ✅  |
+| 7. Radiación Ambiental | Safecast / EURDEP / RadNet / GMCMap |   W1    |       ✅        | ✅  |
 
 ---
 
 ## 6. Glosario Técnico
 
-| Término                | Definición                                                                                         |
-| ---------------------- | -------------------------------------------------------------------------------------------------- |
-| **InstancedMesh**      | Técnica de Three.js para renderizar miles de copias de una misma geometría en una sola draw call.   |
-| **FRP**                | Fire Radiative Power — Potencia radiativa del fuego medida en $MW/km^2$.                           |
-| **Transform Feedback** | Mecanismo de WebGL 2.0 que permite capturar la salida de un vertex shader en un buffer de la GPU.   |
-| **Octree**             | Estructura de datos de particionado espacial 3D que divide el espacio en 8 octantes recursivos.     |
-| **Spatial Hashing**    | Técnica de indexado espacial que mapea coordenadas 3D a celdas de una tabla hash para consultas rápidas. |
-| **Heightmap**          | Textura en escala de grises donde cada píxel codifica la elevación del terreno en ese punto.         |
-| **GRIB2**              | Formato binario estándar de la OMM para datos meteorológicos y atmosféricos.                        |
-| **Transferable Objects**| Objetos JavaScript (ArrayBuffer, ImageBitmap, etc.) cuya propiedad se transfiere al worker sin copia.|
-| **FCP**                | First Contentful Paint — Momento en que el navegador renderiza el primer contenido visible.          |
-| **Draw Call**          | Instrucción enviada a la GPU para dibujar un conjunto de geometrías. Minimizarlas mejora el rendimiento.|
-| **$\mu\text{Sv/h}$**  | Microsieverts por hora — Unidad estándar de tasa de dosis de radiación ambiental.                       |
-| **CPM**                | Cuentas Por Minuto — Unidad de lectura bruta de un contador Geiger. Se convierte a $\mu\text{Sv/h}$ mediante factores de calibración. |
-| **Heatmap Shader**     | Shader GLSL que renderiza una capa de mapa de calor sobre la superficie del globo basada en densidad o intensidad de datos puntuales. |
+| Término                  | Definición                                                                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| **InstancedMesh**        | Técnica de Three.js para renderizar miles de copias de una misma geometría en una sola draw call.                                     |
+| **FRP**                  | Fire Radiative Power — Potencia radiativa del fuego medida en $MW/km^2$.                                                              |
+| **Transform Feedback**   | Mecanismo de WebGL 2.0 que permite capturar la salida de un vertex shader en un buffer de la GPU.                                     |
+| **Octree**               | Estructura de datos de particionado espacial 3D que divide el espacio en 8 octantes recursivos.                                       |
+| **Spatial Hashing**      | Técnica de indexado espacial que mapea coordenadas 3D a celdas de una tabla hash para consultas rápidas.                              |
+| **Heightmap**            | Textura en escala de grises donde cada píxel codifica la elevación del terreno en ese punto.                                          |
+| **GRIB2**                | Formato binario estándar de la OMM para datos meteorológicos y atmosféricos.                                                          |
+| **Transferable Objects** | Objetos JavaScript (ArrayBuffer, ImageBitmap, etc.) cuya propiedad se transfiere al worker sin copia.                                 |
+| **FCP**                  | First Contentful Paint — Momento en que el navegador renderiza el primer contenido visible.                                           |
+| **Draw Call**            | Instrucción enviada a la GPU para dibujar un conjunto de geometrías. Minimizarlas mejora el rendimiento.                              |
+| **$\mu\text{Sv/h}$**     | Microsieverts por hora — Unidad estándar de tasa de dosis de radiación ambiental.                                                     |
+| **CPM**                  | Cuentas Por Minuto — Unidad de lectura bruta de un contador Geiger. Se convierte a $\mu\text{Sv/h}$ mediante factores de calibración. |
+| **Heatmap Shader**       | Shader GLSL que renderiza una capa de mapa de calor sobre la superficie del globo basada en densidad o intensidad de datos puntuales. |
 
 ---
 
-*Este documento sirve como especificación base para el desarrollo del proyecto GAIA.*
+_Este documento sirve como especificación base para el desarrollo del proyecto GAIA._

@@ -1,8 +1,8 @@
 # GAIA — Estructura del Proyecto
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.6  
-> **Fecha:** 2026-09-27
+> **Versión del Documento:** 1.7  
+> **Fecha:** 2026-09-28
 
 ---
 
@@ -22,6 +22,9 @@ GAIA/
 ---
 
 ## 2. Frontend — Árbol Completo
+
+> Este doc es el **mapa de carpetas**. El mapa de módulos por capa y el flujo de
+> datos están en [GAIA_ARCHITECTURE.md](./GAIA_ARCHITECTURE.md) §3 y §4.
 
 ```
 frontend/
