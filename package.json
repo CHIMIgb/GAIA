@@ -14,6 +14,7 @@
     "lint:imports": "eslint .",
     "typecheck": "npm run typecheck -w shared",
     "perf:baseline": "node scripts/perf-baseline.mjs",
+    "perf:check": "npm run perf:check -w frontend",
     "prepare": "husky || true",
     "test:front": "npm run test -w frontend",
     "test": "npm run test:scripts && npm run test:front",

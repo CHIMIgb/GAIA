@@ -41,6 +41,81 @@ Detalle de fases, criterios de aceptación y trazabilidad RF/RNF en el
 
 ---
 
+## Puesta en marcha
+
+Versiones, detalle de cada paso y los `docker run` de Redis y PostgreSQL en
+[Despliegue](docs/GAIA_DEPLOYMENT.md) §3.
+
+| Herramienta | Versión | Para qué                            |
+| ----------- | ------- | ----------------------------------- |
+| Node.js     | 22 LTS  | Vite, Vitest, Playwright            |
+| Python      | 3.12    | FastAPI, Uvicorn, tests             |
+| uv          | 0.5+    | Entorno y dependencias del backend  |
+| Redis       | 7.x     | Caché                               |
+| PostgreSQL  | 18      | Base de datos e historial (Alembic) |
+| Docker      | 24+     | Opcional, solo para Redis           |
+
+```bash
+git clone <url-del-repo> && cd GAIA
+
+# Dependencias. npm va desde la raíz porque el repo son workspaces (frontend y
+# shared); uv desde backend/, que es un proyecto uv propio con su uv.lock.
+npm ci
+cd backend && uv sync && cd ..
+
+# Variables: el backend lee .env desde su propio directorio (Settings, env_file).
+cp .env.example backend/.env      # cambiar DATABASE_URL por la clave real
+
+# La migración necesita la BD y el rol dedicados ya creados; los `createdb` y
+# `psql` están en DEPLOYMENT §3.2, paso 2. Sin eso, alembic sale con
+# ConnectionRefusedError contra el 5432.
+cd backend && uv run alembic upgrade head && cd ..
+```
+
+Las variables del backend están todas en `.env.example`, que es la plantilla
+versionada: cada una sale con su valor por defecto y el doc que la fija. Las del
+frontend van en `frontend/.env.local` y solo se leen del bundle si empiezan por
+`VITE_` (`DEPLOYMENT` §4.3).
+
+```bash
+# Backend, en una terminal
+cd backend && uv run uvicorn app.main:app --reload --port 8000
+
+# Frontend, en otra
+npm run dev                        # http://localhost:5173
+```
+
+Comprobar que está en pie:
+
+```bash
+curl http://localhost:8000/api/health    # {"success": true, "data": {...}, "error": null}
+npm test                                # unit de los scripts de la raíz y del frontend
+```
+
+### Scripts
+
+Todos desde la raíz, menos los que llevan `-w frontend` o `cd backend`.
+
+| Script                           | Qué hace                                           |
+| -------------------------------- | -------------------------------------------------- |
+| `npm run dev`                    | Vite en el 5173 con HMR                            |
+| `npm run build`                  | `tsc -b` y build de producción                     |
+| `npm test`                       | Unit de los scripts de la raíz y del frontend      |
+| `npm run test:e2e -w frontend`   | Smoke E2E; levanta Vite y uvicorn                  |
+| `npm run lint`                   | oxlint, con `--deny-warnings`                      |
+| `npm run lint:imports`           | ESLint: orden de imports y boundaries de `shared/` |
+| `npm run typecheck`              | `tsc -b` de `shared`                               |
+| `npm run coverage`               | Cobertura por fase (`PERFORMANCE`, paso 0.7.10)    |
+| `npm run perf:check`             | Presupuesto de bundle                              |
+| `npm run perf:baseline`          | Compara el bundle con el baseline guardado         |
+| `npm run analyze -w frontend`    | Treemap de chunks en `dist/stats.html`             |
+| `npm run fcp -w frontend`        | FCP con la red 4G de `TESTING` §3.3                |
+| `cd backend && uv run pytest -q` | Tests del backend                                  |
+
+Mapa de carpetas en [Estructura del Proyecto](docs/GAIA_PROJECT_STRUCTURE.md) §2.
+
+---
+
 ## Stack
 
 | Capa     | Tecnología                                    |
