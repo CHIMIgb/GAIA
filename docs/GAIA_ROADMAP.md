@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.42
+> **Versión del Documento:** 1.43
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -247,7 +247,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.6.10 — Umbrales de cobertura iniciales**
 
-- [ ] Configurar cobertura base (backend ≥ 60 % en F0).
+- [ ] Configurar cobertura base (backend ≥ 60 % en F0). _*(realizado, pendiente de validación: `pytest-cov` añadido al grupo dev y `--cov=app` a los `addopts` de pytest, así que toda ejecución —local y CI— reporta y aplica el umbral sin pedirlo a mano; `fail_under = 60` en `[tool.coverage.report]`. La suite está en 96.23 % (62 tests; los 8 de BD se saltan también en el CI, así que el número no cambia). El umbral está activo de verdad: subirlo a 99 % hace fallar la suite. Ningún doc fija la herramienta, así que va pytest-cov; el ≥ 80 % de frontend de TESTING §1.3 sigue sin herramienta y sin `src/utils/`, que aún no existe.)*_
 - **Criterio:** la suite reporta cobertura con umbral activo.
 - **Estimado:** ~1 h.
 
