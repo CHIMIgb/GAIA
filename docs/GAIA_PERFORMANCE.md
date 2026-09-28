@@ -1,6 +1,6 @@
 # GAIA — Performance
 
-> **Versión del Documento:** 1.3
+> **Versión del Documento:** 1.4
 > **Fecha:** 2026-09-28
 > **Propósito:** presupuestos, umbrales y baselines de rendimiento de GAIA. Referencia, no fuente: los valores canónicos viven en su doc de origen y aquí solo se citan.
 
@@ -57,9 +57,24 @@ Un baseline es la medida del estado actual del proyecto, versionada, contra la q
 comparan las siguientes. Sirve para distinguir "ha ido mal" de "ya iba mal".
 
 - **Qué se mide hoy:** el bundle gzip, vía `npm run perf:check` (`frontend/scripts/bundle-budget.mjs`), y el FCP, vía `npm run fcp` (`frontend/tests/fcp/fcp.spec.ts`).
-- **Dónde vive el fichero:** `PENDIENTE`. El paso 0.7.12 debe decidir ruta y formato;
-  este doc solo deja constancia de que el baseline es un dato versionado, no un script,
-  así que no va en `scripts/`.
+- **Dónde vive el fichero:** `docs/performance/baseline.json`, decidido en 0.7.12 con
+  el usuario. JSON y no tabla de este doc porque tiene que ser legible por un programa
+  sin escribir un parser de markdown: `metricas` es la última buena de cada métrica (lo
+  contra lo que compara) y `historial` es un array con una entrada por sesión de
+  medición, cada una con su fecha, commit, Node y Vite. Las claves llevan la unidad
+  (`_kib`, `_ms`) para que el comparador no necesite una tabla de unidades. Se corrigió
+  el CSS de 1.47 a 1.44 KiB: son 1472 bytes medidos, y un baseline que no cuadra con el
+  build hace que el gate dé un falso positivo el primer día.
+- **Cómo se compara:** `npm run perf:baseline` (raíz) mide lo de hoy con
+  `frontend/scripts/bundle-budget.mjs` y falla si algo empeora más del **1 %**. El
+  margen no es 0 a propósito: el tamaño gzip se mueve con cualquier cambio de versión
+  de vite o esbuild sin que cambie el bundle, y con 0 el gate no distinguiría "ha
+  entrado Three.js" de "ha subido vite a 8.3.2". Corre en CI después de `perf:check`.
+- **Qué no llega al gate:** el FCP. `medir()` no lo produce —medirlo necesita navegador,
+  build y `vite preview`— así que en la comparativa sale como `n/d (este script no lo
+mide)`, no como un 0 que parecería una mejora. Es la puerta que sí existe
+  (`perf:check`) y la que no (`npm run fcp`, sin paso en CI); cerrar esa segunda es
+  deuda abierta, no parte de este paso.
 - **Comparativa:** cada medición posterior anota la diferencia contra el baseline
   guardado, no contra el presupuesto. El presupuesto dice si se pasa; el baseline dice
   si se ha empeorado.
@@ -71,7 +86,7 @@ comparan las siguientes. Sirve para distinguir "ha ido mal" de "ya iba mal".
 | JS inicial (gzip)        | 66.8 KiB | ≤ 450 KB (`DEPLOYMENT` §5.1)    | 383 KiB libre, 15 % usado       |
 | Chunk de arranque (gzip) | 66.8 KiB | ≤ 180 KB (`DEPLOYMENT` §5.1)    | 113 KiB libre, 37 % usado       |
 | Chunk Three.js           | `n/d`    | ≤ 250 KB (`DEPLOYMENT` §5.1)    | se mide en 1.1.1, cuando exista |
-| CSS (gzip)               | 1.47 KiB | sin límite fijado en ningún doc | —                               |
+| CSS (gzip)               | 1.44 KiB | sin límite fijado en ningún doc | —                               |
 
 - **Medido el** 2026-09-27 sobre `f6c6abe`, con Node v22.19.0 y Vite 8.3.1:
   `npm run build && npm run perf:check`.

@@ -64,7 +64,7 @@ columna dice de qué doc sale cada una.
 | ------------------------ | -------- | ----------------- | ------------------- | ----------------------------- |
 | JS inicial (gzip)        | 66.8 KiB | ≤ 450 KB          | `PERFORMANCE` §4.1  | `TESTING` §3.4                |
 | Chunk de arranque (gzip) | 66.8 KiB | ≤ 180 KB          | `PERFORMANCE` §4.1  | `TESTING` §3.4                |
-| CSS (gzip)               | 1.47 KiB | sin límite fijado | `PERFORMANCE` §4.1  | —                             |
+| CSS (gzip)               | 1.44 KiB | sin límite fijado | `PERFORMANCE` §4.1  | —                             |
 | FCP (mediana de 3)       | 352 ms   | < 2 s             | `PERFORMANCE` §4.2  | `SPEC` RNF-06, `TESTING` §3.1 |
 
 - **Cómo se reproducen:** `npm run perf:check` para el bundle, `npm run fcp` para el

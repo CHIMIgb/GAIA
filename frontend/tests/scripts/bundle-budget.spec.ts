@@ -24,7 +24,7 @@ const KB = 1024;
  * fichero de ceros o de letras repetidas mediría casi cero y el test no probaría
  * nada. Con datos incompresibles el gzip queda pegado al tamaño real.
  */
-function distFalso({ arranque = 100, three = 0, otros = 0 } = {}) {
+function distFalso({ arranque = 100, three = 0, otros = 0, css = 0 } = {}) {
   const dist = mkdtempSync(join(tmpdir(), "gaia-bundle-"));
   const assets = join(dist, "assets");
   mkdirSync(assets);
@@ -33,6 +33,7 @@ function distFalso({ arranque = 100, three = 0, otros = 0 } = {}) {
   const entrada = "index-abc123.js";
   escribir(entrada, arranque);
   if (three) escribir("three-def456.js", three);
+  if (css) escribir("index-abc123.css", css);
   for (let i = 0; i < otros; i += 1) escribir(`chunk-${i}-ghi789.js`, 1);
   writeFileSync(
     join(dist, "index.html"),
@@ -58,6 +59,20 @@ describe("medir el bundle", () => {
     expect(m.arranque).toBe(m.ficheros["index-abc123.js"]);
   });
 
+  it("el CSS se mide aparte y no se cuela en el JS inicial", () => {
+    const m = medir(distFalso({ arranque: 100, css: 3 }));
+
+    expect(m.css).toBe(m.ficheros["index-abc123.css"]);
+    // Sin esto, el CSS contaria como JS y las dos cifras del baseline estarian mal.
+    // Contra el chunk y no contra 100 * KB: el gzip de bytes aleatorios pesa algo
+    // MAS que la entrada (102453 frente a 102400 medido), asi que el KB exacto no vale.
+    expect(m.jsInicial).toBe(m.arranque);
+  });
+
+  it("sin CSS el valor es null, no 0, para no comparar contra un 0 de mentira", () => {
+    expect(medir(distFalso({ arranque: 100 })).css).toBeNull();
+  });
+
   it("sin chunk de three no hay límite que comprobar, pero tampoco error", () => {
     const m = medir(distFalso({ arranque: 100 }));
 
@@ -67,15 +82,25 @@ describe("medir el bundle", () => {
 });
 
 describe("el presupuesto corta", () => {
-  it("falla si el JS inicial y el chunk de arranque se pasan", () => {
-    // Dos chunks de 240 KB: el arranque se pasa de 180 y el total de 450.
-    const m = medir(distFalso({ arranque: 240, otros: 240 }));
+  // 480 KB de bytes aleatorios con gzip nivel 9 son ~5 s de CPU de verdad, y el
+  // default de vitest son 5 s: el test se caia en cuanto la maquina tenia otra cosa
+  // corriendo. Medir el presupuesto no puede Bajarse de 450 KB sin que deje de
+  // comprobar el presupuesto, asi que el techo se sube aqui y no se toca el codigo.
+  const GZIP_LENTO = 30_000;
 
-    expect(incumplimientos(m)).toEqual([
-      expect.stringContaining("JS inicial"),
-      expect.stringContaining("chunk de arranque"),
-    ]);
-  });
+  it(
+    "falla si el JS inicial y el chunk de arranque se pasan",
+    () => {
+      // Dos chunks de 240 KB: el arranque se pasa de 180 y el total de 450.
+      const m = medir(distFalso({ arranque: 240, otros: 240 }));
+
+      expect(incumplimientos(m)).toEqual([
+        expect.stringContaining("JS inicial"),
+        expect.stringContaining("chunk de arranque"),
+      ]);
+    },
+    GZIP_LENTO,
+  );
 
   it("falla si el chunk de three se pasa aunque el total quepa", () => {
     const m = medir(distFalso({ arranque: 10, three: LIMITES.three + 10 }));

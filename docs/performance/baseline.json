@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "_nota": "Baseline de rendimiento (ROADMAP 0.7.12). `metricas` es contra lo que compara `npm run perf:baseline`; `historial` es de dónde sale cada cifra, una entrada por sesión de medición. Las claves llevan la unidad para que el comparador no necesite una tabla de unidades. Un dato sin medir va en `historial` y no en `metricas`: gatear una cifra que nunca se midió es una puerta que se salta sola.",
+  "metricas": {
+    "bundle_js_inicial_kib": 66.83,
+    "bundle_chunk_arranque_kib": 66.83,
+    "bundle_css_kib": 1.44,
+    "fcp_ms": 352
+  },
+  "historial": [
+    {
+      "fecha": "2026-09-27",
+      "origen": "PERFORMANCE §4.1",
+      "commit": "f6c6abe",
+      "node": "v22.19.0",
+      "vite": "8.3.1",
+      "cifras": {
+        "bundle_js_inicial_kib": 66.8,
+        "bundle_chunk_arranque_kib": 66.8,
+        "bundle_css_kib": 1.47
+      },
+      "nota": "Primer build del scaffold: un solo chunk, sin `manualChunks`."
+    },
+    {
+      "fecha": "2026-09-28",
+      "origen": "PERFORMANCE §4.2",
+      "commit": null,
+      "node": "v22.19.0",
+      "vite": "8.3.1",
+      "cifras": {
+        "fcp_ms": 352
+      },
+      "nota": "Mediana de 3 con red 4G emulada. `commit` a null porque §4.2 no lo anota y no se inventa: la cifra está transcrita del doc, no medida otra vez."
+    },
+    {
+      "fecha": "2026-09-28",
+      "origen": "medido con `npm run perf:check` al crear el fichero (0.7.12)",
+      "commit": "253ff66",
+      "node": "v22.19.0",
+      "vite": "8.3.1",
+      "cifras": {
+        "bundle_js_inicial_kib": 66.83,
+        "bundle_chunk_arranque_kib": 66.83,
+        "bundle_css_kib": 1.44
+      },
+      "nota": "Primera medición hecha por la propia herramienta del baseline, a 0,01 KiB. El CSS de §4.1 ponía 1,47 y son 1472 bytes = 1,438 KiB: el doc iba 2 % alto y el gate veía un -4,8 % el primer día sin que hubiera cambiado nada, así que §4.1 se corrige a 1,44."
+    }
+  ]
+}
