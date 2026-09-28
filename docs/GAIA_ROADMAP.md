@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.50
+> **Versión del Documento:** 1.51
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -291,7 +291,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.5 — Presupuesto de assets**
 
-- [ ] Lista de límites para texturas/shaders por módulo. _(hueco de doc: no hay ningún doc que fije tamaños de textura ni de shader. `GAIA_TESTING.md` §3.4 solo dice «streaming por tiles», sin cifras, y `GAIA_GLOBE_TEXTURES.md` cataloga APIs del globo, no presupuestos. Además el destino que nombra el criterio («el doc de rendimiento») no existe todavía: ver 0.7.8. El paso no se puede ejecutar sin decidir el doc destino y los límites por módulo.)_
+- [ ] Lista de límites para texturas/shaders por módulo. _(hueco de doc parcial: `docs/GAIA_PERFORMANCE.md` v1.0 ya tiene la §3 con la tabla por módulo, pero **ningún doc fija tamaños de textura ni de shader** — `TESTING` §3.4 solo dice «streaming por tiles» y `GLOBE_TEXTURES` cataloga APIs, no presupuestos — así que las casillas van `PENDIENTE` a propósito (decisión del usuario) en vez de rellenarse con números inventados. Cada fila se fija al abrir su módulo, F2–F6. El paso no se puede validar hasta que haya cifras.)_
 - **Criterio:** presupuestos escritos en el doc de rendimiento.
 - **Estimado:** ~0.75 h.
 
@@ -309,7 +309,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.8 — Docs de presupuestos**
 
-- [ ] Sección de presupuestos en `GAIA_PERFORMANCE` (o SPEC). _(hueco de doc: `docs/GAIA_PERFORMANCE.md` no existe — `docs/` tiene 16 ficheros y ninguno es de rendimiento. Los valores canónicos que sí están fijados son los de `GAIA_TESTING.md` §3.4 (chunk de arranque ≤ 180 KB, chunk Three.js ≤ 250 KB, React + HUD ≤ 120 KB, total JS inicial ≤ 450 KB) y RNF-01; un doc de rendimiento nuevo debe referenciarlos, no repetirlos. Falta decidir el destino: doc nuevo o sección en SPEC.)_
+- [x] Sección de presupuestos en `GAIA_PERFORMANCE` (o SPEC). _*(realizado, pendiente de validación: creado `docs/GAIA_PERFORMANCE.md` v1.0 con §2 presupuestos canónicos referenciados a su doc de origen (SPEC RNF-01/RNF-02/RNF-06, TESTING §3.2-§3.4, ROADMAP §17), §3 assets por módulo, §4 baselines, §5 herramientas reales y §6 trazabilidad; fila en el README. Consistente con §17: los valores se citan, no se repiten.)*_
 - **Criterio:** documentado y consistente con §17 del ROADMAP.
 - **Estimado:** ~0.75 h.
 
@@ -333,7 +333,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.12 — Grabación de baseline comparativa**
 
-- [ ] Guardar baseline en repo para comparativas futuras. _(hueco de doc menor: no hay ruta ni formato decididos para el fichero de baseline. `GAIA_PROJECT_STRUCTURE.md` §2 tiene `scripts/` para verificaciones de build, pero un baseline es un dato versionado, no un script, así que necesita su sitio antes de escribirse.)_
+- [ ] Guardar baseline en repo para comparativas futuras. _(hueco de doc menor: `docs/GAIA_PERFORMANCE.md` §4 ya deja constancia de que el baseline es un dato versionado y no un script, así que no va en `scripts/`, pero la ruta y el formato del fichero siguen sin decidirse.)_
 - **Criterio:** archivo de baseline versionado.
 - **Estimado:** ~0.75 h.
 
