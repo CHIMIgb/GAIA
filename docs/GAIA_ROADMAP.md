@@ -1,8 +1,8 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.54
+> **Versión del Documento:** 1.55
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
-> **Última actualización:** 2026-09-27
+> **Última actualización:** 2026-09-28
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
 
 ## 1. Introducción y Método
@@ -285,7 +285,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.4 — Medición del FCP base**
 
-- [ ] Lighthouse local con presupuesto FCP < 2 s.
+- [ ] Lighthouse local con presupuesto FCP < 2 s. _*(realizado, pendiente de validación: medido el 2026-09-28 con `npm run fcp` — **FCP 352 ms** de mediana (carreras 360/340/352) contra el presupuesto < 2 s de `TESTING` §3.1, con el 18 % del presupuesto usado. Herramienta **Playwright + `PerformanceObserver`**, no Lighthouse: desviación consciente, porque el perfil por defecto de Lighthouse es *Slow 4G* (150 ms RTT, 1.6 Mbps) y no el 4G que fija `TESTING` §3.3 (40 ms, 9 Mbps), así que su cifra no sería comparable con el resto de la documentación; Playwright ya venía como dependencia del E2E, sin añadir nada al toolchain. El throttling se emula por CDP `Network.emulateNetworkConditions` contra el build de producción servido por `vite preview`. Registrado en `docs/GAIA_PERFORMANCE.md` §4.2; Lighthouse entra donde el propio roadmap lo sitúa, en 11.2.1. Mutaciones: 9 Mbps con base 1024 en vez de 1000 tumba el test de conversión de caudal; devolver `0` en vez de `null` cuando no hay entrada de paint tumba el test de lectura — que es justo el fallo caro, porque `0 < 2000` y el presupuesto pasaría en verde sin haber pintado nada. Verde: lint 0 warnings, `tsc -b` limpio, 55 unit, 4 E2E, `perf:check` en presupuesto.)*_
 - **Criterio:** se registra el FCP base del scaffold.
 - **Estimado:** ~1 h.
 

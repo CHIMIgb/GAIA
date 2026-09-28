@@ -6,6 +6,9 @@
     "module": "esnext",
     "types": ["node"],
     "moduleResolution": "bundler",
+    /* `scripts/*.mjs` es JavaScript a propósito (lo corre node sin compilar),
+       pero el spec lo importa y sin esto TS no encuentra sus tipos. */
+    "allowJs": true,
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
@@ -24,5 +27,10 @@
       "@gaia/shared": ["../shared/src/index.ts"]
     }
   },
-  "include": ["playwright.config.ts", "tests/e2e"]
+  "include": [
+    "playwright.config.ts",
+    "playwright.fcp.config.ts",
+    "tests/e2e",
+    "tests/fcp"
+  ]
 }

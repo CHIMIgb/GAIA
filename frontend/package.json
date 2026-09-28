@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "perf:check": "node scripts/bundle-budget.mjs",
+    "fcp": "npm run build && playwright test --config=playwright.fcp.config.ts",
     "lint": "oxlint --deny-warnings",
     "preview": "vite preview",
     "test": "vitest run",

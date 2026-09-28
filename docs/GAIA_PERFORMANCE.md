@@ -1,7 +1,7 @@
 # GAIA — Performance
 
-> **Versión del Documento:** 1.0
-> **Fecha:** 2026-09-27
+> **Versión del Documento:** 1.1
+> **Fecha:** 2026-09-28
 > **Propósito:** presupuestos, umbrales y baselines de rendimiento de GAIA. Referencia, no fuente: los valores canónicos viven en su doc de origen y aquí solo se citan.
 
 ## 1. Regla de este documento
@@ -23,13 +23,13 @@ real.
 | FPS                         | 60 estables | `SPEC` RNF-01                 | `DevOverlay` (paso 0.7.1), ventana de 120 frames                                        |
 | p95 de frame                | ≤ 18 ms     | `SPEC` RNF-01, `ROADMAP` §17  | `DevOverlay` (paso 0.7.1)                                                               |
 | Draw calls por fotograma    | ≤ 8         | `SPEC` RNF-02                 | `renderer.info` vía `registerDrawCallsSource`; `n/d` hasta que exista la escena (1.1.1) |
-| FCP                         | < 2.0 s     | `SPEC` RNF-06, `TESTING` §3.2 | Lighthouse / web-vitals (paso 0.7.4)                                                    |
-| Globo interactivo funcional | < 3.5 s     | `SPEC` RNF-06                 | Lighthouse (paso 0.7.4)                                                                 |
+| FCP                         | < 2.0 s     | `SPEC` RNF-06, `TESTING` §3.2 | `npm run fcp`, Playwright + `PerformanceObserver` (0.7.4)                               |
+| Globo interactivo funcional | < 3.5 s     | `SPEC` RNF-06                 | Lighthouse (paso 11.2.1); `n/d` hasta que exista el globo (1.1.1)                       |
 | Bundle JS inicial (gzip)    | ≤ 450 KB    | `SPEC` RNF, `TESTING` §3.4    | `npm run perf:check` (paso 0.7.3)                                                       |
 | Chunk de arranque (gzip)    | ≤ 180 KB    | `TESTING` §3.4                | `npm run perf:check`                                                                    |
 | Chunk Three.js (gzip)       | ≤ 250 KB    | `TESTING` §3.4                | `npm run perf:check`, en F1                                                             |
 | Chunk React + HUD (gzip)    | ≤ 120 KB    | `TESTING` §3.4                | `npm run perf:check`                                                                    |
-| Perfil de red de referencia | 4G          | `TESTING` §3.3                | Configuración de throttling                                                             |
+| Perfil de red de referencia | 4G          | `TESTING` §3.3                | CDP `Network.emulateNetworkConditions` en `npm run fcp`                                 |
 | Datos simultáneos máximos   | > 20 000    | `SPEC` RNF-01                 | F10 (instancing, LOD, octree)                                                           |
 
 ## 3. Presupuestos de assets por módulo
@@ -56,7 +56,7 @@ que genera ese módulo, no con una estimación de partida.
 Un baseline es la medida del estado actual del proyecto, versionada, contra la que se
 comparan las siguientes. Sirve para distinguir "ha ido mal" de "ya iba mal".
 
-- **Qué se mide hoy:** el bundle gzip, vía `npm run perf:check` (`frontend/scripts/bundle-budget.mjs`).
+- **Qué se mide hoy:** el bundle gzip, vía `npm run perf:check` (`frontend/scripts/bundle-budget.mjs`), y el FCP, vía `npm run fcp` (`frontend/tests/fcp/fcp.spec.ts`).
 - **Dónde vive el fichero:** `PENDIENTE`. El paso 0.7.12 debe decidir ruta y formato;
   este doc solo deja constancia de que el baseline es un dato versionado, no un script,
   así que no va en `scripts/`.
@@ -86,16 +86,36 @@ comparan las siguientes. Sirve para distinguir "ha ido mal" de "ya iba mal".
   chunk mide 67.0 KiB (comprobado). Gana la de `perf:check`, que es la que se compara
   contra el presupuesto, porque es la que usa el mismo criterio siempre.
 
+### 4.2 Baseline del FCP (paso 0.7.4)
+
+| Medida             | Baseline | Presupuesto            | Margen                   |
+| ------------------ | -------- | ---------------------- | ------------------------ |
+| FCP (mediana de 3) | 352 ms   | < 2 s (`TESTING` §3.1) | 1.65 s libre, 18 % usado |
+
+- **Medido el** 2026-09-28 con `npm run fcp`: el build de producción servido por
+  `vite preview`, navegado con el perfil 4G de `TESTING` §3.3 emulado por CDP
+  (`Network.emulateNetworkConditions`, RTT 40 ms, 9 Mbps de bajada, 1 Mbps de subida).
+  Carreras 360 / 340 / 352 ms; se publica la **mediana** porque la primera carrera
+  paga el arranque en frío de la máquina y no describe al usuario.
+- **Herramienta: Playwright + `PerformanceObserver`, no Lighthouse.** Es una desviación
+  consciente de `TESTING` §3.1: el perfil por defecto de Lighthouse es _Slow 4G_
+  (150 ms RTT, 1.6 Mbps), que no es el 4G que fija `TESTING` §3.3, así que su cifra
+  no sería comparable con el resto de este doc. Playwright ya era dependencia del E2E,
+  de modo que no se añade nada al bundle ni al toolchain. La desviación queda anotada
+  en el ROADMAP; Lighthouse entra donde el propio roadmap lo sitúa, en 11.2.1.
+- **Es una cifra del scaffold,** no un objetivo: cuando entren el globo y los módulos,
+  lo que se compara es la diferencia contra este número, no el absoluto.
+
 ## 5. Herramientas de medición (estado real, no la prescripción)
 
-| Qué                      | Herramienta                                | Estado                                                                                                                 |
-| ------------------------ | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| Presupuesto de bundle    | `npm run perf:check` + `bundle-budget.mjs` | En uso desde 0.6.x                                                                                                     |
-| Métricas de frame en dev | `DevOverlay` (FPS, p95, draw calls)        | Desde 0.7.1                                                                                                            |
-| Duración por endpoint    | Línea `duración …avg=…p95=…` con `DEBUG`   | Desde 0.7.2                                                                                                            |
-| Tareas largas (> 16 ms)  | `PerformanceObserver('longtask')`          | Pendiente (0.7.7)                                                                                                      |
-| FCP                      | Lighthouse                                 | Pendiente (0.7.4)                                                                                                      |
-| Análisis por chunk       | `rollup-plugin-visualizer` o `size-limit`  | Pendiente (0.7.6); `TESTING` §3.4 lo menciona, `PROJECT_STRUCTURE` §2 lo presupone en `vite.plugins.ts`, que no existe |
+| Qué                      | Herramienta                                        | Estado                                                                                                                 |
+| ------------------------ | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Presupuesto de bundle    | `npm run perf:check` + `bundle-budget.mjs`         | En uso desde 0.6.x                                                                                                     |
+| Métricas de frame en dev | `DevOverlay` (FPS, p95, draw calls)                | Desde 0.7.1                                                                                                            |
+| Duración por endpoint    | Línea `duración …avg=…p95=…` con `DEBUG`           | Desde 0.7.2                                                                                                            |
+| Tareas largas (> 16 ms)  | `PerformanceObserver('longtask')`                  | Pendiente (0.7.7)                                                                                                      |
+| FCP                      | `npm run fcp` (Playwright + `PerformanceObserver`) | Desde 0.7.4 — baseline en §4.2                                                                                         |
+| Análisis por chunk       | `rollup-plugin-visualizer` o `size-limit`          | Pendiente (0.7.6); `TESTING` §3.4 lo menciona, `PROJECT_STRUCTURE` §2 lo presupone en `vite.plugins.ts`, que no existe |
 
 ## 6. Trazabilidad
 
