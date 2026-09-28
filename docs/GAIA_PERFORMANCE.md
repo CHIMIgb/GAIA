@@ -64,6 +64,28 @@ comparan las siguientes. Sirve para distinguir "ha ido mal" de "ya iba mal".
   guardado, no contra el presupuesto. El presupuesto dice si se pasa; el baseline dice
   si se ha empeorado.
 
+### 4.1 Baseline del bundle (paso 0.7.3)
+
+| Medida                   | Baseline | Presupuesto                     | Margen                          |
+| ------------------------ | -------- | ------------------------------- | ------------------------------- |
+| JS inicial (gzip)        | 66.8 KiB | ≤ 450 KB (`DEPLOYMENT` §5.1)    | 383 KiB libre, 15 % usado       |
+| Chunk de arranque (gzip) | 66.8 KiB | ≤ 180 KB (`DEPLOYMENT` §5.1)    | 113 KiB libre, 37 % usado       |
+| Chunk Three.js           | `n/d`    | ≤ 250 KB (`DEPLOYMENT` §5.1)    | se mide en 1.1.1, cuando exista |
+| CSS (gzip)               | 1.47 KiB | sin límite fijado en ningún doc | —                               |
+
+- **Medido el** 2026-09-27 sobre `f6c6abe`, con Node v22.19.0 y Vite 8.3.1:
+  `npm run build && npm run perf:check`.
+- **El baseline es un solo chunk.** El build emite únicamente `index-*.js` (21 módulos)
+  porque `frontend/vite.config.ts` todavía no define `manualChunks`, que es lo que
+  prescriben `DEPLOYMENT` §5.1 y `TESTING` §3.4. React y la app van dentro del chunk de
+  arranque. Cuando se añada el code splitting, el **total** seguirá siendo comparable
+  chunk a chunk no: el mismo byte pasa de "arranque" a "React + HUD", y comparar antes de
+  eso produce un falso positivo.
+- **Dos cifras para la misma medida:** el footer de Vite imprime 69.30 kB y `perf:check`
+  66.8 KiB. Es el mismo fichero con distinto nivel de compresión y base: con nivel 6 el
+  chunk mide 67.0 KiB (comprobado). Gana la de `perf:check`, que es la que se compara
+  contra el presupuesto, porque es la que usa el mismo criterio siempre.
+
 ## 5. Herramientas de medición (estado real, no la prescripción)
 
 | Qué                      | Herramienta                                | Estado                                                                                                                 |

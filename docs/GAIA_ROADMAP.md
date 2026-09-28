@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.51
+> **Versión del Documento:** 1.52
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -279,7 +279,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.3 — Baseline del bundle gzip**
 
-- [ ] Medir chunk principal gzip y guardar referencia.
+- [ ] Medir chunk principal gzip y guardar referencia. _*(realizado, pendiente de validación: la herramienta ya existía (`npm run perf:check`, 0.4.4), así que el paso es medir y registrar, no escribir código. Baseline medido el 2026-09-27 sobre `f6c6abe` con Node v22.19.0: **JS inicial 66.8 KiB gzip** contra el objetivo ≤ 450 KB de `DEPLOYMENT` §5.1 (15 % usado) y chunk de arranque 66.8 KiB contra ≤ 180 KB (37 % usado); chunk de Three.js `n/d` hasta 1.1.1. Registrado en `docs/GAIA_PERFORMANCE.md` §4.1 con dos advertencias para quien compare después: hoy el build emite **un solo chunk** (aún no hay `manualChunks`, que prescriben DEPLOYMENT §5.1 y TESTING §3.4), así que el total será comparable pero los chunks sueltos no; y el footer de Vite (69.30 kB) y `perf:check` (66.8 KiB) miden el mismo chunk con distinto nivel de gzip, y gana el del script. Sin cambios de código.)*_
 - **Criterio:** baseline registrado (target ≤ 450 KB).
 - **Estimado:** ~0.75 h.
 
