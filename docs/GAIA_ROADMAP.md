@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.53
+> **Versión del Documento:** 1.54
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -267,19 +267,19 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.1 — HUD de dev con FPS/draw calls**
 
-- [ ] Overlay de desarrollo: FPS, p95 y draw calls. _*(realizado, pendiente de validación: `DevOverlay` mide FPS y p95 sobre una ventana de 120 frames con rAF y refresco cada 250 ms; la matemática pura vive en `utils/frameStats.ts` y las draw calls se leen de una fuente registrable por el render (`registerDrawCallsSource`), hoy `n/d` porque la escena base es 1.1.1 — no se inventa un número. Criterio verificado: el E2E ve el overlay con FPS > 0 real y la tecla `d` lo oculta; el build de producción no emite chunk del overlay, que es la forma fuerte de «ocultable en prod». Mutaciones: p95→p50 tumba el test de la cola del 5 %; quitar la puerta `import.meta.env.DEV` mete un chunk de 1.49 kB en producción. Verde: lint 0, `tsc -b` limpio, 45 unit, 4 E2E, backend 62/8 al 96.23 %.)*_
+- [x] Overlay de desarrollo: FPS, p95 y draw calls. _*(validado: `DevOverlay` mide FPS y p95 sobre una ventana de 120 frames con rAF y refresco cada 250 ms; la matemática pura vive en `utils/frameStats.ts` y las draw calls se leen de una fuente registrable por el render (`registerDrawCallsSource`), hoy `n/d` porque la escena base es 1.1.1 — no se inventa un número. Criterio verificado: el E2E ve el overlay con FPS > 0 real y la tecla `d` lo oculta; el build de producción no emite chunk del overlay, que es la forma fuerte de «ocultable en prod». Mutaciones: p95→p50 tumba el test de la cola del 5 %; quitar la puerta `import.meta.env.DEV` mete un chunk de 1.49 kB en producción. Verde: lint 0, `tsc -b` limpio, 45 unit, 4 E2E, backend 62/8 al 96.23 %.)*_
 - **Criterio:** métricas en vivo y ocultable en prod.
 - **Estimado:** ~1.25 h.
 
 **Paso 0.7.2 — Timing de respuestas de API**
 
-- [ ] Log de duración por endpoint (nominal/p95) en dev. _*(realizado, pendiente de validación: `app/services/timing.py` acumula por ruta `/api/*` una ventana de 100 muestras y escribe una línea INFO por petición con `avg` y `p95`; nominal = promedio (decidido por el usuario, la doc no lo fijaba). Reutiliza el `perf_counter` que `AccessLogMiddleware` ya calculaba, sin segundo timer, y solo con `DEBUG` (DEPLOYMENT §4.1), que ya existía. Dos topes deliberados: ventana de 100 muestras y 64 endpoints, porque las claves salen de la URL y un escáner de rutas inventadas crecería la memoria. Criterio verificado: con `DEBUG` la petición a `/api/_rl-probe` deja una línea `duración GET /api/_rl-probe avg=… p95=… n=1` en el log, y sin `DEBUG` ninguna. Mutaciones: p95→mediana tumba 2 tests; quitar la puerta `DEBUG` tumba 2. Verde: 73 passed / 8 skipped al 96.50 %.)*_
+- [x] Log de duración por endpoint (nominal/p95) en dev. _*(validado: `app/services/timing.py` acumula por ruta `/api/*` una ventana de 100 muestras y escribe una línea INFO por petición con `avg` y `p95`; nominal = promedio (decidido por el usuario, la doc no lo fijaba). Reutiliza el `perf_counter` que `AccessLogMiddleware` ya calculaba, sin segundo timer, y solo con `DEBUG` (DEPLOYMENT §4.1), que ya existía. Dos topes deliberados: ventana de 100 muestras y 64 endpoints, porque las claves salen de la URL y un escáner de rutas inventadas crecería la memoria. Criterio verificado: con `DEBUG` la petición a `/api/_rl-probe` deja una línea `duración GET /api/_rl-probe avg=… p95=… n=1` en el log, y sin `DEBUG` ninguna. Mutaciones: p95→mediana tumba 2 tests; quitar la puerta `DEBUG` tumba 2. Verde: 73 passed / 8 skipped al 96.50 %.)*_
 - **Criterio:** tiempos visibles en logs del backend.
 - **Estimado:** ~1 h.
 
 **Paso 0.7.3 — Baseline del bundle gzip**
 
-- [ ] Medir chunk principal gzip y guardar referencia. _*(realizado, pendiente de validación: la herramienta ya existía (`npm run perf:check`, 0.4.4), así que el paso es medir y registrar, no escribir código. Baseline medido el 2026-09-27 sobre `f6c6abe` con Node v22.19.0: **JS inicial 66.8 KiB gzip** contra el objetivo ≤ 450 KB de `DEPLOYMENT` §5.1 (15 % usado) y chunk de arranque 66.8 KiB contra ≤ 180 KB (37 % usado); chunk de Three.js `n/d` hasta 1.1.1. Registrado en `docs/GAIA_PERFORMANCE.md` §4.1 con dos advertencias para quien compare después: hoy el build emite **un solo chunk** (aún no hay `manualChunks`, que prescriben DEPLOYMENT §5.1 y TESTING §3.4), así que el total será comparable pero los chunks sueltos no; y el footer de Vite (69.30 kB) y `perf:check` (66.8 KiB) miden el mismo chunk con distinto nivel de gzip, y gana el del script. Sin cambios de código.)*_
+- [x] Medir chunk principal gzip y guardar referencia. _*(validado: la herramienta ya existía (`npm run perf:check`, 0.4.4), así que el paso es medir y registrar, no escribir código. Baseline medido el 2026-09-27 sobre `f6c6abe` con Node v22.19.0: **JS inicial 66.8 KiB gzip** contra el objetivo ≤ 450 KB de `DEPLOYMENT` §5.1 (15 % usado) y chunk de arranque 66.8 KiB contra ≤ 180 KB (37 % usado); chunk de Three.js `n/d` hasta 1.1.1. Registrado en `docs/GAIA_PERFORMANCE.md` §4.1 con dos advertencias para quien compare después: hoy el build emite **un solo chunk** (aún no hay `manualChunks`, que prescriben DEPLOYMENT §5.1 y TESTING §3.4), así que el total será comparable pero los chunks sueltos no; y el footer de Vite (69.30 kB) y `perf:check` (66.8 KiB) miden el mismo chunk con distinto nivel de gzip, y gana el del script. Sin cambios de código.)*_
 - **Criterio:** baseline registrado (target ≤ 450 KB).
 - **Estimado:** ~0.75 h.
 
@@ -309,7 +309,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.8 — Docs de presupuestos**
 
-- [ ] Sección de presupuestos en `GAIA_PERFORMANCE` (o SPEC). _*(realizado, pendiente de validación: creado `docs/GAIA_PERFORMANCE.md` v1.0 con §2 presupuestos canónicos referenciados a su doc de origen (SPEC RNF-01/RNF-02/RNF-06, TESTING §3.2-§3.4, ROADMAP §17), §3 assets por módulo, §4 baselines, §5 herramientas reales y §6 trazabilidad; fila en el README. Consistente con §17: los valores se citan, no se repiten.)*_
+- [x] Sección de presupuestos en `GAIA_PERFORMANCE` (o SPEC). _*(validado: creado `docs/GAIA_PERFORMANCE.md` v1.0 con §2 presupuestos canónicos referenciados a su doc de origen (SPEC RNF-01/RNF-02/RNF-06, TESTING §3.2-§3.4, ROADMAP §17), §3 assets por módulo, §4 baselines, §5 herramientas reales y §6 trazabilidad; fila en el README. Consistente con §17: los valores se citan, no se repiten.)*_
 - **Criterio:** documentado y consistente con §17 del ROADMAP.
 - **Estimado:** ~0.75 h.
 
