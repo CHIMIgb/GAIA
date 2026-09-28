@@ -59,6 +59,26 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    # DATABASE.md §6.1: «CI la ejecuta contra una DB limpia en los tests de
+    # integración». Sin este servicio los 8 tests que hablan con PostgreSQL se
+    # saltan solos (el fixture hace pytest.skip si no hay servidor) y el esquema,
+    # la sesión en BD y el api_log no se verifican nunca: pasaban sin que nadie
+    # mirase. Usuario, contraseña y base coinciden con el default de
+    # `app/config.py`, asi que no hace falta pasar DATABASE_URL por env.
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: gaia
+          POSTGRES_PASSWORD: gaia
+          POSTGRES_DB: gaia
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U gaia"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
