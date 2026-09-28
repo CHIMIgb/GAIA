@@ -34,6 +34,10 @@ jobs:
       # RNF-01. Sin `|| true`, que es justo lo que se quita abajo.
       - run: npm run perf:check
       - run: npm test
+      # 0.7.10: la cobertura se publica por fase del ROADMAP. La puerta son solo
+      # las areas cuyo umbral fija un doc (utils y store/actions al 80 % de TESTING
+      # 1); el resto se publica sin bloquear porque el codigo aun no existe.
+      - run: npm run coverage
 
   backend:
     name: Backend (pytest)

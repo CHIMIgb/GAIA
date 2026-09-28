@@ -56,5 +56,13 @@ export default defineConfig(({ mode }) => ({
     // "Playwright Test did not expect test() to be called here".
     include: ["tests/**/*.spec.{ts,tsx}"],
     exclude: ["tests/e2e/**", "tests/fcp/**", "node_modules/**", "dist/**"],
+    coverage: {
+      provider: "v8",
+      // `json-summary` es lo que lee `scripts/coverage.mjs` (0.7.10) para
+      // atribuir cada archivo a su fase del ROADMAP. `text` lo deja legible en
+      // el log de local; en CI manda el step summary.
+      reporter: ["text", "json-summary"],
+      reportsDirectory: "coverage",
+    },
   },
 }));

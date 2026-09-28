@@ -11,6 +11,7 @@ dist-ssr/
 *.log
 npm-debug.log*
 coverage/
+coverage.json
 htmlcov/
 .coverage
 .coverage.*

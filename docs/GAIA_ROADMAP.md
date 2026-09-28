@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.62
+> **Versión del Documento:** 1.63
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-28
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -321,7 +321,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.10 — Reporte de cobertura por fase**
 
-- [ ] Script que agrega cobertura por fase en CI.
+- [ ] Script que agrega cobertura por fase en CI. _(realizado, pendiente de validación: «por fase» no lo define ningún doc, así que se decidió con el usuario: una fila por fase del ROADMAP, con el mapa fase→código explícito en `scripts/coverage.mjs` (el ROADMAP dice qué hace cada fase y `PROJECT_STRUCTURE` §2 cómo se llaman las carpetas, pero ningún doc los cruza) y las fases sin código saliendo con «sin código aún». Los nombres de carpeta son los del doc (`modules/seismic/`, `shaders/fire/`), no los que se me occurring. Puerta solo donde el número es de un doc: `frontend/src/utils` y `frontend/src/store/actions.ts` al 80 % de `TESTING` §1, y `backend/app` al 60 % del `fail_under` de 0.6.10. El resto se publica sin bloquear, porque `radiation_normalizer.py` y `coordinates.ts` no existen y una puerta sobre código inexistente se salta siempre. Un archivo se atribuye a la fase de glob más largo: sin esa regla `backend/app/routers/fires.py` contaba en F0 y en F2 (medido: F0 daba 80 % en vez de 70 %). Tabla real de hoy: F0 96 %, con `utils` 100 %, `store/actions` 100 %, `services` 91 %, `workers` 100 % y `backend/app` 97 %. El frontend no tenía paquete de cobertura (`@vitest/coverage-v8` ahora sí) y el backend ya tenía `pytest-cov` con su `fail_under`; solo se le añadió `--cov-report=json` para que el agregador lo pueda leer. La tabla va al `GITHUB_STEP_SUMMARY` porque el log de un job desaparece al terminar. Dos bugs de formato, los dos silenciosos: el `json-summary` de vitest no tiene la envoltura `files` de istanbul y coverage.py da rutas relativas a `backend/`, así que la tabla salía entera en «sin código aún» con los reportes generados al lado; los dos tienen ahora un test con la forma real del reporte. Arreglo de paso: CI llamaba a `npm test` en la raíz y ese script no existía, o sea que el job frontend estaba roto; ahora corre los tests de los scripts de la raíz y los del frontend.)_
 - **Criterio:** cada fase publica su cobertura.
 - **Estimado:** ~1 h.
 
