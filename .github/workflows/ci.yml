@@ -42,3 +42,38 @@ jobs:
           python-version: "3.12"
       - run: uv sync --frozen
       - run: uv run pytest -q
+
+  # Smoke E2E (ROADMAP 0.6.9, TESTING §7.3 y §8.1). El backend es real y sin Redis ni
+  # PostgreSQL: /api/health responde y los dos degradan solos.
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.12.x"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: npm ci
+        working-directory: frontend
+      - run: uv sync --frozen
+        working-directory: backend
+      # El browser va con sus dependencias de sistema; `--with-deps` es lo que hace
+      # que falte en un runner limpio.
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: npm run test:e2e
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: frontend/test-results/
+          retention-days: 7

@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.40
+> **Versión del Documento:** 1.41
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -241,7 +241,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.6.9 — Smoke E2E (Playwright) base**
 
-- [ ] Primer flujo E2E: cargar app, health y un dato mock.
+- [ ] Primer flujo E2E: cargar app, health y un dato mock. _*(realizado, pendiente de validación: `@playwright/test` + `playwright.config.ts` con los dos `webServer` (Vite y uvicorn real, sin Redis ni PostgreSQL) y un job E2E en el CI. Tres tests: la app monta sin errores de consola, `/api/health` devuelve el sobre del contrato, y un dato mock enrutado por `page.route` deja el módulo en `live` pasando por el write path real (`runDataRequest` + `fetchAPI`, STATE §6.4) en el navegador. Solo Chromium: el smoke de 4 navegadores con WebGL2 de TESTING §7.3 espera al globo de F1.)*_
 - **Criterio:** el flujo E2E pasa en CI.
 - **Estimado:** ~1.25 h.
 

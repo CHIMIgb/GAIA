@@ -18,6 +18,10 @@ export default defineConfig({
   // hace falta para los tests que montan componentes.
   test: {
     environment: "jsdom",
+    // `e2e` queda fuera a propósito: los `.spec.ts` de Playwright los corre él
+    // (`npm run test:e2e`). Sin el exclude, vitest los carga y falla con
+    // "Playwright Test did not expect test() to be called here".
     include: ["tests/**/*.spec.{ts,tsx}"],
+    exclude: ["tests/e2e/**", "node_modules/**", "dist/**"],
   },
 });
