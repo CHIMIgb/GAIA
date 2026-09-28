@@ -1,0 +1,119 @@
+name: Reporte de bug
+description: Algo no hace lo que debería. Incluye el comando que lo reproduce.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias. Antes de escribir: si el fallo viene de un comando que tenemos, pega su
+        salida tal cual; el log es la mitad del diagnóstico. Los comandos están en
+        `docs/GAIA_CONTRIBUTING.md` §6.
+
+  - type: input
+    id: resumen
+    attributes:
+      label: Resumen en una frase
+      description: Qué falla y dónde, sin contexto extra.
+      placeholder: El smoke E2E falla al arrancar Vite en el job del CI
+    validations:
+      required: true
+
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Pasos para reproducir
+      description: Numerados y ejecutables de principio a fin, con el directorio desde el que corres.
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: esperado
+    attributes:
+      label: Comportamiento esperado
+      value: |
+        -
+    validations:
+      required: true
+
+  - type: textarea
+    id: real
+    attributes:
+      label: Comportamiento real
+      description: Qué sale de verdad, con la salida del comando.
+      value: |
+        ```
+        ```
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severidad
+    attributes:
+      label: Gravedad
+      options:
+        - Bloquea el trabajo de alguien más
+        - Rompe un criterio de aceptación del ROADMAP
+        - Molesta pero hay camino alternativo
+        - Cosmético
+    validations:
+      required: true
+
+  - type: input
+    id: paso
+    attributes:
+      label: Paso del ROADMAP afectado
+      description: Si sabes cuál es, con su número. Si no, "ninguno".
+      placeholder: 0.8.4
+
+  - type: input
+    id: rf
+    attributes:
+      label: RF / RNF relacionada
+      description: Solo si aplica. Están al principio de cada fase en el ROADMAP. Si ninguna, "—".
+      placeholder: RNF-01
+
+  - type: dropdown
+    id: entorno
+    attributes:
+      label: Entorno
+      options:
+        - Local (mi máquina)
+        - CI (GitHub Actions)
+        - Docker
+        - Otro
+    validations:
+      required: true
+
+  - type: textarea
+    id: versiones
+    attributes:
+      label: Versiones y sistema
+      description: Sistema operativo, versión de Node, versión de Python/uv, navegador. Las fijadas por el proyecto están en DEPLOYMENT §3.1.
+      value: |
+        SO:
+        Node:
+        Python/uv:
+        Navegador:
+
+  - type: textarea
+    id: evidencia
+    attributes:
+      label: Evidencia
+      description: Salidas de los comandos, logs, capturas. Si el fallo es intermitente, añade el timestamp del momento (RFC 3339, p. ej. 2026-09-28T15:04:05Z).
+      value: |
+        ```
+
+  - type: checkboxes
+    id: busqueda
+    attributes:
+      label: Antes de enviar
+      options:
+        - label: He buscado si ya hay un issue abierto con lo mismo.
+          required: true
+        - label: He pegado la salida del comando, no una descripción del síntoma.
+          required: true

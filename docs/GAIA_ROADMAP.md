@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.71
+> **Versión del Documento:** 1.72
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-28
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -356,7 +356,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.8.4 — Templates de issue/PR**
 
-- [ ] Plantillas con checklist (RFC3339, RF/RNF, tests).
+- [x] Plantillas con checklist (RFC3339, RF/RNF, tests). _(realizado, pendiente de validación: dos issue forms y una plantilla de PR en `.github/`)_
 - **Criterio:** issues/PRs con estructura consistente.
 - **Estimado:** ~0.75 h.
 
