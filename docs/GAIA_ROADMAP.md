@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.49
+> **Versión del Documento:** 1.50
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -291,13 +291,13 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.5 — Presupuesto de assets**
 
-- [ ] Lista de límites para texturas/shaders por módulo.
+- [ ] Lista de límites para texturas/shaders por módulo. _(hueco de doc: no hay ningún doc que fije tamaños de textura ni de shader. `GAIA_TESTING.md` §3.4 solo dice «streaming por tiles», sin cifras, y `GAIA_GLOBE_TEXTURES.md` cataloga APIs del globo, no presupuestos. Además el destino que nombra el criterio («el doc de rendimiento») no existe todavía: ver 0.7.8. El paso no se puede ejecutar sin decidir el doc destino y los límites por módulo.)_
 - **Criterio:** presupuestos escritos en el doc de rendimiento.
 - **Estimado:** ~0.75 h.
 
 **Paso 0.7.6 — Análisis por chunk**
 
-- [ ] Reporte de tamaños por chunk (source maps, build analyze).
+- [ ] Reporte de tamaños por chunk (source maps, build analyze). _(hueco de doc parcial: `GAIA_TESTING.md` §3.4 menciona `rollup-plugin-visualizer` o `size-limit` como forma de verificar, y el árbol de `GAIA_PROJECT_STRUCTURE.md` §2 lo prescribes en `vite.plugins.ts`, pero ese fichero no existe — la config real está en `frontend/vite.config.ts`. Falta elegir la herramienta y dejar constancia de dónde vive.)_
 - **Criterio:** identificar módulos pesados a futuro.
 - **Estimado:** ~0.75 h.
 
@@ -309,13 +309,13 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.8 — Docs de presupuestos**
 
-- [ ] Sección de presupuestos en `GAIA_PERFORMANCE` (o SPEC).
+- [ ] Sección de presupuestos en `GAIA_PERFORMANCE` (o SPEC). _(hueco de doc: `docs/GAIA_PERFORMANCE.md` no existe — `docs/` tiene 16 ficheros y ninguno es de rendimiento. Los valores canónicos que sí están fijados son los de `GAIA_TESTING.md` §3.4 (chunk de arranque ≤ 180 KB, chunk Three.js ≤ 250 KB, React + HUD ≤ 120 KB, total JS inicial ≤ 450 KB) y RNF-01; un doc de rendimiento nuevo debe referenciarlos, no repetirlos. Falta decidir el destino: doc nuevo o sección en SPEC.)_
 - **Criterio:** documentado y consistente con §17 del ROADMAP.
 - **Estimado:** ~0.75 h.
 
 **Paso 0.7.9 — Reglas de orden de imports**
 
-- [ ] ESLint de import order y boundaries (`shared`).
+- [ ] ESLint de import order y boundaries (`shared`). _(hueco de doc: el paso nombra ESLint, pero el lint del proyecto es oxlint desde 0.6.11 y no existe `.eslintrc.js`, aunque el árbol de `GAIA_PROJECT_STRUCTURE.md` §2 lo lista y el paso 0.1.x del ROADMAP lo da por hecho. Además `GAIA_TESTING.md` §9 dice `tsc --noEmit` y el código usa `tsc -b`. `shared/` sí existe (0.2.x), así que la boundary esa es real. Hay que decidir si la regla se aplica con oxlint o si se reintroduce ESLint.)_
 - **Criterio:** imports consistentes en todo el repo.
 - **Estimado:** ~0.75 h.
 
@@ -333,7 +333,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.12 — Grabación de baseline comparativa**
 
-- [ ] Guardar baseline en repo para comparativas futuras.
+- [ ] Guardar baseline en repo para comparativas futuras. _(hueco de doc menor: no hay ruta ni formato decididos para el fichero de baseline. `GAIA_PROJECT_STRUCTURE.md` §2 tiene `scripts/` para verificaciones de build, pero un baseline es un dato versionado, no un script, así que necesita su sitio antes de escribirse.)_
 - **Criterio:** archivo de baseline versionado.
 - **Estimado:** ~0.75 h.
 
