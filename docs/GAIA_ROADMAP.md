@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.47
+> **Versión del Documento:** 1.48
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -267,7 +267,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.1 — HUD de dev con FPS/draw calls**
 
-- [ ] Overlay de desarrollo: FPS, p95 y draw calls.
+- [ ] Overlay de desarrollo: FPS, p95 y draw calls. _*(realizado, pendiente de validación: `DevOverlay` mide FPS y p95 sobre una ventana de 120 frames con rAF y refresco cada 250 ms; la matemática pura vive en `utils/frameStats.ts` y las draw calls se leen de una fuente registrable por el render (`registerDrawCallsSource`), hoy `n/d` porque la escena base es 1.1.1 — no se inventa un número. Criterio verificado: el E2E ve el overlay con FPS > 0 real y la tecla `d` lo oculta; el build de producción no emite chunk del overlay, que es la forma fuerte de «ocultable en prod». Mutaciones: p95→p50 tumba el test de la cola del 5 %; quitar la puerta `import.meta.env.DEV` mete un chunk de 1.49 kB en producción. Verde: lint 0, `tsc -b` limpio, 45 unit, 4 E2E, backend 62/8 al 96.23 %.)*_
 - **Criterio:** métricas en vivo y ocultable en prod.
 - **Estimado:** ~1.25 h.
 
