@@ -32,7 +32,11 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
     {
-      command: `npm run dev -- --port ${FRONTEND_PORT} --strictPort`,
+      // `--host 127.0.0.1` no es decorativo: sin él el dev server de Vite 8 escucha
+      // solo en `[::1]`, y la sonda de readiness va a `127.0.0.1` → ECONNREFUSED
+      // hasta que se agotan los 60 s. Se vio al abrir 0.7.4: con un dev server
+      // viejo reutilizado el bug pasaba desapercibido.
+      command: `npm run dev -- --port ${FRONTEND_PORT} --host 127.0.0.1 --strictPort`,
       url: `http://127.0.0.1:${FRONTEND_PORT}`,
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
