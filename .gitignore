@@ -11,6 +11,9 @@ dist-ssr/
 *.log
 npm-debug.log*
 coverage/
+htmlcov/
+.coverage
+.coverage.*
 .vite/
 
 # Playwright (0.6.9)
