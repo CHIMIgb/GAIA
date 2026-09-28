@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.45
+> **Versión del Documento:** 1.46
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -259,7 +259,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.6.12 — Definición de Terminado (DoD)**
 
-- [ ] Checklist de DoD (barra `- [ ]` green + test + commit) documentado.
+- [ ] Checklist de DoD (barra `- [ ]` green + test + commit) documentado. _*(realizado, pendiente de validación: `docs/GAIA_DOD.md` v1.0 con cabecera de versión y fecha, fila en el README y enlace desde `AGENTS.md`. El checklist ata los ocho puntos que se comprueban al cerrar un micro-paso (criterio verificado con evidencia, test que ata el comportamiento, mutación que lo tumba, suite en verde, commit con prefijo semántico, ROADMAP que refleja el estado real, valores de su doc de origen y deudas anotadas), incluye una tabla de las seis mutaciones ya usadas en la Fase 0 y las excepciones: docs, configuración pura y deuda pospuesta a propósito.)*_
 - **Criterio:** el DoD es seguible por cualquier contribuidor.
 - **Estimado:** ~0.25 h.
 

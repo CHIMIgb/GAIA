@@ -23,6 +23,7 @@
 | [Roadmap de Desarrollo](docs/GAIA_ROADMAP.md)                       | 14 fases incrementales: construcción de un módulo a la vez (de extremo a extremo) con pasos pequeños, criterios de aceptación y trazabilidad RF/RNF. |
 | [Identidad Visual y Diseño de Interfaz](docs/GAIA_VISUAL_DESIGN.md) | Estilo minimalista de GAIA: paleta orbital, tipografía, iconografía de línea, layout centrado en el planeta y movimiento.                            |
 | [Recomendaciones Técnicas](docs/GAIA_RECOMENDACIONES.md)            | Auditoría objetiva de la documentación: fortalezas, deudas técnicas y recomendaciones accionables priorizadas (P0–P3).                               |
+| [Definición de Terminado (DoD)](docs/GAIA_DOD.md)                   | Checklist con el que se da por terminado un micro-paso: criterio verificado, test que ata el comportamiento, mutación, suite en verde y commit.      |
 
 ---
 
