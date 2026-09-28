@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.60
+> **Versión del Documento:** 1.61
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-28
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -297,7 +297,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.6 — Análisis por chunk**
 
-- [ ] Reporte de tamaños por chunk (source maps, build analyze). _(hueco de doc parcial: `GAIA_TESTING.md` §3.4 menciona `rollup-plugin-visualizer` o `size-limit` como forma de verificar, y el árbol de `GAIA_PROJECT_STRUCTURE.md` §2 lo prescribes en `vite.plugins.ts`, pero ese fichero no existe — la config real está en `frontend/vite.config.ts`. Falta elegir la herramienta y dejar constancia de dónde vive.)_
+- [ ] Reporte de tamaños por chunk (source maps, build analyze). _(realizado, pendiente de validación: la herramienta era la parte que faltaba decidir, y sale del criterio. `rollup-plugin-visualizer`, porque el criterio es *identificar* módulos pesados a futuro y eso es un reporte; `size-limit` pone puertas por chunk y necesita cifras, que es justo lo que 0.7.5 tiene bloqueado. Vive en `frontend/vite.config.ts` —el fichero real, no el `vite.plugins.ts` que el árbol de `GAIA_PROJECT_STRUCTURE.md` §2 presuponía y que no existe— y detrás de `--mode analyze` (`npm run analyze`) en vez de una env var, porque en npm scripts una env var necesita `cross-env` para dar lo mismo en Windows que en Linux y `--mode` ya es de Vite. Sale un treemap de 175 KB en `dist/stats.html` con gzip y brotli, no raw: los presupuestos de §4 son de gzip, y comparar el número grande contra ellos daría falsos positivos. Un build normal no lo genera ni lo deja. Mutación: colgar el plugin siempre tumba el test que comprueba que el build normal no paga el reporte. No se mete en CI a propósito: el reporte es para mirar un momento concreto, no una puerta.)_
 - **Criterio:** identificar módulos pesados a futuro.
 - **Estimado:** ~0.75 h.
 

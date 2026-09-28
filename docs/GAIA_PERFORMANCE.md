@@ -1,6 +1,6 @@
 # GAIA — Performance
 
-> **Versión del Documento:** 1.2
+> **Versión del Documento:** 1.3
 > **Fecha:** 2026-09-28
 > **Propósito:** presupuestos, umbrales y baselines de rendimiento de GAIA. Referencia, no fuente: los valores canónicos viven en su doc de origen y aquí solo se citan.
 
@@ -108,14 +108,14 @@ comparan las siguientes. Sirve para distinguir "ha ido mal" de "ya iba mal".
 
 ## 5. Herramientas de medición (estado real, no la prescripción)
 
-| Qué                      | Herramienta                                                             | Estado                                                                                                                 |
-| ------------------------ | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Presupuesto de bundle    | `npm run perf:check` + `bundle-budget.mjs`                              | En uso desde 0.6.x                                                                                                     |
-| Métricas de frame en dev | `DevOverlay` (FPS, p95, draw calls)                                     | Desde 0.7.1                                                                                                            |
-| Duración por endpoint    | Línea `duración …avg=…p95=…` con `DEBUG`                                | Desde 0.7.2                                                                                                            |
-| Frames largos            | `DevOverlay` (contador) + `PerformanceObserver('long-animation-frame')` | Desde 0.7.7 — ver la nota de dos umbrales                                                                              |
-| FCP                      | `npm run fcp` (Playwright + `PerformanceObserver`)                      | Desde 0.7.4 — baseline en §4.2                                                                                         |
-| Análisis por chunk       | `rollup-plugin-visualizer` o `size-limit`                               | Pendiente (0.7.6); `TESTING` §3.4 lo menciona, `PROJECT_STRUCTURE` §2 lo presupone en `vite.plugins.ts`, que no existe |
+| Qué                      | Herramienta                                                             | Estado                                          |
+| ------------------------ | ----------------------------------------------------------------------- | ----------------------------------------------- |
+| Presupuesto de bundle    | `npm run perf:check` + `bundle-budget.mjs`                              | En uso desde 0.6.x                              |
+| Métricas de frame en dev | `DevOverlay` (FPS, p95, draw calls)                                     | Desde 0.7.1                                     |
+| Duración por endpoint    | Línea `duración …avg=…p95=…` con `DEBUG`                                | Desde 0.7.2                                     |
+| Frames largos            | `DevOverlay` (contador) + `PerformanceObserver('long-animation-frame')` | Desde 0.7.7 — ver la nota de dos umbrales       |
+| FCP                      | `npm run fcp` (Playwright + `PerformanceObserver`)                      | Desde 0.7.4 — baseline en §4.2                  |
+| Análisis por chunk       | `npm run analyze` (`rollup-plugin-visualizer`)                          | Desde 0.7.6 — treemap HTML en `dist/stats.html` |
 
 ### 5.1 Los dos umbrales de los frames largos (0.7.7)
 
