@@ -20,6 +20,10 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      # Lint antes que test y build (0.6.11): falla rápido y sin gastar minutos de
+      # runner. `oxlint --deny-warnings` es lo que hace que un aviso tumbe el job;
+      # sin ese flag oxlint sale con 0 aunque reporte.
+      - run: npm run lint
       - run: npm run build
       # Presupuesto de bundle: falla el CI si dist/ se pasa de los límites de
       # RNF-01. Sin `|| true`, que es justo lo que se quita abajo.

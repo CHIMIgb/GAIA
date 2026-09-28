@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.44
+> **Versión del Documento:** 1.45
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-27
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -253,7 +253,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.6.11 — CI: lint + test + build por PR**
 
-- [ ] Workflow completo en GitHub Actions (lint, test, build).
+- [ ] Workflow completo en GitHub Actions (lint, test, build). _*(realizado, pendiente de validación: el job de frontend corre `lint` → `build` → `perf:check` → `test` y el de backend `pytest` con el umbral de cobertura, todo en `pull_request` y en push a `main`. El paso grande era que `npm run lint` salía con 0 aunque hubiera avisos, así que no bloqueaba nada: ahora es `oxlint --deny-warnings`, verificado metiendo un `debugger` (exit 1) y sin él (exit 0). Sin linter de Python, que ningún doc pide y no se ha añadido.)*_
 - **Criterio:** cada PR ejecuta los tres pasos y bloquea en rojo.
 - **Estimado:** ~0.75 h.
 
