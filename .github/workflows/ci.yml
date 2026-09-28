@@ -9,16 +9,21 @@ jobs:
   frontend:
     name: Frontend (build + test)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
+    # Este job corre en la RAÍZ, no en `frontend/`, y no por gusto: cuatro de sus
+    # pasos son scripts de la raíz (`lint:imports`, `perf:baseline`, `test` y
+    # `coverage`, este último el agregador de fases) y la boundary de imports
+    # atraviesa los dos workspaces. Con `working-directory: frontend` esos cuatro
+    # no existían, `npm ci` instalaba desde `frontend/package-lock.json` —un lock
+    # independiente y viejo, sin el enlace a `shared` ni los devDeps de la raíz— y
+    # el job no podía terminar en verde. La raíz es la única desde donde los doce
+    # comandos existen, que es lo mismo que se ejecuta en local.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: package-lock.json
       - run: npm ci
       # Lint antes que test y build (0.6.11): falla rápido y sin gastar minutos de
       # runner. `oxlint --deny-warnings` es lo que hace que un aviso tumbe el job;
@@ -42,6 +47,10 @@ jobs:
       # 0.7.10: la cobertura se publica por fase del ROADMAP. La puerta son solo
       # las areas cuyo umbral fija un doc (utils y store/actions al 80 % de TESTING
       # 1); el resto se publica sin bloquear porque el codigo aun no existe.
+      # El script raíz encadena el coverage de frontend con `scripts/coverage.mjs`,
+      # así que aquí por fin se publica la tabla. Lo que no llega es la fila del
+      # backend: su reporte vive en otro job y sin compartir el artefacto la tabla
+      # sale solo con frontend. Deuda para F11.
       - run: npm run coverage
 
   backend:
