@@ -1,7 +1,7 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.97
-> **Estado:** En ejecución — Fase 0 en curso: **61 de 66 micro-pasos validados**; **5 pendientes** (`0.7.5`, `0.7.13`, `0.8.13` a `0.8.15`). Fases F1 a F13 sin empezar.
+> **Versión del Documento:** 1.98
+> **Estado:** En ejecución — Fase 0 en curso: **61 de 66 micro-pasos validados**; 0.8.13 realizado y pendiente de validación; **4 pendientes** (`0.7.5`, `0.7.13`, `0.8.14`, `0.8.15`). Fases F1 a F13 sin empezar.
 > **Última actualización:** 2026-09-29
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
 
@@ -413,7 +413,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.8.13 — Consistencia con docs compañeros**
 
-- [ ] Revisar que SPEC/SECURITY/STATE coinciden con lo construido.
+- [ ] Revisar que SPEC/SECURITY/STATE coinciden con lo construido. _\*(realizado, pendiente de validación: auditado doc por doc contra el código, y el resultado fue desigual. STATE: correcto, su `GaiaState` es una transcripción literal — extraje las 11 claves del doc y del `state.types.ts` y son las mismas, sin una sola diferencia. SECURITY: correcto, los valores que fija están en el código y no en un comentario — token bucket 240/120 en Redis con script Lua atómico (`rate_limit.py` es un `GLOBAL_LIMIT = {capacity: 240, refill_per_min: 120}`), cookie `gaia_session` con token opaco de que solo se guarda `sha256` y TTL de 30 d, `HttpOnly` + `SameSite=Lax` + `Secure` por config, CSP con nonce en producción y `frame-ancestors 'none'`. SPEC: no afirma nada falso sobre el presente (describe el sistema, no un estado ya construido). Los que minten eran otros dos: AGENTS.md decía «**No existe** `frontend/` ni `backend/`: no hay package.json, tests, lint ni CI. No inventar comandos de build/test (no existen)» y «## Verificación (no hay framework)», con «16 docs» cuando hay 20 más el ADR. Eso es lo peligroso de la regla: invita a no correr unos tests que sí existen y eran el mapa de cualquiera que abriese el repo. Corregido con lo medido, no de memoria: los comandos reales, 73 tests pasan y 8 se saltan en local porque el fixture hace `skip` sin PostgreSQL (81 en CI), Node 22 y Python 3.12. Escribí primero «63 tests», «Node 20» y «hay `pre-commit`» porque sonaban razonables, y las tres eran falsas: lo primero que corrige un doc es medirlo. Y DEPLOYMENT §4.4, que listaba 19 variables de `.env.example` sin decir que 10 no las lee nadie: ahora separa las 9 cableadas de las 10 previstas y dice en qué fase llega cada una, para que ponerlas y ver que no hacen nada no parezca un bug)_*
 - **Criterio:** sin desviaciones entre docs.
 - **Estimado:** ~1 h.
 

@@ -232,6 +232,15 @@ TTL_ELEVATION_SECONDS=300
 VITE_GAIA_API_BASE_URL=http://localhost:8000
 ```
 
+> [!IMPORTANT]
+> De las 19 variables de esta plantilla, **9 las lee hoy `Settings`** (`REDIS_URL`, `REDIS_TIMEOUT_SECONDS`,
+> `DATABASE_URL`, `SESSION_COOKIE_NAME`, `SESSION_TTL_SECONDS`, `SESSION_COOKIE_SECURE`, `SESSION_DB_FLUSH_EVERY`,
+> `CORS_ORIGINS`, `DEBUG`) y son las únicas que tiene el repo con contenido real en `.env.example`. Las otras 10
+> están **previstas y aún no cableadas**: `LOG_LEVEL`, `PORT` y `PUBLIC_FRONTEND_URL` (las consume el despliegue,
+> no la app), `VITE_GAIA_API_BASE_URL` (frontend, entra con el primer cliente real en F2), los cinco
+> `TTL_*_SECONDS` (los introduce la caché de módulos en F2–F6) y `FIRMS_MAP_KEY` (F2). No darlas por leídas: si
+> las pones y no hace nada, es porque nadie las consulta todavía.
+
 > [!CAUTION]
 > Nunca commitear `.env` ni `.env.local` con claves reales. `FIRMS_MAP_KEY` se inyecta en el entorno de despliegue (secrets del provider / GitHub Actions), no en el repo.
 

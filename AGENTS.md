@@ -11,7 +11,7 @@
 
 ## Estado del repo
 
-- Documentación de planificación en `docs/` (16 docs, cada uno con `version` + `fecha` en cabecera). **No existe** `frontend/` ni `backend/`: no hay package.json, tests, lint ni CI. No inventar comandos de build/test (no existen).
+- Documentación de planificación en `docs/` (20 docs + `docs/adr/`, cada uno con `version` + `fecha` en cabecera; el índice está en el `README.md`). El código **existe y está en marcha**: `frontend/` (Vite + React + Valtio + workers), `backend/` (FastAPI + Redis + SQLAlchemy + Alembic), `shared/` (contrato tipado), `tests/` y `.github/workflows/`.
 - Todo el contenido es **en español** (identificadores, rutas y comandos en inglés). Escribir nueva documentación en español.
 
 ## Regla de oro: coherencia entre documentos
@@ -58,9 +58,16 @@ Todos los docs de `docs/` comparten valores canónicos en paralelo. Al editar cu
 - `opencode.json` y `.env` están **gitignored** (`opencode.json` contiene la API key de Context7). No committear ni editar el `opencode.json` para romper el plugin ponytail o el MCP de context7; **sí** commitear `.env.example`.
 - Tras commit suele pushearse a `origin/main`.
 
-## Verificación (no hay framework)
+## Verificación (hay framework: úsalo antes deuros greps)
 
-- No hay lint/typecheck/test. Validar cambios con greps de coherencia:
+- Comandos reales, desde la raíz: `npm run lint`, `npm run lint:imports`, `npm run typecheck`, `npm test`,
+  `npm run test:front`, `npm run build`, `npm run perf:baseline` (y `perf:check` como gate de regresión).
+- Backend: `cd backend && .venv/bin/python -m pytest` → **73 pasan y 8 se saltan en local**, y no es un fallo: los
+  8 saltados son los que hablan con PostgreSQL y el fixture hace `skip` si no hay servidor. En CI corren los 81
+  contra un `postgres:18` de servicio (Node 22, Python 3.12; no hay Redis de servicio, el job E2E arranca el
+  backend sin él a propósito). Husky (`lint-staged` + Prettier) formatea lo que se toca; no hay `pre-commit`.
+- Un cambio se da por terminado con **el comando que lo cubre en verde**, no con un grep. Los greps de coherencia
+  de abajo son un extra para lo que ninguna herramienta comprueba (contrato, nombres propios, cifras del ROADMAP):
   - Contrato, endpoints, stack y nombres propios (ver arriba).
   - `/api/quakes` → 0 resultados; `quakes.*` interno (archivos/carpetas) es legítimo: no marcarlo como error.
   - `webpack` solo como comparación intencional (TECH_STACK/DEPLOYMENT).
