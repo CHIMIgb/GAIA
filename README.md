@@ -84,10 +84,8 @@ a F6; allí está el detalle de cada paso, su criterio de aceptación y su estim
 
 ## Puesta en marcha
 
-Hay dos niveles, porque hoy el frontend todavía no habla con la API: el cliente de
-`frontend/src/services/api.ts` existe, pero ningún módulo lo llama todavía porque los
-datos se cablean en F2-F6. Así que el globo 3D arranca sin backend. Detalle de cada
-paso, servicios y variables en [Despliegue](docs/GAIA_DEPLOYMENT.md) §3.
+Hay tres niveles, del más corto al más explícito. El detalle de cada paso, los servicios
+y las variables están en [Despliegue](docs/GAIA_DEPLOYMENT.md) §3.
 
 | Herramienta | Versión | Para qué                            |
 | ----------- | ------- | ----------------------------------- |
@@ -98,64 +96,80 @@ paso, servicios y variables en [Despliegue](docs/GAIA_DEPLOYMENT.md) §3.
 | PostgreSQL  | 18      | Base de datos e historial (Alembic) |
 | Docker      | 24+     | Opcional, solo para Redis           |
 
-### Nivel 1 — Solo el globo (sin backend)
-
-Lo mínimo para ver la esfera 3D y orbitarla:
+### Nivel 1 — Un solo comando (Redis + backend + frontend)
 
 ```bash
 git clone <url-del-repo> && cd GAIA
 npm ci                                # workspaces: instala frontend/ y shared/
+npm run dev:all
+```
+
+`dev:all` levanta Redis con Docker si el 6379 está libre, uvicorn en el 8000 y Vite en
+el 5173, y para los tres con `Ctrl+C`. Si un proceso se cae, para los otros en vez de
+dejarlos huérfanos ocupando el puerto.
+
+Es `scripts/dev.mjs`, sin dependencias nuevas. **No redefine `npm run dev`**: ese sigue
+siendo solo el frontend, como fijan `GAIA_CONTRIBUTING.md` y `GAIA_DEPLOYMENT.md` §3.2
+("la API va aparte, en el 8000").
+
+Lo que `dev:all` **no** hace, porque `DEPLOYMENT` §3.2 lo fija nativo y fuera de Docker
+y porque el backend arranca sin él: crear la BD y el rol de PostgreSQL, y correr
+`alembic upgrade head`. Sin eso no hay historial, y el resto funciona.
+
+### Nivel 2 — Solo el globo (sin backend)
+
+El frontend todavía no llama a la API: el cliente de `frontend/src/services/api.ts`
+existe pero ningún módulo lo usa porque los datos se cablean en F2-F6. Para ver la
+esfera y orbitarla basta con:
+
+```bash
 npm run dev                           # http://localhost:5173
 ```
 
 Vite con HMR; recargar la página basta para volver a aplicar un cambio.
 
-### Nivel 2 — Proyecto completo (globo + backend)
+### Nivel 3 — A mano, paso a paso
 
-Hace falta Redis, PostgreSQL 18 y la migración de Alembic. El backend arranca
-también sin Redis (responde degradado) y sin PostgreSQL, pero sin ellos no hay
-historial ni caché.
+Lo mismo que `dev:all`, proceso a proceso, para cuando se quiere ver o tocar cada
+pieza. Redis y PostgreSQL:
 
 ```bash
-git clone <url-del-repo> && cd GAIA
-
-# Dependencias. npm va desde la raíz porque el repo son workspaces (frontend y
-# shared); uv desde backend/, que es un proyecto uv propio con su uv.lock.
-npm ci
-cd backend && uv sync && cd ..
-
-# Variables: el backend lee .env desde su propio directorio (Settings, env_file).
-cp .env.example backend/.env          # cambiar DATABASE_URL por la clave real
-
-# Redis (Docker o nativo en :6379) y PostgreSQL 18 nativo — los `createdb` y
-# `psql` están en DEPLOYMENT §3.2. Sin la BD y el rol dedicados, alembic sale
-# con ConnectionRefusedError contra el 5432.
+# Redis (Docker o nativo en :6379)
 docker run -d --rm -p 6379:6379 --name gaia-redis redis:7-alpine
-cd backend && uv run alembic upgrade head && cd ..
+
+# PostgreSQL 18 nativo (NO en Docker) con la BD y el rol dedicados
+# GAIA_DATABASE.md §6.3 — el firewall de Windows corta el tráfico WSL → 5432,
+# así que el backend se levanta desde Windows si la BD es local.
+createdb -U postgres gaia            # una vez
+psql -U postgres -c "CREATE ROLE gaia LOGIN PASSWORD '<clave>'"
+psql -U postgres -c "ALTER DATABASE gaia OWNER TO gaia"
 ```
 
-Y luego, en dos terminales:
+Backend y frontend, en dos terminales:
 
 ```bash
-# Backend, en una terminal
+# El backend lee .env desde su propio directorio (Settings, env_file).
+cp .env.example backend/.env          # cambiar DATABASE_URL por la clave real
+cd backend && uv run alembic upgrade head   # crea el esquema (GAIA_DATABASE.md §6.4)
 cd backend && uv run uvicorn app.main:app --reload --port 8000
+```
 
-# Frontend, en otra
-npm run dev                            # http://localhost:5173
+```bash
+npm run dev                            # http://localhost:5173, en la otra terminal
 ```
 
 Comprobar que está en pie:
 
 ```bash
 curl http://localhost:8000/api/health   # {"success": true, "data": {...}, "error": null}
-npm run perf:check                      # presupupuesto de bundle
+npm run perf:check                      # presupuesto de bundle
 npm test                                # unit de los scripts de la raíz y del frontend
 ```
 
 > [!NOTE]
-> En Windows, `uv` puede no estar en el `PATH` de `cmd.exe` aunque esté instalado
-> para tu usuario. `uv sync` y `uv run` fallan con "no se reconoce"; hay que
-> instalarlo para el usuario o añadir su carpeta al `PATH`.
+> En Windows, `uv` puede no estar en el `PATH` de la terminal aunque esté instalado
+> para tu usuario. `uv sync`, `uv run` y `dev:all` fallan con "no se reconoce"; hay
+> que instalarlo para el usuario o añadir su carpeta al `PATH`, y reabrir la terminal.
 
 > [!NOTE]
 > Las variables del backend están todas en `.env.example`, que es la plantilla
@@ -169,7 +183,8 @@ Todos desde la raíz, menos los que llevan `-w frontend` o `cd backend`.
 
 | Script                           | Qué hace                                           |
 | -------------------------------- | -------------------------------------------------- |
-| `npm run dev`                    | Vite en el 5173 con HMR                            |
+| `npm run dev:all`                | Redis + backend + frontend a la vez (Ctrl+C para)  |
+| `npm run dev`                    | Solo Vite en el 5173 con HMR                       |
 | `npm run build`                  | `tsc -b` y build de producción                     |
 | `npm test`                       | Unit de los scripts de la raíz y del frontend      |
 | `npm run test:e2e -w frontend`   | Smoke E2E; levanta Vite y uvicorn                  |
