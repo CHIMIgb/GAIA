@@ -13,9 +13,9 @@ jobs:
     # pasos son scripts de la raíz (`lint:imports`, `perf:baseline`, `test` y
     # `coverage`, este último el agregador de fases) y la boundary de imports
     # atraviesa los dos workspaces. Con `working-directory: frontend` esos cuatro
-    # no existían, `npm ci` instalaba desde `frontend/package-lock.json` —un lock
-    # independiente y viejo, sin el enlace a `shared` ni los devDeps de la raíz— y
-    # el job no podía terminar en verde. La raíz es la única desde donde los doce
+    # no existían, `npm ci` instalaba desde un lock propio de `frontend/` —viejo e
+    # independiente, sin el enlace a `shared` ni los devDeps de la raíz, ya borrado—
+    # y el job no podía terminar en verde. La raíz es la única desde donde los doce
     # comandos existen, que es lo mismo que se ejecuta en local.
     steps:
       - uses: actions/checkout@v4
@@ -100,6 +100,11 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync --frozen
+      # El servicio arranca con la base limpia, y los tests de integración la dan
+      # por migrada: sin esto, `test_api_log_db` y `test_session_db` (que corren
+      # antes que `test_migrations` por orden alfabético) fallan con
+      # UndefinedTableError. `test_migrations` migra igualmente y es idempotente.
+      - run: uv run alembic upgrade head
       - run: uv run pytest -q
 
   # Smoke E2E (ROADMAP 0.6.9, TESTING §7.3 y §8.1). El backend es real y sin Redis ni
@@ -113,7 +118,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: package-lock.json
       - uses: astral-sh/setup-uv@v5
         with:
           version: "0.12.x"
