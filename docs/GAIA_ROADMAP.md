@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.89
+> **Versión del Documento:** 1.90
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-28
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -385,7 +385,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.8.9 — `.env.example`**
 
-- [ ] Variables de entorno documentadas sin secretos.
+- [x] Variables de entorno documentadas sin secretos. _*(realizado, pendiente de validación: `.env.example` reescrito con la regla de que solo se declaran variables que el código lee hoy. `backend/app/config.py` declara 9 y las 9 están como `clave=valor`, con sus defaults; las 9 que `DEPLOYMENT` §4.1-§4.3 documenta y que nadie lee todavía (`DB_PASSWORD`, `FIRMS_MAP_KEY`, `LOG_LEVEL`, `PORT`, `PUBLIC_FRONTEND_URL`, los 5 `TTL_*` y las 2 `VITE_GAIA_*`) quedan en bloque de comentario, porque como `CLAVE=` dirían que están cableadas. `VITE_*` va aparte porque Vite solo lee `frontend/.env.local` y `fetchAPI` recibe la URL como argumento. Verificado: la plantilla carga en `Settings(_env_file=...)` con los tipos correctos, ningún valor del `.env` real aparece en el ejemplo, `backend/.env` sigue ignorado, y `CONTEXT7_API_KEY` va vacía)*_
 - **Criterio:** `.env.example` completo y sin valores reales.
 - **Estimado:** ~0.25 h.
 
