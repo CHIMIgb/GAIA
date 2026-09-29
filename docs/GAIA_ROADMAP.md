@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.79
+> **Versión del Documento:** 1.80
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-28
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -444,7 +444,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.14 — Comparativa baseline vs fase**
 
-- [ ] Script que compara el baseline guardado con la métrica actual. _*(realizado, pendiente de validación: `scripts/perf-baseline.mjs` compara la medición de hoy contra `docs/performance/baseline.json` y el job frontend de CI lo ejecuta. Verificado: con el baseline real sale exit 0; bajando a la fuerza `bundle_js_inicial_kib` a 10 KiB sale exit 1 con «+568,3 %», o sea que el gate bloquea de verdad y no solo informa. La tolerancia es del 1 % a propósito, para distinguir «ha entrado Three.js» de «ha subido esbuild».)*_
+- [x] Script que compara el baseline guardado con la métrica actual. _*(validado: `scripts/perf-baseline.mjs` compara la medición de hoy contra `docs/performance/baseline.json` y el job frontend de CI lo ejecuta. Verificado: con el baseline real sale exit 0; bajando a la fuerza `bundle_js_inicial_kib` a 10 KiB sale exit 1 con «+568,3 %», o sea que el gate bloquea de verdad y no solo informa. La tolerancia es del 1 % a propósito, para distinguir «ha entrado Three.js» de «ha subido esbuild».)*_
 - **Estimado:** ~0.75 h.
 
 **Paso 0.7.15 — Script de medición automática**
@@ -455,17 +455,17 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.16 — Ajuste del presupuesto de FCP**
 
-- [ ] Confirmar presupuesto FCP < 2 s con el scaffold. _*(realizado, pendiente de validación: el presupuesto vive en `frontend/scripts/fcp.mjs` (`FCP_MAX_MS = 2000`) y el test de Playwright lo verifica sobre el build de producción con red 4G. Medido hoy: FCP mediana 304 ms (carreras 332, 304 y 300), un 15 % del presupuesto. El baseline aún guarda los 352 ms de la medición anterior; el comparador no gatea FCP, así que se actualiza cuando se cierre la fase.)*_
+- [x] Confirmar presupuesto FCP < 2 s con el scaffold. _*(validado: el presupuesto vive en `frontend/scripts/fcp.mjs` (`FCP_MAX_MS = 2000`) y el test de Playwright lo verifica sobre el build de producción con red 4G. Medido hoy: FCP mediana 304 ms (carreras 332, 304 y 300), un 15 % del presupuesto. El baseline aún guarda los 352 ms de la medición anterior; el comparador no gatea FCP, así que se actualiza cuando se cierre la fase.)*_
 - **Estimado:** ~0.75 h.
 
 **Paso 0.7.17 — Validación del overlay de dev**
 
-- [ ] Verificar que el overlay no se muestra en prod. _*(realizado, pendiente de validación: comprobado sobre el artefacto, no sobre el código: tras `npm run build`, ningún chunk de `dist/assets/` contiene el texto del overlay ni una referencia a `DevOverlay`, porque `App.tsx` lo importa dinámicamente tras `import.meta.env.DEV` y Vite elimina la rama del grafo. En dev sigue montado, con sus métricas.)*_
+- [x] Verificar que el overlay no se muestra en prod. _*(validado: comprobado sobre el artefacto, no sobre el código: tras `npm run build`, ningún chunk de `dist/assets/` contiene el texto del overlay ni una referencia a `DevOverlay`, porque `App.tsx` lo importa dinámicamente tras `import.meta.env.DEV` y Vite elimina la rama del grafo. En dev sigue montado, con sus métricas.)*_
 - **Estimado:** ~0.75 h.
 
 **Paso 0.7.18 — Snapshot del baseline**
 
-- [ ] Guardar snapshot del baseline en el repo. _*(realizado, pendiente de validación: `docs/performance/baseline.json` está versionado (commit 4abe070) y es JSON legible con `schema`, `metricas` y `historial` con el origen de cada cifra. Lo lee el comparador de 0.7.14. Un dato sin medir va solo en `historial`, no en `metricas`, para no gatear una cifra que nunca se midió.)*_
+- [x] Guardar snapshot del baseline en el repo. _*(validado: `docs/performance/baseline.json` está versionado (commit 4abe070) y es JSON legible con `schema`, `metricas` y `historial` con el origen de cada cifra. Lo lee el comparador de 0.7.14. Un dato sin medir va solo en `historial`, no en `metricas`, para no gatear una cifra que nunca se midió.)*_
 - **Estimado:** ~0.75 h.
 
 ## 3. FASE 1 — Motor 3D y Globo Terráqueo
