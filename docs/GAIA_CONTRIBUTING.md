@@ -99,7 +99,7 @@ docs(fase-0): 0.8.8 convencion de commits con scope de fase y numero de paso en 
   están: el criterio del paso 0.8.8 del ROADMAP es que la convención se aplique **desde F1
   en adelante**, y los pasos de F0 que quedan se hacen ya con la forma nueva. Corregir el
   pasado exigiría reescribir ramas ya pusheadas, y un historial reescrito es peor que un
-  historial con cuatro commits old-school al principio.
+  historial con cinco commits sin prefijo de los primeros días.
 
 ## 5. El hook de pre-commit
 
