@@ -1,7 +1,7 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.103
-> **Estado:** Fase 0 **cerrada con dos excepciones** — 64 de 66 micro-pasos validados; los 2 pendientes (`0.7.5`, `0.7.13`) no son cumplibles con los docs actuales y quedan anotados como tal. Fases F1 a F13 sin empezar.
+> **Versión del Documento:** 1.104
+> **Estado:** Fase 0 **cerrada con dos excepciones** — 64 de 66 micro-pasos validados; los 2 pendientes (`0.7.5`, `0.7.13`) no son cumplibles con los docs actuales y quedan anotados como tal. **Fase 1 en curso**; F2 a F13 sin empezar.
 > **Última actualización:** 2026-09-29
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
 
@@ -2379,7 +2379,7 @@ Cada fase se divide jerárquicamente así:
 | Fase | RF / RNF cubiertos                       | Estado                                             |
 | ---- | ---------------------------------------- | -------------------------------------------------- |
 | F0   | RNF-01 (baseline), RNF-07 (base headers) | **Cerrada con 2 excepciones** — 64 de 66 validados |
-| F1   | RF-01, RF-02, RNF-06, RNF-07 (globo)     | Pendiente                                          |
+| F1   | RF-01, RF-02, RNF-06, RNF-07 (globo)     | En curso — desde el paso 1.1.1                     |
 | F2   | RF-03, RF-04, RNF-02, RNF-03, RNF-05     | Pendiente                                          |
 | F3   | RF-07, RF-08, RNF-02, RNF-03             | Pendiente                                          |
 | F4   | RF-05, RF-06, RNF-01, RNF-03             | Pendiente                                          |
