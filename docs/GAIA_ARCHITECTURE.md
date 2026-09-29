@@ -1,9 +1,9 @@
 # GAIA — Arquitectura del sistema (F0-F1)
 
 > **Proyecto:** GAIA 3D
-> **Versión del Documento:** 1.0
+> **Versión del Documento:** 1.1
 > **Fecha:** 2026-09-28
-> **Alcance:** Describe la arquitectura tal como está montada para las fases 0 y 1, con el flujo de datos que hoy corre de verdad. Complementa a la [Especificación Técnica](./GAIA_SPECIFICATION.md) §2 y al [Roadmap](./GAIA_ROADMAP.md) (fases F0 y F1).
+> **Alcance:** Describe la arquitectura tal como está montada para las fases 0 y 1, con el flujo de datos que hoy corre de verdad. Complementa a la [Especificación Técnica](./GAIA_SPECIFICATION.md) §2 y al [Roadmap](./GAIA_ROADMAP.md) (fases F0 y F1). El porqué de cada tecnología está en [ADR-001](./adr/ADR-001-stack.md) y su justificación por capa, en el [Stack Tecnológico](./GAIA_TECH_STACK.md).
 
 ---
 

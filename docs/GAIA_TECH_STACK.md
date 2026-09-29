@@ -1,8 +1,11 @@
 # GAIA — Stack Tecnológico
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.3  
-> **Fecha:** 2026-09-23  
+> **Versión del Documento:** 1.4  
+> **Fecha:** 2026-09-28
+
+> Este doc explica **por qué** cada tecnología. El registro de decisión —qué se descartó y qué
+> queda sin documentar— está en [adr/ADR-001-stack.md](./adr/ADR-001-stack.md).
 
 ---
 
@@ -55,10 +58,10 @@
 
 ### 2.1 Lenguaje Base — TypeScript
 
-| Aspecto       | Detalle                  |
-| ------------- | ------------------------ |
-| **Tecnología**| TypeScript (strict mode) |
-| **Rol**       | Lenguaje principal del frontend |
+| Aspecto        | Detalle                         |
+| -------------- | ------------------------------- |
+| **Tecnología** | TypeScript (strict mode)        |
+| **Rol**        | Lenguaje principal del frontend |
 
 #### Justificación Técnica
 
@@ -73,11 +76,11 @@ TypeScript con tipado estricto es fundamental en un proyecto de esta complejidad
 interface FireHotspot {
   lat: number;
   lon: number;
-  brightness: number;     // Kelvin
-  frp: number;            // MW/km²
-  instrument: 'VIIRS' | 'MODIS';
-  confidence: 'low' | 'nominal' | 'high';
-  acq_date: string;       // ISO 8601
+  brightness: number; // Kelvin
+  frp: number; // MW/km²
+  instrument: "VIIRS" | "MODIS";
+  confidence: "low" | "nominal" | "high";
+  acq_date: string; // ISO 8601
 }
 ```
 
@@ -85,10 +88,10 @@ interface FireHotspot {
 
 ### 2.2 Tooling & Bundler — Vite
 
-| Aspecto       | Detalle                              |
-| ------------- | ------------------------------------ |
-| **Tecnología**| Vite (esbuild + Rollup)              |
-| **Rol**       | Dev server con HMR y pipeline de compilación |
+| Aspecto        | Detalle                                      |
+| -------------- | -------------------------------------------- |
+| **Tecnología** | Vite (esbuild + Rollup)                      |
+| **Rol**        | Dev server con HMR y pipeline de compilación |
 
 #### Justificación Técnica
 
@@ -102,8 +105,8 @@ Vite cubre el mismo pipeline (GLSL, Workers, code splitting) que Webpack, pero c
 
    ```typescript
    // shaders.ts — Vite
-   import atmosphereVert from './atmosphere.vert?raw';
-   import atmosphereFrag from './atmosphere.frag?raw';
+   import atmosphereVert from "./atmosphere.vert?raw";
+   import atmosphereFrag from "./atmosphere.frag?raw";
    ```
 
 3. **Web Workers de primera clase:**  
@@ -123,10 +126,10 @@ Vite cubre el mismo pipeline (GLSL, Workers, code splitting) que Webpack, pero c
 
 ### 2.3 Motor 3D & Shaders — Three.js + GLSL
 
-| Aspecto       | Detalle          |
-| ------------- | ---------------- |
-| **Tecnología**| Three.js + GLSL  |
-| **Rol**       | Renderizado 3D, shaders, gestión de VRAM |
+| Aspecto        | Detalle                                  |
+| -------------- | ---------------------------------------- |
+| **Tecnología** | Three.js + GLSL                          |
+| **Rol**        | Renderizado 3D, shaders, gestión de VRAM |
 
 #### Justificación Técnica
 
@@ -155,10 +158,10 @@ void main() {
 
 ### 2.4 UI & Dashboard — React
 
-| Aspecto       | Detalle |
-| ------------- | ------- |
-| **Tecnología**| React   |
-| **Rol**       | HUD táctico, paneles de telemetría, controles de capas |
+| Aspecto        | Detalle                                                |
+| -------------- | ------------------------------------------------------ |
+| **Tecnología** | React                                                  |
+| **Rol**        | HUD táctico, paneles de telemetría, controles de capas |
 
 #### Justificación Técnica
 
@@ -173,10 +176,10 @@ React se utiliza **exclusivamente para la capa de interfaz (DOM)**, no para el r
 
 ### 2.5 Manejo de Estado — Valtio
 
-| Aspecto       | Detalle                        |
-| ------------- | ------------------------------ |
-| **Tecnología**| Valtio (alternativa: Jotai)    |
-| **Rol**       | Estado reactivo compartido entre Three.js y React |
+| Aspecto        | Detalle                                           |
+| -------------- | ------------------------------------------------- |
+| **Tecnología** | Valtio (alternativa: Jotai)                       |
+| **Rol**        | Estado reactivo compartido entre Three.js y React |
 
 #### Justificación Técnica
 
@@ -205,10 +208,10 @@ Valtio está basado en **Proxy de JavaScript** y es la alternativa perfecta para
 
 ### 2.6 Concurrencia — Web Workers Nativos + Comlink
 
-| Aspecto       | Detalle                          |
-| ------------- | -------------------------------- |
-| **Tecnología**| Web Workers nativos + Comlink    |
-| **Rol**       | Procesamiento paralelo sin bloquear UI |
+| Aspecto        | Detalle                                |
+| -------------- | -------------------------------------- |
+| **Tecnología** | Web Workers nativos + Comlink          |
+| **Rol**        | Procesamiento paralelo sin bloquear UI |
 
 #### Justificación Técnica
 
@@ -217,9 +220,11 @@ Valtio está basado en **Proxy de JavaScript** y es la alternativa perfecta para
 
 ```typescript
 // main.ts — llamada al worker con Comlink
-import { wrap } from 'comlink';
+import { wrap } from "comlink";
 
-const worker = new Worker(new URL('./workers/ingestion.worker.ts', import.meta.url));
+const worker = new Worker(
+  new URL("./workers/ingestion.worker.ts", import.meta.url),
+);
 const api = wrap<IngestionWorker>(worker);
 
 // Se llama como una función async normal
@@ -230,10 +235,10 @@ const hotspots = await api.parseFIRMSData(rawCSV);
 
 ### 2.7 Backend & Proxy — FastAPI (Python)
 
-| Aspecto       | Detalle                                |
-| ------------- | -------------------------------------- |
-| **Tecnología**| FastAPI + Uvicorn (ASGI)               |
-| **Rol**       | Proxy geoespacial, caché, procesamiento de datos |
+| Aspecto        | Detalle                                          |
+| -------------- | ------------------------------------------------ |
+| **Tecnología** | FastAPI + Uvicorn (ASGI)                         |
+| **Rol**        | Proxy geoespacial, caché, procesamiento de datos |
 
 #### Justificación Técnica
 
@@ -252,7 +257,7 @@ Python es el **lenguaje estándar en ciencia de datos y análisis espacial**. Fa
        cached = await redis.get(cache_key)
        if cached:
            return Response(content=cached, media_type="application/json")
-       
+
        data = await fetch_firms_api(hours)
        await redis.setex(cache_key, 300, data)  # TTL: 5 min
        return data
@@ -274,10 +279,10 @@ Python es el **lenguaje estándar en ciencia de datos y análisis espacial**. Fa
 
 ### 2.8 Estilos & UI Táctica — Tailwind CSS
 
-| Aspecto       | Detalle       |
-| ------------- | ------------- |
-| **Tecnología**| Tailwind CSS  |
-| **Rol**       | Estilado del HUD y dashboard |
+| Aspecto        | Detalle                      |
+| -------------- | ---------------------------- |
+| **Tecnología** | Tailwind CSS                 |
+| **Rol**        | Estilado del HUD y dashboard |
 
 #### Justificación Técnica
 
@@ -291,17 +296,17 @@ Tailwind CSS permite la construcción ágil de **HUDs oscuros, mínimos y de alt
 
 ## 3. Tabla Resumen
 
-| Capa / Módulo        | Tecnología                      | Rol Principal                                          |
-| -------------------- | ------------------------------- | ------------------------------------------------------ |
-| Lenguaje Base        | **TypeScript**                  | Tipado estricto para coordenadas, buffers y WebGL      |
-| Tooling & Bundler    | **Vite** (esbuild + Rollup)         | Dev server con HMR, pipeline GLSL, Workers y code split |
-| Motor 3D & Shaders   | **Three.js + GLSL**             | Renderizado 60 FPS, shaders, gestión de VRAM           |
-| UI & Dashboard       | **React**                       | HUD táctico, telemetría, controles de capas            |
-| Manejo de Estado     | **Valtio** (o Jotai)            | Estado reactivo Proxy-based entre Three.js y React     |
-| Concurrencia         | **Web Workers + Comlink**       | Procesamiento paralelo sin bloquear UI                 |
-| Backend & Proxy      | **FastAPI (Python) + PostgreSQL 18 / TimescaleDB** | Caché Redis, rate-limiting, normalización de $\mu\text{Sv/h}$, procesamiento geoespacial y archivo de históricos |
-| Estilos              | **Tailwind CSS**                | HUD sobrio minimalista (ver [GAIA_VISUAL_DESIGN](./GAIA_VISUAL_DESIGN.md))          |
-| Fuentes de Datos     | NASA FIRMS, USGS, Open-Meteo, GEBCO, **Safecast, EURDEP, RadNet, GMCMap** | Ingesta ambiental, sísmica, meteorológica y de radiación |
+| Capa / Módulo      | Tecnología                                                                | Rol Principal                                                                                                    |
+| ------------------ | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Lenguaje Base      | **TypeScript**                                                            | Tipado estricto para coordenadas, buffers y WebGL                                                                |
+| Tooling & Bundler  | **Vite** (esbuild + Rollup)                                               | Dev server con HMR, pipeline GLSL, Workers y code split                                                          |
+| Motor 3D & Shaders | **Three.js + GLSL**                                                       | Renderizado 60 FPS, shaders, gestión de VRAM                                                                     |
+| UI & Dashboard     | **React**                                                                 | HUD táctico, telemetría, controles de capas                                                                      |
+| Manejo de Estado   | **Valtio** (o Jotai)                                                      | Estado reactivo Proxy-based entre Three.js y React                                                               |
+| Concurrencia       | **Web Workers + Comlink**                                                 | Procesamiento paralelo sin bloquear UI                                                                           |
+| Backend & Proxy    | **FastAPI (Python) + PostgreSQL 18 / TimescaleDB**                        | Caché Redis, rate-limiting, normalización de $\mu\text{Sv/h}$, procesamiento geoespacial y archivo de históricos |
+| Estilos            | **Tailwind CSS**                                                          | HUD sobrio minimalista (ver [GAIA_VISUAL_DESIGN](./GAIA_VISUAL_DESIGN.md))                                       |
+| Fuentes de Datos   | NASA FIRMS, USGS, Open-Meteo, GEBCO, **Safecast, EURDEP, RadNet, GMCMap** | Ingesta ambiental, sísmica, meteorológica y de radiación                                                         |
 
 ---
 
@@ -343,4 +348,4 @@ Tailwind CSS permite la construcción ágil de **HUDs oscuros, mínimos y de alt
 
 ---
 
-*Este documento complementa la [Especificación Técnica de GAIA](./GAIA_SPECIFICATION.md) y define las decisiones tecnológicas del proyecto.*
+_Este documento complementa la [Especificación Técnica de GAIA](./GAIA_SPECIFICATION.md) y define las decisiones tecnológicas del proyecto._

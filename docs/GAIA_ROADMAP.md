@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.83
+> **Versión del Documento:** 1.84
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-28
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -368,8 +368,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.8.6 — ADR de stack**
 
-- [ ] ADR-001 con la decisión de stack (Vite/three/Valtio/redis/postgres).
-- **Criterio:** ADR documentado y referenciable.
+- [ ] ADR-001 con la decisión de stack (Vite/three/Valtio/redis/postgres). _*(realizado, pendiente de validación: `docs/adr/ADR-001-stack.md`, con la decisión por capa citada contra el doc que la justifica —`TECH_STACK` §2 y `DEPLOYMENT` §4— para no duplicar nada. Registra cuatro alternativas descartadas que ya estaban documentadas (Webpack, Jotai/Zustand, `aioredis`, `slowapi`) y, en §3.2, dice sin adornos las dos que **no** tienen comparación escrita: por qué Python y no Node en el backend, y por qué PostgreSQL+TimescaleDB y no otro almacén. Ese hueco estaba y se ha hecho visible en vez de rellenarse con una razón inventada. §4 anota el coste real de la decisión, incluido que el objetivo de frame de RNF-01 no se puede gatear en CI sin GPU. Referenciable: fila propia en el README y enlaces cruzados desde `TECH_STACK` (1.3 → 1.4) y `ARCHITECTURE` (1.0 → 1.1); los 4 enlaces del ADR resuelven. **Ubicación y formato los decidió el usuario**: ningún doc fijaba dónde viven los ADR, y se eligió un directorio propio para que la serie escale a ADR-002 sin mezclarse con los docs por tema.)*_
 - **Estimado:** ~0.75 h.
 
 **Paso 0.8.7 — Configuración de editor**
