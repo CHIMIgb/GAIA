@@ -1,7 +1,7 @@
 # GAIA — Guía de contribución
 
 > **Proyecto:** GAIA 3D
-> **Versión del Documento:** 1.0
+> **Versión del Documento:** 1.1
 > **Fecha:** 2026-09-28
 > **Alcance:** Cómo se trabaja en este repositorio: el bucle de un micro-paso, los comandos que existen y las reglas de los docs. El _qué_ se instala está en el [README](../README.md) y el _checklist_ de calidad en la [DoD](./GAIA_DOD.md); aquí no se repite ninguno de los dos.
 
@@ -75,18 +75,31 @@ qué significa cada estado está en la [DoD](./GAIA_DOD.md) §1-§2.
 
 ## 4. Ramas y commits
 
-- La rama de la fase va **`feat/fase-X`** (p. ej. `feat/fase-0`).
-- Un commit por paso realizado: es el historial verificable de avance y el respaldo de
-  la validación.
-- El mensaje lleva prefijo semántico: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`
-  y, cuando el commit es de un paso concreto, `docs(0.8.3):` para sayar cuál.
+**Rama:** una por fase, `feat/fase-X` (p. ej. `feat/fase-0`). El número de fase sale de
+ahí y es el que va en el scope del commit.
 
-Ejemplos reales del historial:
+**Mensaje:** `<tipo>(fase-N): <nº de paso> <qué cambia y por qué>`
 
 ```
-docs(0.8.2): doc de arquitectura de F0-F1 con el estado real y el flujo de datos
-docs: 0.8.2 validado por el usuario, doc de arquitectura de F0-F1
+feat(fase-0): 0.3.1 Alembic + SQLAlchemy con las tablas base del modelo canonico
+fix(fase-0): 0.2.1 aplica lo que fijan los docs (typo, getattr defensivo) y regla de docs en AGENTS
+docs(fase-0): 0.8.8 convencion de commits con scope de fase y numero de paso en el asunto
 ```
+
+- **Un commit por paso realizado** (§3): es el historial verificable de avance y el
+  respaldo de la validación. Por eso el **número de paso va en el asunto** y no solo en el
+  cuerpo — es lo que permite auditar con un `git log` qué pasos están commiteados.
+- **El tipo es uno de los que el repo ya usa**: `feat`, `fix`, `docs`, `test`, `chore` y
+  `build`. No se inventan tipos nuevos; si ninguno encaja, es `chore` con el motivo en el
+  cuerpo.
+- **El cuerpo cita el doc que lo manda** (sección, RF o RNF) cuando el cambio aplica una
+  regla, y explica el porqué de lo que no se ve a simple vista. El asunto dice _qué_ cambia;
+  el cuerpo dice _por qué_ y con _qué criterio_.
+- **No se reescribe la historia.** Los commits anteriores a esta convención se quedan como
+  están: el criterio del paso 0.8.8 del ROADMAP es que la convención se aplique **desde F1
+  en adelante**, y los pasos de F0 que quedan se hacen ya con la forma nueva. Corregir el
+  pasado exigiría reescribir ramas ya pusheadas, y un historial reescrito es peor que un
+  historial con cuatro commits old-school al principio.
 
 ## 5. El hook de pre-commit
 

@@ -54,7 +54,7 @@ Todos los docs de `docs/` comparten valores canónicos en paralelo. Al editar cu
 ## Git
 
 - Mensajes de commit estilo `docs: ...` (historial existente lo usa).
-- **Commit por paso realizado.** Cada paso/micro-paso que se marque como **realizado** se commitea de inmediato (al completarlo y antes de pedir su validación), bajo rama/commit `feat/fase-X`, con prefijo semántico (`feat:`, `fix:`, `docs:`). Esto sirve de historial verificable de avance y respaldo para la validación del usuario. Excepción: cambios de configuración local (`opencode.json`, `.env`, skills) no se commitean salvo indicación contraria.
+- **Commit por paso realizado.** Cada paso/micro-paso que se marque como **realizado** se commitea de inmediato (al completarlo y antes de pedir su validación), bajo la rama `feat/fase-X`, con prefijo semántico y scope de fase (`feat(fase-X):`, `fix(fase-X):`, `docs(fase-X):`) y el número de paso en el asunto; el formato completo y los tipos admitidos están en `docs/GAIA_CONTRIBUTING.md` §4. Esto sirve de historial verificable de avance y respaldo para la validación del usuario. Excepción: cambios de configuración local (`opencode.json`, `.env`, skills) no se commitean salvo indicación contraria.
 - `opencode.json` y `.env` están **gitignored** (`opencode.json` contiene la API key de Context7). No committear ni editar el `opencode.json` para romper el plugin ponytail o el MCP de context7; **sí** commitear `.env.example`.
 - Tras commit suele pushearse a `origin/main`.
 
