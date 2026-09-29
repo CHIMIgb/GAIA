@@ -1,0 +1,34 @@
+# Formato único del repo.
+#
+# Los valores de `[*]` son los que ya usa Prettier con sus defaults (80 columnas,
+# 2 espacios, LF, comillas dobles y punto y coma). No es que se hayan inventado
+# aquí: están en `package.json` -> `lint-staged`, que corre `prettier --write`
+# en el commit. Si este fichero dijera otra cosa, el editor guardaría un archivo
+# que el hook volvería a cambiar en el commit, y el culpable sería siempre el
+# hook. Editor y formateador tienen que decir lo mismo.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+max_line_length = 80
+
+# Python usa 4 espacios (PEP 8) y es el indentation real de `backend/`. Esta
+# sección no sirve para el hook: Prettier no tiene parser de Python y ni lo
+# comprueba (`npx prettier --check backend/` avisa "No parser could be
+# inferred"). Es para el editor, que hereda `[*]` si no se lo decimos, y para
+# cuando alguien formatee Python con una herramienta que sí lo haga.
+[*.py]
+indent_size = 4
+
+# En Markdown, dos espacios finales son un salto de línea explícito, así que
+# recortarlos rompe el texto. Tampoco hay ancho de línea: Prettier no reenvuelve
+# prosa (`proseWrap: preserve` por defecto) y una regla de 80 solo daría una guía
+# visual que el formateador no respeta.
+[*.md]
+trim_trailing_whitespace = false
+max_line_length = off
