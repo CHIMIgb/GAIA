@@ -95,6 +95,35 @@ async def test_una_peticion_crea_la_sesion_y_su_cookie(
     assert datos[b"requests"] == b"1"
 
 
+async def test_el_hash_de_sesion_no_guarda_pii(
+    client, fake_redis, monkeypatch
+) -> None:
+    """SECURITY §3.1: la sesión guarda el sha256 del token y poco más. Ni IP, ni el
+    user-agent crudo —que es una huella— sino su familia.
+
+    El conjunto de campos va exacto a propósito: añadir `ip` o `email` al hash
+    rompe este test aunque el valor parezca inocuo, que es justo lo que prohíbe
+    §3.1 para impedir la reidentificación indirecta de DATABASE.
+    """
+
+    async def _nada(session_hash: str, requests: int, user_agent: str | None) -> None:
+        return None
+
+    monkeypatch.setattr(session_service, "upsert_session_event", _nada)
+    ua_cromo = (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+    )
+
+    token = _set_cookie(client.get("/api/ping", headers={"user-agent": ua_cromo}))
+    datos = await fake_redis.hgetall(f"gaia:session:{session_key(token)}")
+
+    assert set(datos) == {b"hash", b"requests", b"last_seen", b"ua"}
+    assert datos[b"ua"] == b"Chrome"
+    # El UA crudo, con versión de navegador y de SO, no se guarda en ninguna parte.
+    assert b"537.36" not in datos[b"ua"]
+
+
 def test_atributos_de_la_cookie_httponly_samesite_maxage(client: TestClient) -> None:
     raw = client.get("/api/ping").headers["set-cookie"]
     assert "HttpOnly" in raw

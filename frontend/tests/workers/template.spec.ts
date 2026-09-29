@@ -14,13 +14,13 @@
 import { expose, wrap } from "comlink";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { createWorkerApi } from "../../src/workers/template.worker";
 import {
   FIRE_STRIDE,
   type FiresReadyMessage,
   type WorkerApi,
   type WorkerRequest,
 } from "../../src/workers/worker.types";
-import { createWorkerApi } from "../../src/workers/template.worker";
 
 type Canal = { worker: MessagePort; main: MessagePort; cerrar(): void };
 

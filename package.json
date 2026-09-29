@@ -11,14 +11,26 @@
     "dev": "npm run dev -w frontend",
     "build": "npm run build -w frontend",
     "lint": "npm run lint -w frontend",
+    "lint:imports": "eslint .",
+    "check:links": "node scripts/check-links.mjs",
     "typecheck": "npm run typecheck -w shared",
+    "perf:baseline": "node scripts/perf-baseline.mjs",
+    "perf:check": "npm run perf:check -w frontend",
     "prepare": "husky || true",
-    "test:front": "npm run test -w frontend"
+    "test:front": "npm run test -w frontend",
+    "test": "npm run test:scripts && npm run test:front",
+    "test:scripts": "vitest run --dir tests",
+    "coverage": "npm run coverage -w frontend && node scripts/coverage.mjs"
   },
   "devDependencies": {
+    "@typescript-eslint/parser": "^8.71.0",
+    "eslint": "^10.11.0",
+    "eslint-plugin-import-x": "^4.17.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
-    "prettier": "^3.9.9"
+    "oxlint": "^1.81.0",
+    "prettier": "^3.9.9",
+    "vitest": "^5.0.2"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,css,md,json}": "prettier --write"

@@ -11,7 +11,7 @@
 
 ## Estado del repo
 
-- Solo documentación (15 docs en `docs/`, cada uno con `version` + `fecha` en cabecera). **No existe** `frontend/` ni `backend/`: no hay package.json, tests, lint ni CI. No inventar comandos de build/test (no existen).
+- Documentación de planificación en `docs/` (20 docs + `docs/adr/`, cada uno con `version` + `fecha` en cabecera; el índice está en el `README.md`). El código **existe y está en marcha**: `frontend/` (Vite + React + Valtio + workers), `backend/` (FastAPI + Redis + SQLAlchemy + Alembic), `shared/` (contrato tipado), `tests/` y `.github/workflows/`.
 - Todo el contenido es **en español** (identificadores, rutas y comandos en inglés). Escribir nueva documentación en español.
 
 ## Regla de oro: coherencia entre documentos
@@ -38,8 +38,9 @@ Todos los docs de `docs/` comparten valores canónicos en paralelo. Al editar cu
 ## Roadmap (`GAIA_ROADMAP.md`)
 
 - Números verificables que deben cuadrar en TODA mención: 14 fases · 88 grupos · **332 micro-pasos · 564 h ≈ 94 jornadas** (jornada = 6 h). Las horas de cada fase deben cuadrar con (jornadas de la fase × 6) ±1.2 h.
-- Estado real: **planificado, NO ejecutado** (no hay código). No afirmar que fases están "aprobadas y ejecutadas" (deuda conocida: el ROADMAP decía "Aprobado y ejecutado").
+- Estado real: **en ejecución desde el grupo 0.1**; la Fase 0 avanza paso a paso sobre `feat/fase-0` y cada paso se valida antes de pasar al siguiente. No afirmar que una fase está "terminada" sin que todos sus pasos estén `validated`.
 - Recomendaciones accionables priorizadas en `GAIA_RECOMENDACIONES.md` (P0–P3); P0 = arrancar Fase 0 (Vite scaffold + health FastAPI + Redis PING + migration Alembic + contrato).
+- La barra verde del ROADMAP la pone quien valida, no el implementador: el checklist que la acompaña está en `docs/GAIA_DOD.md`.
 
 ## Skills del proyecto
 
@@ -53,13 +54,20 @@ Todos los docs de `docs/` comparten valores canónicos en paralelo. Al editar cu
 ## Git
 
 - Mensajes de commit estilo `docs: ...` (historial existente lo usa).
-- **Commit por paso realizado.** Cada paso/micro-paso que se marque como **realizado** se commitea de inmediato (al completarlo y antes de pedir su validación), bajo rama/commit `feat/fase-X`, con prefijo semántico (`feat:`, `fix:`, `docs:`). Esto sirve de historial verificable de avance y respaldo para la validación del usuario. Excepción: cambios de configuración local (`opencode.json`, `.env`, skills) no se commitean salvo indicación contraria.
+- **Commit por paso realizado.** Cada paso/micro-paso que se marque como **realizado** se commitea de inmediato (al completarlo y antes de pedir su validación), bajo la rama `feat/fase-X`, con prefijo semántico y scope de fase (`feat(fase-X):`, `fix(fase-X):`, `docs(fase-X):`) y el número de paso en el asunto; el formato completo y los tipos admitidos están en `docs/GAIA_CONTRIBUTING.md` §4. Esto sirve de historial verificable de avance y respaldo para la validación del usuario. Excepción: cambios de configuración local (`opencode.json`, `.env`, skills) no se commitean salvo indicación contraria.
 - `opencode.json` y `.env` están **gitignored** (`opencode.json` contiene la API key de Context7). No committear ni editar el `opencode.json` para romper el plugin ponytail o el MCP de context7; **sí** commitear `.env.example`.
 - Tras commit suele pushearse a `origin/main`.
 
-## Verificación (no hay framework)
+## Verificación (hay framework: úsalo antes deuros greps)
 
-- No hay lint/typecheck/test. Validar cambios con greps de coherencia:
+- Comandos reales, desde la raíz: `npm run lint`, `npm run lint:imports`, `npm run check:links`, `npm run typecheck`, `npm test`,
+  `npm run test:front`, `npm run build`, `npm run perf:baseline` (y `perf:check` como gate de regresión).
+- Backend: `cd backend && .venv/bin/python -m pytest` → **73 pasan y 8 se saltan en local**, y no es un fallo: los
+  8 saltados son los que hablan con PostgreSQL y el fixture hace `skip` si no hay servidor. En CI corren los 81
+  contra un `postgres:18` de servicio (Node 22, Python 3.12; no hay Redis de servicio, el job E2E arranca el
+  backend sin él a propósito). Husky (`lint-staged` + Prettier) formatea lo que se toca; no hay `pre-commit`.
+- Un cambio se da por terminado con **el comando que lo cubre en verde**, no con un grep. Los greps de coherencia
+  de abajo son un extra para lo que ninguna herramienta comprueba (contrato, nombres propios, cifras del ROADMAP):
   - Contrato, endpoints, stack y nombres propios (ver arriba).
   - `/api/quakes` → 0 resultados; `quakes.*` interno (archivos/carpetas) es legítimo: no marcarlo como error.
   - `webpack` solo como comparación intencional (TECH_STACK/DEPLOYMENT).

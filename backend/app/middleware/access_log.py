@@ -20,6 +20,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.db.api_log_store import log_request
 from app.services.session import STATE_SESSION_HASH
+from app.services.timing import log_duracion
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,11 @@ class AccessLogMiddleware:
         try:
             await self.app(scope, receive, send_envuelto)
         finally:
-            await self._registrar(scope, status_code, (time.perf_counter() - started) * 1000)
+            elapsed_ms = (time.perf_counter() - started) * 1000
+            # Primero la duración en el log (0.7.2) y después la persistencia: el log es
+            # el que se mira en dev, y una BD caída no debe callárselo.
+            log_duracion(scope["method"], scope["path"], elapsed_ms)
+            await self._registrar(scope, status_code, elapsed_ms)
 
     async def _registrar(self, scope, status_code: int, latency_ms: float) -> None:
         try:

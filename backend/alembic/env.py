@@ -19,7 +19,14 @@ config = context.config
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # disable_existing_loggers=False: por defecto `fileConfig` apaga todos los loggers
+    # que ya existían, y en los tests (donde `test_migrations` migra en el mismo
+    # proceso que la app) eso dejaba mudos `app.middleware.rate_limit` y
+    # `app.services.timing` para el resto de la sesión: sus avisos y su línea de
+    # duración no llegaban a ningún sitio y los tests que los comprueban veían un
+    # log vacío. En el CLI es un proceso aparte y no se nota, pero el valor por
+    # defecto es el equivocado aquí.
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 target_metadata = Base.metadata
 

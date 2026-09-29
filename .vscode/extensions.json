@@ -1,0 +1,6 @@
+{
+  // `settings.json` fija Prettier como formateador, y sin la extensión instalada
+  // VS Code avisa de que no encuentra el formateador que se le pidió. Es la única
+  // recomendación: el resto del stack no necesita extensión para Contribution.
+  "recommendations": ["esbenp.prettier-vscode"]
+}

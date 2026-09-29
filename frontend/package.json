@@ -1,15 +1,20 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "analyze": "vite build --mode analyze",
     "perf:check": "node scripts/bundle-budget.mjs",
-    "lint": "oxlint",
+    "fcp": "npm run build && playwright test --config=playwright.fcp.config.ts",
+    "fps": "npm run build && playwright test --config=playwright.fps.config.ts",
+    "lint": "oxlint --deny-warnings",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "comlink": "^4.4.2",
@@ -18,13 +23,15 @@
     "valtio": "^2.3.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@testing-library/react": "^16.3.3",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "@vitest/coverage-v8": "^5.0.2",
     "jsdom": "^29.1.1",
-    "oxlint": "^1.81.0",
+    "rollup-plugin-visualizer": "^7.1.1",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.2"

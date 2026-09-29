@@ -1,8 +1,8 @@
 # GAIA — Plan de Testing y Métricas de Rendimiento
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.4  
-> **Fecha:** 2026-09-26
+> **Versión del Documento:** 1.6  
+> **Fecha:** 2026-09-29
 
 ---
 
@@ -423,7 +423,9 @@ if (!supportsWebGL2) {
 ```
 PR / push a main
    │
-   ├─ 1. lint          eslint + tsc --noEmit (strict)
+   ├─ 1. lint          npm run lint (oxlint, --deny-warnings) + npm run lint:imports
+   │                   (ESLint: orden de imports y boundary de shared/, 0.7.9) + `tsc -b`
+   │                   (los tipos van dentro de `npm run build`, no en un paso aparte)
    ├─ 2. unit front    vitest run            (utils, store/actions, services)
    ├─ 3. unit backend  pytest -q             (endpoints + contract + fallback)
    ├─ 4. perf checks   draw calls + bundle budget (size-limit)

@@ -9,22 +9,61 @@ jobs:
   frontend:
     name: Frontend (build + test)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
+    # Este job corre en la RAÍZ, no en `frontend/`, y no por gusto: cuatro de sus
+    # pasos son scripts de la raíz (`lint:imports`, `perf:baseline`, `test` y
+    # `coverage`, este último el agregador de fases) y la boundary de imports
+    # atraviesa los dos workspaces. Con `working-directory: frontend` esos cuatro
+    # no existían, `npm ci` instalaba desde un lock propio de `frontend/` —viejo e
+    # independiente, sin el enlace a `shared` ni los devDeps de la raíz, ya borrado—
+    # y el job no podía terminar en verde. La raíz es la única desde donde los doce
+    # comandos existen, que es lo mismo que se ejecuta en local.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: package-lock.json
       - run: npm ci
+      # Lint antes que test y build (0.6.11): falla rápido y sin gastar minutos de
+      # runner. `oxlint --deny-warnings` es lo que hace que un aviso tumbe el job;
+      # sin ese flag oxlint sale con 0 aunque reporte.
+      - run: npm run lint
+      # Orden de imports y boundary de `shared/` (0.7.9). ESLint solo para esas
+      # dos reglas: oxlint no tiene `import/order` y 1.85 ignora en silencio la
+      # regla si no la conoce. Vive en la raíz porque la boundary atraviesa los
+      # dos workspaces.
+      - run: npm run lint:imports
+      # Enlaces cruzados de los docs (ROADMAP 0.8.14). Va aqui y no en un job propio porque es
+      # otro check estatico de la raiz que no necesita navegador ni servicios, igual que los dos
+      # de arriba. Sin red: un check que sale a internet mide la disponibilidad de otro sitio.
+      - run: npm run check:links
       - run: npm run build
       # Presupuesto de bundle: falla el CI si dist/ se pasa de los límites de
       # RNF-01. Sin `|| true`, que es justo lo que se quita abajo.
       - run: npm run perf:check
+      # Baseline comparativo (0.7.12): el presupuesto dice si nos pasamos, esto
+      # dice si hemos empeorado. Lee `docs/performance/baseline.json` y falla si el
+      # bundle crece mas de la tolerancia. El FCP sale n/d aqui: medirlo necesita
+      # navegador y no entra en este job (queda anotado en `PERFORMANCE` §4).
+      - run: npm run perf:baseline
+      # ROADMAP 0.7.15: FPS y p95 de frame en headless, sobre el build que se acaba de
+      # generar (por eso no se llama a `npm run fps`, que rebuilda). NO gatea contra los
+      # 60 FPS de TESTING §3.2: headless no tiene GPU y esa puerta se passesaria siempre.
+      # Lo que exige es que la medicion exista, para que un 0 no se lea como un resultado.
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: npx playwright test --config=playwright.fps.config.ts
+        working-directory: frontend
       - run: npm test
+      # 0.7.10: la cobertura se publica por fase del ROADMAP. La puerta son solo
+      # las areas cuyo umbral fija un doc (utils y store/actions al 80 % de TESTING
+      # 1); el resto se publica sin bloquear porque el codigo aun no existe.
+      # El script raíz encadena el coverage de frontend con `scripts/coverage.mjs`,
+      # así que aquí por fin se publica la tabla. Lo que no llega es la fila del
+      # backend: su reporte vive en otro job y sin compartir el artefacto la tabla
+      # sale solo con frontend. Deuda para F11.
+      - run: npm run coverage
 
   backend:
     name: Backend (pytest)
@@ -32,6 +71,26 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    # DATABASE.md §6.1: «CI la ejecuta contra una DB limpia en los tests de
+    # integración». Sin este servicio los 8 tests que hablan con PostgreSQL se
+    # saltan solos (el fixture hace pytest.skip si no hay servidor) y el esquema,
+    # la sesión en BD y el api_log no se verifican nunca: pasaban sin que nadie
+    # mirase. Usuario, contraseña y base coinciden con el default de
+    # `app/config.py`, asi que no hace falta pasar DATABASE_URL por env.
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: gaia
+          POSTGRES_PASSWORD: gaia
+          POSTGRES_DB: gaia
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U gaia"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -41,4 +100,44 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync --frozen
+      # El servicio arranca con la base limpia, y los tests de integración la dan
+      # por migrada: sin esto, `test_api_log_db` y `test_session_db` (que corren
+      # antes que `test_migrations` por orden alfabético) fallan con
+      # UndefinedTableError. `test_migrations` migra igualmente y es idempotente.
+      - run: uv run alembic upgrade head
       - run: uv run pytest -q
+
+  # Smoke E2E (ROADMAP 0.6.9, TESTING §7.3 y §8.1). El backend es real y sin Redis ni
+  # PostgreSQL: /api/health responde y los dos degradan solos.
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.12.x"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: npm ci
+        working-directory: frontend
+      - run: uv sync --frozen
+        working-directory: backend
+      # El browser va con sus dependencias de sistema; `--with-deps` es lo que hace
+      # que falte en un runner limpio.
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: npm run test:e2e
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: frontend/test-results/
+          retention-days: 7

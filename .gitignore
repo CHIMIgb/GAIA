@@ -11,7 +11,17 @@ dist-ssr/
 *.log
 npm-debug.log*
 coverage/
+coverage.json
+htmlcov/
+.coverage
+.coverage.*
 .vite/
+
+# Playwright (0.6.9)
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+frontend/.playwright/
 
 # Python / backend
 __pycache__/

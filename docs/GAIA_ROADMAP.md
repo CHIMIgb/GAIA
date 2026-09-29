@@ -1,8 +1,8 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.32
-> **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
-> **Última actualización:** 2026-09-27
+> **Versión del Documento:** 1.103
+> **Estado:** Fase 0 **cerrada con dos excepciones** — 64 de 66 micro-pasos validados; los 2 pendientes (`0.7.5`, `0.7.13`) no son cumplibles con los docs actuales y quedan anotados como tal. Fases F1 a F13 sin empezar.
+> **Última actualización:** 2026-09-29
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
 
 ## 1. Introducción y Método
@@ -48,7 +48,11 @@ Cada fase se divide jerárquicamente así:
 
 - **Paso X.Y** — unidad de trabajo con un entregable parcial (Backend, Persistencia, Worker, Renderizado, HUD).
 - **Paso X.Y.Z** — **micro-paso**: acción concreta. Cada micro-paso tiene:
-  - `- [ ]` la acción a ejecutar (marcar al terminar),
+  - el checkbox, que va por cuatro estados y **solo los marca el implementador menos el
+    último**: `- [ ]` mientras está pendiente, `- [ ]` con el sufijo _*(realizado, pendiente
+    de validación)*_ cuando el criterio está cumplido con evidencia, y `- [x]` cuando el
+    usuario lo ha **validado**. La barra verde la pone quien valida, no quien implementa
+    ([DoD](./GAIA_DOD.md) §1-§2).
   - `**Criterio:**` la definición de "hecho" verificable,
   - `**Estimado:** ~X h.` horas de foco estimadas (1 jornada ≈ 6 h).
 - Los grupos **Opcionales** están marcados `(Opcional)`: solo se hacen si el núcleo del roadmap va según lo previsto.
@@ -199,7 +203,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.6.2 — Tests de errores del contrato**
 
-- [ ] Test que valida las respuestas `{success, data, error}` con los 7 códigos del catálogo de la API. _*(realizado, pendiente de validación: los 7 códigos de API_CONTRACT §6 verificados por HTTP; el catálogo está copiado a mano en el test para que un mapeo equivocado no se autovalide. Faltaban 502, 503 y 504.)*_
+- [x] Test que valida las respuestas `{success, data, error}` con los 7 códigos del catálogo de la API. _*(validado: los 7 códigos de API_CONTRACT §6 verificados por HTTP; el catálogo está copiado a mano en el test para que un mapeo equivocado no se autovalide. Faltaban 502, 503 y 504. Reverificado al validar: los 7 aparecen en el test y 13 tests de contrato y job en verde. Mutación: mapear el 503 a `UPSTREAM_UNAVAILABLE` en `CODE_BY_STATUS` tumba 3 tests, incluido el que comprueba que la tabla no se desvía del catálogo.)*_
 - **Criterio:** errores conocidos devuelven el código correcto.
 - **Estimado:** ~1.25 h.
 
@@ -211,55 +215,55 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.6.4 — Gestor de fixtures**
 
-- [ ] Carpeta `backend/tests/fixtures` con muestras JSON/CSV por fuente (y `shared/test-fixtures` cuando el worker las necesite). _*(realizado, pendiente de validación: `backend/tests/fixtures/fires_viirs_nrt_sample.csv` es la cabecera y la fila que documenta DATA_SOURCES, tal cual; la fixture `sample` de `conftest.py` devuelve el texto crudo y falla si el nombre no existe. La usan 2 tests. `shared/test-fixtures` espera a que el worker necesite muestras.)*_
+- [x] Carpeta `backend/tests/fixtures` con muestras JSON/CSV por fuente (y `shared/test-fixtures` cuando el worker las necesite). _*(validado: `backend/tests/fixtures/fires_viirs_nrt_sample.csv` es la cabecera y la fila que documenta DATA_SOURCES, tal cual; la fixture `sample` de `conftest.py` devuelve el texto crudo y falla si el nombre no existe. La usan 2 tests, y mutar el FRP de la muestra tumba el de fetch. `shared/test-fixtures` espera a que el worker necesite muestras.)*_
 - **Criterio:** fixtures versionados y usados por varios tests.
 - **Estimado:** ~1 h.
 
 **Paso 0.6.5 — Test de rate-limit global**
 
-- [ ] Test que supera 120 r/m y verifica 429 + burst hasta 240.
+- [x] Test que supera 120 r/m y verifica 429 + burst hasta 240. _*(validado: el burst 240, la sostenida 120/min, el techo de capacidad, la exención de `/api/health` y el 429 antes que la sesión ya los cubrían los tests de 0.2.3; se añadió la dimensión real del bucket `{IP}:{endpoint}`, que sin ella un solo cliente podía dejar sin servicio a los demás sin que ningún test se enterara.)*_
 - **Criterio:** el test documenta el comportamiento real del límite.
 - **Estimado:** ~1.25 h.
 
 **Paso 0.6.6 — Test de sesión anónima**
 
-- [ ] Test de cookie/token: atributos y ausencia de PII.
+- [x] Test de cookie/token: atributos y ausencia de PII. _*(validado: los atributos de la cookie, el sha256 y el token opaco ya los cubrían los tests de 0.2.3; se añadió el conjunto exacto de campos del hash de sesión y que el user-agent se guarde solo como familia. Meter una IP o el UA crudo tumba el test y ninguno de los otros once.)*_
 - **Criterio:** cookie con sha256, sin datos personales.
 - **Estimado:** ~1 h.
 
 **Paso 0.6.7 — Test de API log**
 
-- [ ] Test de escritura/consulta de `api_log` y retención.
+- [x] Test de escritura/consulta de `api_log` y retención. _*(validado: escritura, consulta SQL, purga e idempotencia ya los cubrían los tests de 0.3.3 contra PostgreSQL real —4 en verde ejecutados con el Python de Windows—; faltaban el comando que programa el cron de DEPLOYMENT §3.2 y el valor de retención, ambos ahora con test sin BD para que también corran en el CI. Reverificado al validar: los 4 tests de BD contra el PostgreSQL local y los 2 del job en verde. Mutación: bajar `RETENTION_DAYS` de 90 a 30 tumba el test de retención.)*_
 - **Criterio:** logs correctos y limpieza programada.
 - **Estimado:** ~1 h.
 
 **Paso 0.6.8 — Test de helpers de Redis**
 
-- [ ] Test de get/set/TTL y de fallback local.
+- [x] Test de get/set/TTL y de fallback local. _*(validado: roundtrip get/set añadido, y con Redis caído toda ruta /api/* daba 500 porque el rate-limit no capturaba el error; ahora degrada en fail-open con warning y el test ata las dos caras —se sirve y avisa—. La cadena completa Redis → API → local sigue siendo de 2.1.3 y F8.)*_
 - **Criterio:** TTL respetado y fallback funciona.
 - **Estimado:** ~1 h.
 
 **Paso 0.6.9 — Smoke E2E (Playwright) base**
 
-- [ ] Primer flujo E2E: cargar app, health y un dato mock.
+- [x] Primer flujo E2E: cargar app, health y un dato mock. _*(validado: `@playwright/test` + `playwright.config.ts` con los dos `webServer` (Vite y uvicorn real, sin Redis ni PostgreSQL) y un job E2E en el CI. Tres tests en verde —la app monta sin errores de consola, `/api/health` devuelve el sobre del contrato, y un dato mock enrutado por `page.route` deja el módulo en `live` pasando por el write path real (`runDataRequest` + `fetchAPI`, STATE §6.4) en el navegador—; mutar `"live"` por `"loading"` tumba solo el del dato mock. `tsc -b` cubre ya los tests E2E y vitest deja de recogerlos. Solo Chromium: el smoke de 4 navegadores con WebGL2 de TESTING §7.3 espera al globo de F1.)*_
 - **Criterio:** el flujo E2E pasa en CI.
 - **Estimado:** ~1.25 h.
 
 **Paso 0.6.10 — Umbrales de cobertura iniciales**
 
-- [ ] Configurar cobertura base (backend ≥ 60 % en F0).
+- [x] Configurar cobertura base (backend ≥ 60 % en F0). _*(validado: `pytest-cov` en el grupo dev y `--cov=app` en los `addopts` de pytest, así que el CI lo hereda sin pedirlo a mano; `fail_under = 60` en `[tool.coverage.report]`. La suite está en 96.23 % (62 tests; los 8 de BD se saltan también en el CI) y el umbral está activo: a 99 % la suite falla. El ≥ 80 % de frontend de TESTING §1.3 sigue sin herramienta y sin `src/utils/`, que aún no existe.)*_
 - **Criterio:** la suite reporta cobertura con umbral activo.
 - **Estimado:** ~1 h.
 
 **Paso 0.6.11 — CI: lint + test + build por PR**
 
-- [ ] Workflow completo en GitHub Actions (lint, test, build).
+- [x] Workflow completo en GitHub Actions (lint, test, build). _*(validado: pendiente de validación: el job de frontend corre `lint` → `build` → `perf:check` → `test` y el de backend `pytest` con el umbral de cobertura, todo en `pull_request` y en push a `main`. El paso grande era que `npm run lint` salía con 0 aunque hubiera avisos, así que no bloqueaba nada: ahora es `oxlint --deny-warnings`, verificado metiendo un `debugger` (exit 1) y sin él (exit 0). Sin linter de Python, que ningún doc pide y no se ha añadido.)*_
 - **Criterio:** cada PR ejecuta los tres pasos y bloquea en rojo.
 - **Estimado:** ~0.75 h.
 
 **Paso 0.6.12 — Definición de Terminado (DoD)**
 
-- [ ] Checklist de DoD (barra `- [ ]` green + test + commit) documentado.
+- [x] Checklist de DoD (barra `- [ ]` green + test + commit) documentado. _*(validado: pendiente de validación: `docs/GAIA_DOD.md` v1.0 con cabecera de versión y fecha, fila en el README y enlace desde `AGENTS.md`. El checklist ata los ocho puntos que se comprueban al cerrar un micro-paso (criterio verificado con evidencia, test que ata el comportamiento, mutación que lo tumba, suite en verde, commit con prefijo semántico, ROADMAP que refleja el estado real, valores de su doc de origen y deudas anotadas), incluye una tabla de las seis mutaciones ya usadas en la Fase 0 y las excepciones: docs, configuración pura y deuda pospuesta a propósito.)*_
 - **Criterio:** el DoD es seguible por cualquier contribuidor.
 - **Estimado:** ~0.25 h.
 
@@ -267,178 +271,172 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.1 — HUD de dev con FPS/draw calls**
 
-- [ ] Overlay de desarrollo: FPS, p95 y draw calls.
+- [x] Overlay de desarrollo: FPS, p95 y draw calls. _*(validado: `DevOverlay` mide FPS y p95 sobre una ventana de 120 frames con rAF y refresco cada 250 ms; la matemática pura vive en `utils/frameStats.ts` y las draw calls se leen de una fuente registrable por el render (`registerDrawCallsSource`), hoy `n/d` porque la escena base es 1.1.1 — no se inventa un número. Criterio verificado: el E2E ve el overlay con FPS > 0 real y la tecla `d` lo oculta; el build de producción no emite chunk del overlay, que es la forma fuerte de «ocultable en prod». Mutaciones: p95→p50 tumba el test de la cola del 5 %; quitar la puerta `import.meta.env.DEV` mete un chunk de 1.49 kB en producción. Verde: lint 0, `tsc -b` limpio, 45 unit, 4 E2E, backend 62/8 al 96.23 %.)*_
 - **Criterio:** métricas en vivo y ocultable en prod.
 - **Estimado:** ~1.25 h.
 
 **Paso 0.7.2 — Timing de respuestas de API**
 
-- [ ] Log de duración por endpoint (nominal/p95) en dev.
+- [x] Log de duración por endpoint (nominal/p95) en dev. _*(validado: `app/services/timing.py` acumula por ruta `/api/*` una ventana de 100 muestras y escribe una línea INFO por petición con `avg` y `p95`; nominal = promedio (decidido por el usuario, la doc no lo fijaba). Reutiliza el `perf_counter` que `AccessLogMiddleware` ya calculaba, sin segundo timer, y solo con `DEBUG` (DEPLOYMENT §4.1), que ya existía. Dos topes deliberados: ventana de 100 muestras y 64 endpoints, porque las claves salen de la URL y un escáner de rutas inventadas crecería la memoria. Criterio verificado: con `DEBUG` la petición a `/api/_rl-probe` deja una línea `duración GET /api/_rl-probe avg=… p95=… n=1` en el log, y sin `DEBUG` ninguna. Mutaciones: p95→mediana tumba 2 tests; quitar la puerta `DEBUG` tumba 2. Verde: 73 passed / 8 skipped al 96.50 %.)*_
 - **Criterio:** tiempos visibles en logs del backend.
 - **Estimado:** ~1 h.
 
 **Paso 0.7.3 — Baseline del bundle gzip**
 
-- [ ] Medir chunk principal gzip y guardar referencia.
+- [x] Medir chunk principal gzip y guardar referencia. _*(validado: la herramienta ya existía (`npm run perf:check`, 0.4.4), así que el paso es medir y registrar, no escribir código. Baseline medido el 2026-09-27 sobre `f6c6abe` con Node v22.19.0: **JS inicial 66.8 KiB gzip** contra el objetivo ≤ 450 KB de `DEPLOYMENT` §5.1 (15 % usado) y chunk de arranque 66.8 KiB contra ≤ 180 KB (37 % usado); chunk de Three.js `n/d` hasta 1.1.1. Registrado en `docs/GAIA_PERFORMANCE.md` §4.1 con dos advertencias para quien compare después: hoy el build emite **un solo chunk** (aún no hay `manualChunks`, que prescriben DEPLOYMENT §5.1 y TESTING §3.4), así que el total será comparable pero los chunks sueltos no; y el footer de Vite (69.30 kB) y `perf:check` (66.8 KiB) miden el mismo chunk con distinto nivel de gzip, y gana el del script. Sin cambios de código.)*_
 - **Criterio:** baseline registrado (target ≤ 450 KB).
 - **Estimado:** ~0.75 h.
 
 **Paso 0.7.4 — Medición del FCP base**
 
-- [ ] Lighthouse local con presupuesto FCP < 2 s.
+- [x] Lighthouse local con presupuesto FCP < 2 s. _*(validado: medido el 2026-09-28 con `npm run fcp` — **FCP 352 ms** de mediana (carreras 360/340/352) contra el presupuesto < 2 s de `TESTING` §3.1, con el 18 % del presupuesto usado. Herramienta **Playwright + `PerformanceObserver`**, no Lighthouse: desviación consciente, porque el perfil por defecto de Lighthouse es *Slow 4G* (150 ms RTT, 1.6 Mbps) y no el 4G que fija `TESTING` §3.3 (40 ms, 9 Mbps), así que su cifra no sería comparable con el resto de la documentación; Playwright ya venía como dependencia del E2E, sin añadir nada al toolchain. El throttling se emula por CDP `Network.emulateNetworkConditions` contra el build de producción servido por `vite preview`. Registrado en `docs/GAIA_PERFORMANCE.md` §4.2; Lighthouse entra donde el propio roadmap lo sitúa, en 11.2.1. Mutaciones: 9 Mbps con base 1024 en vez de 1000 tumba el test de conversión de caudal; devolver `0` en vez de `null` cuando no hay entrada de paint tumba el test de lectura — que es justo el fallo caro, porque `0 < 2000` y el presupuesto pasaría en verde sin haber pintado nada. Verde: lint 0 warnings, `tsc -b` limpio, 55 unit, 4 E2E, `perf:check` en presupuesto.)*_
 - **Criterio:** se registra el FCP base del scaffold.
 - **Estimado:** ~1 h.
 
 **Paso 0.7.5 — Presupuesto de assets**
 
-- [ ] Lista de límites para texturas/shaders por módulo.
+- [ ] Lista de límites para texturas/shaders por módulo. _(hueco de doc parcial: `docs/GAIA_PERFORMANCE.md` v1.0 ya tiene la §3 con la tabla por módulo, pero **ningún doc fija tamaños de textura ni de shader** — `TESTING` §3.4 solo dice «streaming por tiles» y `GLOBE_TEXTURES` cataloga APIs, no presupuestos — así que las casillas van `PENDIENTE` a propósito (decisión del usuario) en vez de rellenarse con números inventados. Cada fila se fija al abrir su módulo, F2–F6. El paso no se puede validar hasta que haya cifras.)_
 - **Criterio:** presupuestos escritos en el doc de rendimiento.
 - **Estimado:** ~0.75 h.
 
 **Paso 0.7.6 — Análisis por chunk**
 
-- [ ] Reporte de tamaños por chunk (source maps, build analyze).
+- [x] Reporte de tamaños por chunk (source maps, build analyze). _(validado: la herramienta era la parte que faltaba decidir, y sale del criterio. `rollup-plugin-visualizer`, porque el criterio es *identificar* módulos pesados a futuro y eso es un reporte; `size-limit` pone puertas por chunk y necesita cifras, que es justo lo que 0.7.5 tiene bloqueado. Vive en `frontend/vite.config.ts` —el fichero real, no el `vite.plugins.ts` que el árbol de `GAIA_PROJECT_STRUCTURE.md` §2 presuponía y que no existe— y detrás de `--mode analyze` (`npm run analyze`) en vez de una env var, porque en npm scripts una env var necesita `cross-env` para dar lo mismo en Windows que en Linux y `--mode` ya es de Vite. Sale un treemap de 175 KB en `dist/stats.html` con gzip y brotli, no raw: los presupuestos de §4 son de gzip, y comparar el número grande contra ellos daría falsos positivos. Un build normal no lo genera ni lo deja. Mutación: colgar el plugin siempre tumba el test que comprueba que el build normal no paga el reporte. No se mete en CI a propósito: el reporte es para mirar un momento concreto, no una puerta.)_
 - **Criterio:** identificar módulos pesados a futuro.
 - **Estimado:** ~0.75 h.
 
 **Paso 0.7.7 — Perfilador dev overlay**
 
-- [ ] Overlay para perfilar frames (long tasks) en dev.
+- [x] Overlay para perfilar frames (long tasks) en dev. _*(validado: el overlay de 0.7.1 suma dos detecciones, porque el criterio de "> 16 ms" y la API que el doc nombraba no pueden cumplirse a la vez. `lframe` cuenta los frames de la ventana que pasan de **18 ms** (el p95 de `TESTING` §3.2, no los 16.67 ms del frame budget: a 60 Hz todo frame dura eso y el contador marcaba 30 de 46 frames en una app sana), y `loaf` atribuye el bloqueo con `PerformanceObserver('long-animation-frame')`, que solo entrega frames de ≥ 50 ms. Sin atribución, el contador dice cuántos frames se pasaron de presupuesto pero no cuánto duró el culpable; con ella, ambos datos. Criterio verificado: el E2E bloquea el main thread 180 ms y ve subir `lframe` y `loaf` con la duración del bloqueo, dentro de rango (50–400 ms); donde la API no existe (Firefox, Safari) el overlay muestra `n/d` y no un 0. Desviación de herramienta registrada en `GAIA_PERFORMANCE.md` §5.1: se usa LoAF y no `longtask` porque en Chromium headless este último no emite entrada ni con un bloqueo de 1200 ms (`getEntriesByType('longtask')` = 0), medido, mientras LoAF reporta 182 ms por 180. Mutaciones: `>` por `>=` en el umbral tumba 1 test; `n/d` por `0` en la peor duración tumba 1; cambiar LoAF por `longtask` tumba el E2E. Verde: lint 0 warnings, `tsc -b` limpio, 59 unit, 5 E2E.)*_
 - **Criterio:** se detectan tareas > 16 ms.
 - **Estimado:** ~1 h.
 
 **Paso 0.7.8 — Docs de presupuestos**
 
-- [ ] Sección de presupuestos en `GAIA_PERFORMANCE` (o SPEC).
+- [x] Sección de presupuestos en `GAIA_PERFORMANCE` (o SPEC). _*(validado: creado `docs/GAIA_PERFORMANCE.md` v1.0 con §2 presupuestos canónicos referenciados a su doc de origen (SPEC RNF-01/RNF-02/RNF-06, TESTING §3.2-§3.4, ROADMAP §17), §3 assets por módulo, §4 baselines, §5 herramientas reales y §6 trazabilidad; fila en el README. Consistente con §17: los valores se citan, no se repiten.)*_
 - **Criterio:** documentado y consistente con §17 del ROADMAP.
 - **Estimado:** ~0.75 h.
 
 **Paso 0.7.9 — Reglas de orden de imports**
 
-- [ ] ESLint de import order y boundaries (`shared`).
+- [x] ESLint de import order y boundaries (`shared`). _(validado: el paso dice ESLint y el resultado es que hay dos linters, porque oxlint 1.85 no implementa `import/order` y —peor— ignora en silencio las reglas que no conoce: medido, `--deny import/order` y `--deny import/regla-inventada` dan el mismo 116 rules y 0 errores, así que poner esa regla en `.oxlintrc.json` habría parecido configurada sin cumplir nada. Reparto: oxlint sigue con react/typescript/oxc (`npm run lint`, intacto) y ESLint se queda solo con las dos reglas de este paso, en `eslint.config.mjs` de la raíz, que es lo único que alcanza a `frontend/` y `shared/` a la vez. Se usa `eslint-plugin-import-x` porque el `eslint-plugin-import` original no acepta ESLint 10 (9.39.5 ya está en `maintenance`); no se fuerza el árbol con `--legacy-peer-deps`. Orden: builtin → externo → padre → hermano, alfabético y con línea en blanco entre grupos, que es la convención que ya seguían la mayoría de los ficheros (`always` costaba 11 líneas en blanco, `never` 14). Boundary: `shared/` no puede importar de `frontend/` ni de `backend/` (es la base del grafo, cerrar un ciclo ahí no lo ven ni tsc ni Vite), y el `shared/` se consume siempre por su índice, nunca por un archivo suelto. Para lo segundo hizo falta `no-restricted-imports` de core y no `import-x/no-restricted-paths`: esta última resuelve la ruta antes de comparar y, sin `eslint-import-resolver-typescript`, no resuelve imports `.ts` (medido: 0 errores con un import directo a `store/state.types`). Verificado con cuatro sondas que luego se borran: import desordenado, import profundo a `shared/`, subpath `@gaia/shared/dates` y ciclo `shared/` → `frontend/`: las cuatro muerden. `npm run lint:imports` sale en 0 sobre el repo, y CI lo ejecuta. Verde: oxlint 0/0, build, 59 unit + 5 E2E, `perf:check` 66.8/450 KB, `shared` 12 test.)_
 - **Criterio:** imports consistentes en todo el repo.
 - **Estimado:** ~0.75 h.
 
 **Paso 0.7.10 — Reporte de cobertura por fase**
 
-- [ ] Script que agrega cobertura por fase en CI.
+- [x] Script que agrega cobertura por fase en CI. _(validado: «por fase» no lo define ningún doc, así que se decidió con el usuario: una fila por fase del ROADMAP, con el mapa fase→código explícito en `scripts/coverage.mjs` (el ROADMAP dice qué hace cada fase y `PROJECT_STRUCTURE` §2 cómo se llaman las carpetas, pero ningún doc los cruza) y las fases sin código saliendo con «sin código aún». Los nombres de carpeta son los del doc (`modules/seismic/`, `shaders/fire/`). Puerta solo donde el número es de un doc: `frontend/src/utils` y `frontend/src/store/actions.ts` al 80 % de `TESTING` §1, y `backend/app` al 60 % del `fail_under` de 0.6.10. El resto se publica sin bloquear, porque `radiation_normalizer.py` y `coordinates.ts` no existen y una puerta sobre código inexistente se salta siempre. Un archivo se atribuye a la fase de glob más largo: sin esa regla `backend/app/routers/fires.py` contaba en F0 y en F2 (medido: F0 daba 80 % en vez de 70 %). Tabla real de hoy: F0 96 %, con `utils` 100 %, `store/actions` 100 %, `services` 91 %, `workers` 100 % y `backend/app` 97 %. El frontend no tenía paquete de cobertura (`@vitest/coverage-v8` ahora sí) y el backend ya tenía `pytest-cov` con su `fail_under`; solo se le añadió `--cov-report=json` para que el agregador lo pueda leer. La tabla va al `GITHUB_STEP_SUMMARY` porque el log de un job desaparece al terminar. Dos bugs de formato, los dos silenciosos: el `json-summary` de vitest no tiene la envoltura `files` de istanbul y coverage.py da rutas relativas a `backend/`, así que la tabla salía entera en «sin código aún» con los reportes generados al lado; los dos tienen ahora un test con la forma real del reporte. Arreglo de paso: CI llamaba a `npm test` en la raíz y ese script no existía, o sea que el job frontend estaba roto; ahora corre los tests de los scripts de la raíz y los del frontend.)_
 - **Criterio:** cada fase publica su cobertura.
 - **Estimado:** ~1 h.
 
 **Paso 0.7.11 — Nota de rendimiento en README**
 
-- [ ] Bloque de rendimiento (baselines) en el README raíz.
-- **Criterio:** README muestra baseline y target.
+- [x] Bloque de rendimiento (baselines) en el README raíz. _(validado: va entre «Stack» y «Fuentes de Datos», que es donde alguien que entra busca si la app rinde. El criterio pide que el README muestre baseline y target, así que las cifras están escritas, pero con dos columnas de fuente: `PERFORMANCE` §4.1/§4.2 para el baseline y el doc de origen de cada objetivo para el target. Es la excepción justificada a «no duplicar valores técnicos» de `AGENTS.md`: la regla evita que un número viva suelto y se desincronice, y por eso cada celda dice de dónde sale; sin las cifras el criterio no se cumple. Lo que no tiene baseline no recibe un número inventado: FPS, p95 y draw calls salen `n/d` con un puntero a `PERFORMANCE` §2 hasta que exista la escena (F1). Sin test, por `DOD` §5 (los pasos de docs se verifican con el diff y greps de coherencia), y el grep de coherencia lo cazó: la primera redacción citaba `≤ 450 KB` como `SPEC` RNF-01 y `SPEC` no lo dice en ningún sitio — lo fija `TESTING` §3.4, que es donde está ahora; el FCP sí está en los dos, `SPEC` RNF-06 lo escribe «2.0 segundos» y `TESTING` §3.1 «2.0 s». Sin inventar cifras nuevas: las cuatro medidas son las que ya existen en `PERFORMANCE` §4. Hallazgo que queda anotado y no arreglado aquí, por ser de otro paso: CI corre `perf:check` pero no `npm run fcp`, así que el presupuesto de FCP no está en puerta, solo el del bundle; por eso el README no dice que ambos estén en el CI.)_- **Criterio:** README muestra baseline y target.
 - **Estimado:** ~0.25 h.
 
 **Paso 0.7.12 — Grabación de baseline comparativa**
 
-- [ ] Guardar baseline en repo para comparativas futuras.
-- **Criterio:** archivo de baseline versionado.
+- [x] Guardar baseline en repo para comparativas futuras. _(validado: `GAIA_PERFORMANCE.md` §4 dejaba la ruta y el formato en `PENDIENTE` y delegaba en este paso, así que se preguntó: `docs/performance/baseline.json` en JSON, con comparador automático y con historial. JSON y no una tabla más en el doc porque tiene que poder leerlo un programa sin escribir un parser de markdown. El fichero va en `docs/` porque es dato, no herramienta: §4 ya decía que no es un script, así que no está en `scripts/`. Estructura: `metricas` es la última buena de cada métrica, contra eso se compara, y `historial` es un array con una entrada por sesión, con fecha, commit, Node y Vite, que es lo que hace falta para responder «ha ido mal» o «ya iba mal». Las claves llevan la unidad (`_kib`, `_ms`) para que el comparador no necesite una tabla de unidades. El comparador es `scripts/perf-baseline.mjs` (`npm run perf:baseline`), que reutiliza el `medir()` de `frontend/scripts/bundle-budget.mjs` en vez de medir otra vez, y corre en CI detrás de `perf:check`. Dos decisiones que ningún doc fijaba, las dos anotadas para que se puedan revertir: la tolerancia es del 1 % y no 0, porque el tamaño gzip se mueve con cualquier versión nueva de vite o esbuild sin que cambie el bundle, y con 0 el gate no distinguiría «ha entrado Three.js» de «ha subido vite»; y el FCP queda fuera del gate porque medirlo necesita navegador, build y `vite preview`, así que sale como `n/d (este script no lo mide)` y no como un 0 que parecería una mejora. Que el FCP no esté en puerta en CI sigue siendo la deuda que se anotó en 0.7.11, no se ha cerrado aquí. Dos cosas que salieron midiendo: el CSS de §4.1 estaba mal (1,47 KiB son 1472 bytes = 1,438 KiB, y con el doc así el gate daba un falso -4,8 % el primer día), corregido a 1,44 en §4.1 y en el README que lo duplicaba; y `medir()` solo miraba `.js`, así que el CSS que estaba en el baseline era una cifra que nadie podía comparar — ahora lo mide y tiene dos tests, uno que verifica que no se cuela en el JS inicial y otro que devuelve `null` en vez de 0 cuando no hay CSS, porque un 0 se compararía contra un 0 y no miraría nada. Mutaciones: bajar el baseline a 10 KiB tumba con rc=1 diciendo «+568,3 %», y un -0,8 % pasa con rc=0; el primer día salía un -4,8 % fantasma: no era una mejora, era el redondeo a 0,1 KiB del CSS. 7 tests nuevos en `tests/`, más 2 en el spec de `bundle-budget`.)_- **Criterio:** archivo de baseline versionado.
 - **Estimado:** ~0.75 h.
 
 **Paso 0.8 — Documentación y convenciones del repo**
 
 **Paso 0.8.1 — README raíz (setup)**
 
-- [ ] README con pre-requisitos (Node para el frontend, Python/uv para el backend), `npm ci` + `uv sync`, variables y scripts.
-- **Criterio:** se puede subir GAIA siguiendo el README.
+- [x] README con pre-requisitos (Node para el frontend, Python/uv para el backend), `npm ci` + `uv sync`, variables y scripts. _(validado: sección «Puesta en marcha» entre Estado y Stack, con requisitos, el bloque de instalación, las variables y una tabla de los scripts. Los pasos se ejecutaron de verdad en vez de copiar el doc: `npm ci` en la raíz (369 paquetes), `uv sync` en `backend/`, `cp .env.example backend/.env`, `uv run alembic upgrade head` —este último sale con `ConnectionRefusedError` contra el 5432 si no está Postgres levantado, así que el README avisa de que la BD y el rol dedicados se crean antes, en `DEPLOYMENT` §3.2 paso 2— y `uv run uvicorn` respondiendo con el contrato universal (`{"success": true, ..., "redis": "disconnected"}`, fail-open de 0.6.8). Las versiones de la tabla de requisitos salen de `DEPLOYMENT` §3.1 y se citan ahí en vez de repetirse: el mismo patrón que el bloque de Rendimiento de 0.7.11. Tres correcciones que salieron al comprobar los comandos en vez de leerlos. `DEPLOYMENT` §3.2 dice `cd frontend && npm install`, y el repo es un workspace de npm (root + `frontend` + `shared`), así que el README pone `npm ci` en la raíz, que es lo que hace el CI. Y el CI llamaba a `npm run perf:check` en la raíz, donde ese script no existía: mismo fallo que el `npm test` de 0.7.10, y desde 0.7.3; se arregla proxeyéndolo en la raíz como ya hacen `dev`, `build` y `lint`, no tocando el CI. Con eso los siete comandos que pide el CI existen en la raíz y se comprobó uno a uno. El `curl` al dev server devuelve código 0 desde WSL y no por el README: Vite 8 escucha solo en `[::1]` y hace falta `--host 127.0.0.1`, que es lo mismo que ya documenta `playwright.fcp.config.ts`; el dev server arranca (`ready in 3423 ms`) y quien lo prueba de verdad es el E2E, que lo levanta con el host correcto. Sin test, por `DOD` §5; la evidencia es que la secuencia del README se ha ejecutado. Nota: `VITE_GAIA_API_BASE_URL` y `VITE_GAIA_PUBLIC_URL` están en `DEPLOYMENT` §4.3 pero ningún código las lee todavía —el cliente de API no consulta `import.meta.env`—, así que el README las lista como lo que son, variables documentadas, sin afirmar que la app dependa de ellas; conectarlas es trabajo de F0.4. Verde: 15 unit de raíz + 63 de frontend, 5 E2E, 73 backend, oxlint 0/0, `lint:imports` rc=0, build 669 ms, `perf:check` y `perf:baseline` OK.)_- **Criterio:** se puede subir GAIA siguiendo el README.
 - **Estimado:** ~1 h.
 
 **Paso 0.8.2 — Documento de arquitectura inicial**
 
-- [ ] Esquema de módulos (backend/worker/GPU/HUD) y flujo de datos.
+- [x] Esquema de módulos (backend/worker/GPU/HUD) y flujo de datos. _(validado: `docs/GAIA_ARCHITECTURE.md` v1.0)_
 - **Criterio:** el doc describe la arquitectura de F0-F1.
 - **Estimado:** ~1.25 h.
 
 **Paso 0.8.3 — Guía de contribución**
 
-- [ ] CONTRIBUTING con setup, tests y pre-commit.
+- [x] CONTRIBUTING con setup, tests y pre-commit. _(validado: `docs/GAIA_CONTRIBUTING.md` v1.0)_
 - **Criterio:** un nuevo dev sigue la guía sin dudas.
 - **Estimado:** ~0.75 h.
 
 **Paso 0.8.4 — Templates de issue/PR**
 
-- [ ] Plantillas con checklist (RFC3339, RF/RNF, tests).
+- [x] Plantillas con checklist (RFC3339, RF/RNF, tests). _(validado: dos issue forms y una plantilla de PR en `.github/`)_
 - **Criterio:** issues/PRs con estructura consistente.
 - **Estimado:** ~0.75 h.
 
 **Paso 0.8.5 — CHANGELOG y versionado**
 
-- [ ] CHANGELOG semántico y etiquetado de releases.
+- [x] CHANGELOG semántico y etiquetado de releases. _(validado: `docs/GAIA_CHANGELOG.md` v1.0, con `Unreleased` para F0 y el `v0.1.0` al cerrar la fase)_
 - **Criterio:** cada fase añade su entrada.
 - **Estimado:** ~0.75 h.
 
 **Paso 0.8.6 — ADR de stack**
 
-- [ ] ADR-001 con la decisión de stack (Vite/three/Valtio/redis/postgres).
-- **Criterio:** ADR documentado y referenciable.
+- [x] ADR-001 con la decisión de stack (Vite/three/Valtio/redis/postgres). _*(validado: `docs/adr/ADR-001-stack.md`, con la decisión por capa citada contra el doc que la justifica —`TECH_STACK` §2 y `DEPLOYMENT` §4— para no duplicar nada. Registra cuatro alternativas descartadas que ya estaban documentadas (Webpack, Jotai/Zustand, `aioredis`, `slowapi`) y, en §3.2, dice sin adornos las dos que **no** tienen comparación escrita: por qué Python y no Node en el backend, y por qué PostgreSQL+TimescaleDB y no otro almacén. Ese hueco estaba y se ha hecho visible en vez de rellenarse con una razón inventada. §4 anota el coste real de la decisión, incluido que el objetivo de frame de RNF-01 no se puede gatear en CI sin GPU. Referenciable: fila propia en el README y enlaces cruzados desde `TECH_STACK` (1.3 → 1.4) y `ARCHITECTURE` (1.0 → 1.1); los 4 enlaces del ADR resuelven. **Ubicación y formato los decidió el usuario**: ningún doc fijaba dónde viven los ADR, y se eligió un directorio propio para que la serie escale a ADR-002 sin mezclarse con los docs por tema.)*_
 - **Estimado:** ~0.75 h.
 
 **Paso 0.8.7 — Configuración de editor**
 
-- [ ] VS Code settings (format on save), editorconfig.
+- [x] VS Code settings (format on save), editorconfig. _*(validado: `.editorconfig` fija 2 espacios / LF / 80 columnas como los defaults de Prettier, con `[*.py]` a 4 porque Prettier no tiene parser de Python; `.vscode/settings.json` formatea al guardar y `extensions.json` recomienda la extensión de Prettier. Con `formatOnSave` activo, los 3 ficheros que ya incumplían se normalizan: `App.css`, `index.css` y `shared/tsconfig.json`)*_
 - **Criterio:** formato uniforme entre devs.
 - **Estimado:** ~0.25 h.
 
 **Paso 0.8.8 — Convención de commits documentada**
 
-- [ ] Documentar `feat/fase-X` y `fix(fase): ...`.
+- [x] Documentar `feat/fase-X` y `fix(fase): ...`. _*(validado: la convención queda en `GAIA_CONTRIBUTING` §4 (v1.1): rama `feat/fase-X`, mensaje `<tipo>(fase-N): <nº de paso> <qué cambia y por qué>`, tipos `feat`/`fix`/`docs`/`test`/`chore`/`build`, y el cuerpo citando el doc que lo manda. El scope de fase lo decidió el usuario frente a las dos alternativas que coexistían: el ROADMAP pedía `fix(fase):` y la propia guía decía `docs(0.8.3):`. `AGENTS.md` §Git queda alineado. No se reescribe la historia: el criterio empieza en F1, y este commit es el primero con la forma nueva)*_
 - **Criterio:** la convención se aplica desde F1 en adelante.
 - **Estimado:** ~0.75 h.
 
 **Paso 0.8.9 — `.env.example`**
 
-- [ ] Variables de entorno documentadas sin secretos.
+- [x] Variables de entorno documentadas sin secretos. _*(validado: `.env.example` reescrito con la regla de que solo se declaran variables que el código lee hoy. `backend/app/config.py` declara 9 y las 9 están como `clave=valor`, con sus defaults; las 9 que `DEPLOYMENT` §4.1-§4.3 documenta y que nadie lee todavía (`DB_PASSWORD`, `FIRMS_MAP_KEY`, `LOG_LEVEL`, `PORT`, `PUBLIC_FRONTEND_URL`, los 5 `TTL_*` y las 2 `VITE_GAIA_*`) quedan en bloque de comentario, porque como `CLAVE=` dirían que están cableadas. `VITE_*` va aparte porque Vite solo lee `frontend/.env.local` y `fetchAPI` recibe la URL como argumento. Verificado: la plantilla carga en `Settings(_env_file=...)` con los tipos correctos, ningún valor del `.env` real aparece en el ejemplo, `backend/.env` sigue ignorado, y `CONTEXT7_API_KEY` va vacía)*_
 - **Criterio:** `.env.example` completo y sin valores reales.
 - **Estimado:** ~0.25 h.
 
 **Paso 0.8.10 — Naming de branches**
 
-- [ ] Convención `fase-X/feature-...` documentada.
+- [x] Convención `fase-X/feature-...` documentada. _*(validado: la convención que se documenta es `feat/fase-X`, una rama por fase, que es la que ya fijan el propio ROADMAP en su § preamble, sus 14 pasos de "Commit del hito `feat/fase-X`", la DoD y el CONTRIBUTING §4 validado en 0.8.8. El texto de este paso era el único sitio del repo que decía `fase-X/feature-...`, y no se ha inventado nada: `CONTRIBUTING` §4 explica el ciclo (la fase acumula, el hito cierra y mergea a `main`) y por qué no hay sufijo de feature — la unidad de revisión es la fase, y 88 grupos en 14 fases serían 88 ramas. La DoD dice ahora "rama de su fase" y no "rama del paso", que invite a abrir una rama por micro-paso. Verificado: las dos ramas del repo (`main`, `feat/fase-0`) cumplen el patrón)*_
 - **Criterio:** nombres coherentes en el repo.
 - **Estimado:** ~0.25 h.
 
 **Paso 0.8.11 — Mapa de fases en README**
 
-- [ ] Tabla resumen de las 14 fases con enlaces al ROADMAP.
+- [x] Tabla resumen de las 14 fases con enlaces al ROADMAP. _*(validado: el README gana la sección «Mapa de fases» con las 14 filas (nombre, micro-pasos, estado) y un ancla a la sección de cada fase en el ROADMAP. El ancla se calculó con el algoritmo de `github-slugger`, que reemplaza **cada** espacio por un guion, así que las que tienen em dash llevan dos guiones seguidos; los 14 se comprobaron contra los encabezados reales. Los micro-pasos de cada fila son los que declara el propio ROADMAP en su «Ruta de ejecución», no un recuento mío: contrastados, 332 declarados = 332 checkboxes. Los nombres son literales de los encabezados (sin el sufijo «— Corte Vertical Completo» de F2-F6). Y el «Estado», que decía «validados hasta 0.5.1» cuando el real era 0.8.10, ahora dice 60 de 66 y explica por qué `0.7.5` y `0.7.13` no se pueden cumplir hoy)*_
 - **Criterio:** README refleja el roadmap y su estado.
 - **Estimado:** ~0.75 h.
 
 **Paso 0.8.12 — Metadata del documento**
 
-- [ ] Versión/estado/fecha actualizados en GAIA_ROADMAP.
+- [x] Versión/estado/fecha actualizados en GAIA_ROADMAP. _\*(validado: la cabecera del ROADMAP pasa a v1.96 con la fecha real de hoy y un estado que ya no se limita a decir «Fase 0 en curso» sino que lleva la cuenta — 60 de 66 validados, 0.8.12 realizado, 5 pendientes — que es lo que distingue metadata al día de metadata decorativa. La convención de marcas se mudó de la cabecera a §1.4, donde estaba a medias: decía «`- [ ]` … marcar al terminar», que se lee como que `[x]` significa «hecho», cuando `[x]` es «validado por el usuario» y la barra verde la pone quien valida ([DoD](./GAIA_DOD.md) §1-§2); ahora los cuatro estados están escritos y son comprobables. Al auditar las cabeceras de los 23 ficheros contra la fecha real de su último commit aparecieron 5 desajustes: 2 míos de 0.8.10 (CONTRIBUTING y DoD, a los que subí versión pero no fecha) y 2 preexistentes (API_CONTRACT con fecha anterior a su propio último commit, igual que TESTING), corregidos los cuatro; README y AGENTS.md no declaran versión ni fecha y no entran en el invariante)_*
 - **Criterio:** metadata al día tras cada fase.
 - **Estimado:** ~0.25 h.
 
 **Paso 0.8.13 — Consistencia con docs compañeros**
 
-- [ ] Revisar que SPEC/SECURITY/STATE coinciden con lo construido.
+- [x] Revisar que SPEC/SECURITY/STATE coinciden con lo construido. _\*(validado: auditado doc por doc contra el código, y el resultado fue desigual. STATE: correcto, su `GaiaState` es una transcripción literal — extraje las 11 claves del doc y del `state.types.ts` y son las mismas, sin una sola diferencia. SECURITY: correcto, los valores que fija están en el código y no en un comentario — token bucket 240/120 en Redis con script Lua atómico (`rate_limit.py` es un `GLOBAL_LIMIT = {capacity: 240, refill_per_min: 120}`), cookie `gaia_session` con token opaco de que solo se guarda `sha256` y TTL de 30 d, `HttpOnly` + `SameSite=Lax` + `Secure` por config, CSP con nonce en producción y `frame-ancestors 'none'`. SPEC: no afirma nada falso sobre el presente (describe el sistema, no un estado ya construido). Los que minten eran otros dos: AGENTS.md decía «**No existe** `frontend/` ni `backend/`: no hay package.json, tests, lint ni CI. No inventar comandos de build/test (no existen)» y «## Verificación (no hay framework)», con «16 docs» cuando hay 20 más el ADR. Eso es lo peligroso de la regla: invita a no correr unos tests que sí existen y eran el mapa de cualquiera que abriese el repo. Corregido con lo medido, no de memoria: los comandos reales, 73 tests pasan y 8 se saltan en local porque el fixture hace `skip` sin PostgreSQL (81 en CI), Node 22 y Python 3.12. Escribí primero «63 tests», «Node 20» y «hay `pre-commit`» porque sonaban razonables, y las tres eran falsas: lo primero que corrige un doc es medirlo. Y DEPLOYMENT §4.4, que listaba 19 variables de `.env.example` sin decir que 10 no las lee nadie: ahora separa las 9 cableadas de las 10 previstas y dice en qué fase llega cada una, para que ponerlas y ver que no hacen nada no parezca un bug)_*
 - **Criterio:** sin desviaciones entre docs.
 - **Estimado:** ~1 h.
 
 **Paso 0.8.14 — Enlaces cruzados**
 
-- [ ] Revisar todos los `./GAIA_*.md` referenciados existen.
+- [x] Revisar todos los `./GAIA_*.md` referenciados existen. _\*(validado: 231 enlaces internos en `docs/` + `README.md` + `AGENTS.md`, y no hay ni un roto: ni ficheros ni anclas. Pero el paso no se queda en un «lo he mirado», porque eso caduca en cuanto alguien añade un enlace: el check queda en `scripts/check-links.mjs` (`npm run check:links`) y en el CI, junto a `lint` y `lint:imports` que también son checks estáticos de la raíz. Sin dependencias nuevas y sin red, que un check que sale a internet mide la disponibilidad de otro sitio y no la de este repo. El slug se calcula como lo hace `github-slugger` (minúsculas, sin puntuación, **cada** espacio → un guion sin colapsar), que es lo que hace que los títulos con em dash lleven dos guiones y no fallen; y los bloques de código se ignoran, porque un ejemplo de markdown dentro de un fence no es un enlace del documento. Lo importante: **probé el comprobador antes de creérmelo**. Mi primera versión con un fichero inexistente inyectado se callaba — y el motivo era que la comprobación de anclas llevaba `const [ruta, , ancla] = dest.split("#")`, un hueco de más para un array de dos elementos, así que `ancla` era `undefined` siempre y esa mitad del check no se ejecutaba nunca. Parecía que el repo estaba impecable porque media comprobación no miraba nada. Un check que no ha sidoRONDA... probado contra un caso roto no es un check)_*
 - **Criterio:** sin enlaces rotos en los docs.
 - **Estimado:** ~0.75 h.
 
 **Paso 0.8.15 — Actualizar Matriz de Trazabilidad**
 
-- [ ] Marcar F0 cubierta en la sección 16 del ROADMAP.
+- [x] Marcar F0 cubierta en la sección 16 del ROADMAP. _\*(validado: la fila de F0 decía «En curso — 0.1 a 0.5 validados», un estado de hace sesenta micro-pasos que nadie había seguido, y el párrafo de debajo repetía que «los grupos 0.6, 0.7 y 0.8 siguen pendientes» cuando los tres están cerrados salvo dos pasos del 0.7. Ahora la fila dice **cubierta con 2 excepciones — 63 de 66** y el párrafo cuenta cuáles son y por qué no se pueden cumplir. Salió también una incoherencia en la propia regla de cierre: decía que F0 se cubría «al cerrar su último grupo, el 0.8», y el último grupo es el 0.8 pero el 0.7 sigue con dos pasos abiertos, así que la regla no podía cumplirse tal como estaba escrita. Se corrige a la que sí se sostiene —el 0.8 cerrado y las excepciones del 0.7 documentadas— y se dice sin rodeos que para llegar a 66 de 66 hace falta que el usuario decida qué se hace con `0.7.5` y `0.7.13`._*
 - **Criterio:** la matriz refleja el estado real.
 - **Estimado:** ~0.75 h.
 
 **Paso 0.6.13 — Test de migraciones idempotentes**
 
-- [ ] Test que ejecuta migraciones dos veces.
-- **Criterio:** segunda ejecución no falla ni altera el esquema.
+- [x] Test que ejecuta migraciones dos veces. _*(validado: el test ya existía pero comprobaba menos de lo que dice el criterio: solo que las tablas base existieran tras dos `upgrade head`, así que una migración que añadiera una columna o cambiara un tipo habría pasado. Ahora compara el esquema entero —tabla → {columna: tipo}— con el inspector de SQLAlchemy, que además es portable. El otro problema era que la capa de BD no se ejecutaba nunca en CI: sin PostgreSQL los tests hacen `pytest.skip` y el job de backend salía verde sin verificar el esquema, la sesión ni el api_log. `GAIA_DATABASE` §6.1 dice que CI ejecuta las migraciones «contra una DB limpia en los tests de integración», así que el job de backend ahora levanta un servicio `postgres:18` con `pg_isready` como healthcheck; usuario, contraseña y base coinciden con el default de `app/config.py`, de modo que no hace falta pasar `DATABASE_URL`. Verificado contra el PostgreSQL 18 del equipo: 8 de 8 tests de BD en verde (2 de migraciones, 4 de api_log, 2 de session). Mutación hecha a propósito para que la segunda ejecución quitara una columna: el test falla con el diff de `session_events`, justo lo que la aserción anterior no veía. Suite completa desde WSL: 73 pasados, 8 omitidos, 96,50 % de cobertura. El servicio se pusheó con este mismo commit, de modo que su primer run real en Actions es posterior a esta validación.)*_
 - **Estimado:** ~0.75 h.
 
 **Paso 0.6.14 — Test de CORS y headers**
 
-- [ ] Test de orígenes permitidos y headers de seguridad base.
-- **Criterio:** origen no permitido recibe bloqueo; headers presentes.
+- [x] Test de orígenes permitidos y headers de seguridad base. _*(validado: el paso ya estaba cubierto y era una casilla sin marcar, no trabajo perdido. `backend/tests/test_security_headers.py` (10 tests) nació en 0.4.5 y cubre los dos lados del criterio: headers presentes —las 5 fijas de `GAIA_SECURITY` §6.2 más la CSP canónica con nonce distinto en cada respuesta— y origen no permitido bloqueado —sin `access-control-allow-origin` y preflight 400—, con los casos permitidos como contraprueba. Se comprobó que el test sirve: con `allow_origins=["*"]` en `main.py` fallan los 2 tests del origen no permitido, y restaurado el allowlist vuelven a pasar los 10. No hizo falta tocar código: el criterio se cumplía.*_
 - **Estimado:** ~0.75 h.
 
 **Paso 0.7.13 — Medición de p95 de frame en dev**
@@ -449,32 +447,27 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.14 — Comparativa baseline vs fase**
 
-- [ ] Script que compara el baseline guardado con la métrica actual.
-- **Criterio:** la comparativa se ejecuta en CI opcional.
+- [x] Script que compara el baseline guardado con la métrica actual. _*(validado: `scripts/perf-baseline.mjs` compara la medición de hoy contra `docs/performance/baseline.json` y el job frontend de CI lo ejecuta. Verificado: con el baseline real sale exit 0; bajando a la fuerza `bundle_js_inicial_kib` a 10 KiB sale exit 1 con «+568,3 %», o sea que el gate bloquea de verdad y no solo informa. La tolerancia es del 1 % a propósito, para distinguir «ha entrado Three.js» de «ha subido esbuild».)*_
 - **Estimado:** ~0.75 h.
 
 **Paso 0.7.15 — Script de medición automática**
 
-- [ ] Script headless para medir FPS/bundle en CI.
-- **Criterio:** el script emite valores usables.
+- [x] Script headless para medir FPS/bundle en CI. _*(validado: el bundle ya lo medía `perf:check`; faltaba el frame, y ahora hay `frontend/tests/fps/fps.spec.ts` con su config propia, el script `npm run fps` y un paso en el job frontend de CI. La estadística no se reimplementa: importa `computeStats` de `src/utils/frameStats.ts`, el mismo que alimenta el `DevOverlay`, para que el número de CI y el que se ve en pantalla no puedan separarse por una diferencia de aritmética. Medido sobre el build de producción: 59,5 / 59,5 / 60,0 FPS con p95 de 16,7-16,8 ms, 120 frames por carrera en tres carreras. **No se gatea contra los 60 FPS ni el p95 ≤ 18 ms de `TESTING` §3.2**: Chromium headless no tiene GPU, así que esa puerta se pasaría siempre y daría una confianza falsa; lo único que se exige es que la medición exista, porque un 0 o un `n/d` es un fallo silencioso, no un resultado. Mutación: pedir 0 frames al muestreador y el test falla con «la carrera 1 no recogió ningún frame». `tests/fps/**` queda excluido de vitest como `tests/fcp/**`, y `npm test` sigue en 63 y `npm run lint` en 0 avisos.)*_
 - **Estimado:** ~0.75 h.
 
 **Paso 0.7.16 — Ajuste del presupuesto de FCP**
 
-- [ ] Confirmar presupuesto FCP < 2 s con el scaffold.
-- **Criterio:** presupuesto definido y verificado.
+- [x] Confirmar presupuesto FCP < 2 s con el scaffold. _*(validado: el presupuesto vive en `frontend/scripts/fcp.mjs` (`FCP_MAX_MS = 2000`) y el test de Playwright lo verifica sobre el build de producción con red 4G. Medido hoy: FCP mediana 304 ms (carreras 332, 304 y 300), un 15 % del presupuesto. El baseline aún guarda los 352 ms de la medición anterior; el comparador no gatea FCP, así que se actualiza cuando se cierre la fase.)*_
 - **Estimado:** ~0.75 h.
 
 **Paso 0.7.17 — Validación del overlay de dev**
 
-- [ ] Verificar que el overlay no se muestra en prod.
-- **Criterio:** prod sin overlay; dev con métricas.
+- [x] Verificar que el overlay no se muestra en prod. _*(validado: comprobado sobre el artefacto, no sobre el código: tras `npm run build`, ningún chunk de `dist/assets/` contiene el texto del overlay ni una referencia a `DevOverlay`, porque `App.tsx` lo importa dinámicamente tras `import.meta.env.DEV` y Vite elimina la rama del grafo. En dev sigue montado, con sus métricas.)*_
 - **Estimado:** ~0.75 h.
 
 **Paso 0.7.18 — Snapshot del baseline**
 
-- [ ] Guardar snapshot del baseline en el repo.
-- **Criterio:** archivo de baseline versionado y legible.
+- [x] Guardar snapshot del baseline en el repo. _*(validado: `docs/performance/baseline.json` está versionado (commit 4abe070) y es JSON legible con `schema`, `metricas` y `historial` con el origen de cada cifra. Lo lee el comparador de 0.7.14. Un dato sin medir va solo en `historial`, no en `metricas`, para no gatear una cifra que nunca se midió.)*_
 - **Estimado:** ~0.75 h.
 
 ## 3. FASE 1 — Motor 3D y Globo Terráqueo
@@ -2383,27 +2376,34 @@ Cada fase se divide jerárquicamente así:
 
 ## 16. Matriz de Trazabilidad Fase ↔ RF/RNF
 
-| Fase | RF / RNF cubiertos                       | Estado                         |
-| ---- | ---------------------------------------- | ------------------------------ |
-| F0   | RNF-01 (baseline), RNF-07 (base headers) | En curso — 0.1 a 0.5 validados |
-| F1   | RF-01, RF-02, RNF-06, RNF-07 (globo)     | Pendiente                      |
-| F2   | RF-03, RF-04, RNF-02, RNF-03, RNF-05     | Pendiente                      |
-| F3   | RF-07, RF-08, RNF-02, RNF-03             | Pendiente                      |
-| F4   | RF-05, RF-06, RNF-01, RNF-03             | Pendiente                      |
-| F5   | RF-09, RF-10, RNF-01                     | Pendiente                      |
-| F6   | RF-13, RF-14, RNF-02, RNF-03, RNF-04     | Pendiente                      |
-| F7   | RF-11, RF-12, RNF-04                     | Pendiente                      |
-| F8   | RNF-03, RNF-05                           | Pendiente                      |
-| F9   | RNF-07 (parcial), GDPR/privacidad        | Pendiente                      |
-| F10  | RNF-01, RNF-02, RNF-04                   | Pendiente                      |
-| F11  | RNF-06, RNF-07                           | Pendiente                      |
-| F12  | operaciones, despliegue                  | Pendiente                      |
-| F13  | cierre y demostración                    | Pendiente                      |
+| Fase | RF / RNF cubiertos                       | Estado                                             |
+| ---- | ---------------------------------------- | -------------------------------------------------- |
+| F0   | RNF-01 (baseline), RNF-07 (base headers) | **Cerrada con 2 excepciones** — 64 de 66 validados |
+| F1   | RF-01, RF-02, RNF-06, RNF-07 (globo)     | Pendiente                                          |
+| F2   | RF-03, RF-04, RNF-02, RNF-03, RNF-05     | Pendiente                                          |
+| F3   | RF-07, RF-08, RNF-02, RNF-03             | Pendiente                                          |
+| F4   | RF-05, RF-06, RNF-01, RNF-03             | Pendiente                                          |
+| F5   | RF-09, RF-10, RNF-01                     | Pendiente                                          |
+| F6   | RF-13, RF-14, RNF-02, RNF-03, RNF-04     | Pendiente                                          |
+| F7   | RF-11, RF-12, RNF-04                     | Pendiente                                          |
+| F8   | RNF-03, RNF-05                           | Pendiente                                          |
+| F9   | RNF-07 (parcial), GDPR/privacidad        | Pendiente                                          |
+| F10  | RNF-01, RNF-02, RNF-04                   | Pendiente                                          |
+| F11  | RNF-06, RNF-07                           | Pendiente                                          |
+| F12  | operaciones, despliegue                  | Pendiente                                          |
+| F13  | cierre y demostración                    | Pendiente                                          |
 
-F0 se marca como **cubierta** al cerrar su último grupo, el 0.8 (Paso 0.8.15 —
-Actualizar Matriz de Trazabilidad); hasta entonces la columna refleja el estado
-real: los grupos 0.6 (testing), 0.7 (benchmark) y 0.8 (documentación) siguen
-pendientes.
+F0 queda **cerrada con dos excepciones** (`Paso 0.8.15`): de sus 66 micro-pasos, 64 están
+`validated`, este último es el que cierra el grupo 0.8, y quedan exactamente dos — `0.7.5`
+(presupuesto de assets: ningún doc fija tamaños de textura ni de shader) y `0.7.13` (p95 de
+frame por capa: el overlay mide el p95 global y las cinco capas que el criterio exige son de
+F1 a F6) — que no se pueden cumplir hoy porque el dato que necesitan no existe en ningún doc.
+Ambos llevan su anotación explicando el hueco y por qué las casillas se dejan `PENDIENTE` en
+vez de rellenarse con cifras inventadas. La regla anterior decía que F0 se cubría «al cerrar su
+último grupo, el 0.8», y no era cierta: el grupo 0.7 sigue con dos pasos abiertos. La regla
+correcta es la de arriba — el grupo 0.8 cerrado y las excepciones del 0.7 documentadas — y para
+que F0 quede en 66 de 66 hace falta una decisión del usuario sobre esos dos: dar los
+presupuestos que faltan, o aceptarlos como requisitos no definidos y cerrar la fase así.
 
 Los valores técnicos y la definición de RF/RNF viven en [GAIA_SPECIFICATION.md](./GAIA_SPECIFICATION.md).
 

@@ -19,6 +19,7 @@ dev = [
     "httpx2>=2.13.1",
     "pytest>=8.4.2",
     "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.0.0",
 ]
 
 [tool.pytest.ini_options]
@@ -26,3 +27,13 @@ testpaths = ["tests"]
 pythonpath = ["."]
 
 asyncio_mode = "auto"
+# Cobertura en toda ejecución (ROADMAP 0.6.10): el criterio del paso es que la suite
+# *reporte* con el umbral activo, no que se pueda pedir a mano.
+addopts = "--cov=app --cov-report=term:skip-covered --cov-report=json:coverage.json"
+
+[tool.coverage.report]
+# Umbral base de F0 tal y como lo fija el ROADMAP 0.6.10. Es deliberadamente holgado:
+# entra el código de F1-F6 antes que sus tests, y un umbral que bloquea el CI hasta
+# alcanzar el rojo acaba siempre saltándose.
+fail_under = 60
+skip_covered = true

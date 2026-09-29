@@ -16,7 +16,8 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import text
+from sqlalchemy import inspect, text
+from sqlalchemy.engine import Connection
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import create_async_engine
 
@@ -43,14 +44,29 @@ async def _downgrade(cfg: Config, revision: str = "base") -> None:
     await asyncio.to_thread(command.downgrade, cfg, revision)
 
 
-async def _tablas(url: str) -> set[str]:
+async def _esquema(url: str) -> dict[str, dict[str, str]]:
+    """Tabla -> {columna: tipo} según el inspector de SQLAlchemy.
+
+    El criterio de 0.6.13 es que la segunda ejecución «no altera el esquema», así que
+    no basta con mirar nombres de tabla: una migración que cambiara el tipo de una
+    columna, o añadiera otra, pasaría igual. Antes de este paso el test solo
+    comprobaba que las tablas base existieran después de dos ejecuciones, que es
+    bastante menos de lo que dice el criterio.
+    """
     engine = create_async_engine(url)
     try:
         async with engine.connect() as conn:
-            rows = await conn.execute(
-                text("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
-            )
-            return {row[0] for row in rows}
+
+            def leer(c: Connection) -> dict[str, dict[str, str]]:
+                insp = inspect(c)
+                return {
+                    tabla: {
+                        col["name"]: str(col["type"]) for col in insp.get_columns(tabla)
+                    }
+                    for tabla in insp.get_table_names()
+                }
+
+            return await conn.run_sync(leer)
     finally:
         await engine.dispose()
 
@@ -72,15 +88,18 @@ async def url() -> str:
 
 
 async def test_migrate_crea_el_esquema_y_es_idempotente(url: str) -> None:
-    """`upgrade head` crea el esquema; repetirlo no duplica nada."""
+    """`upgrade head` crea el esquema; repetirlo no lo altera, ni en un tipo."""
     cfg = _alembic_config()
     await _upgrade(cfg)
+    antes = await _esquema(url)
     await _upgrade(cfg)
-    assert TABLAS_BASE <= await _tablas(url)
+    despues = await _esquema(url)
+    assert TABLAS_BASE <= set(antes)
+    assert despues == antes
 
 
 async def test_downgrade_limpia_el_esquema(url: str) -> None:
     cfg = _alembic_config()
     await _downgrade(cfg)
-    assert TABLAS_BASE.isdisjoint(await _tablas(url))
+    assert TABLAS_BASE.isdisjoint(await _esquema(url))
     await _upgrade(cfg)  # deja la BD migrada para el siguiente paso

@@ -8,17 +8,12 @@ import pytest
 
 from app.main import app
 from app.middleware import rate_limit
-
-PROBE = "/api/_rl-probe"
+from tests.conftest import PROBE
 
 
 @pytest.fixture
 def probe(fake_redis):
-    """Endpoint de prueba: los módulos reales (F2-F6) aún no existen."""
-    @app.get(PROBE)
-    async def _rl_probe():
-        return {"success": True, "data": {"ok": True}, "error": None}
-
+    """Redis simulado + la ruta normal compartida de conftest."""
     return PROBE
 
 
@@ -43,6 +38,26 @@ def test_burst_240_tolerado(client, probe, clock):
     assert body["error"]["code"] == "UPSTREAM_RATE_LIMITED"
     assert body["error"]["details"]["retry_after_seconds"] >= 1
     assert int(res.headers["Retry-After"]) >= 1
+
+
+def test_limite_por_ip_un_cliente_no_deja_sin_servicio_a_los_demas(
+    client, probe, clock
+):
+    """El bucket es `{IP}:{endpoint}` (SECURITY §4.1), no uno global compartido.
+
+    Sin esto, un cliente que agotara su cuota dejaría sin servicio al resto: con
+    240 peticiones contra una IP, otra distinta tiene que seguir pasando. Las IP se
+    varían con `X-Forwarded-For`, que es lo que el backend honra detrás del proxy de
+    DEPLOYMENT §5.
+    """
+    ip_a = {"X-Forwarded-For": "203.0.113.7"}
+    ip_b = {"X-Forwarded-For": "198.51.100.4"}
+
+    for _ in range(240):
+        assert client.get(PROBE, headers=ip_a).status_code == 200
+
+    assert client.get(PROBE, headers=ip_a).status_code == 429
+    assert client.get(PROBE, headers=ip_b).status_code == 200
 
 
 def test_refill_tras_un_minuto(client, probe, clock):

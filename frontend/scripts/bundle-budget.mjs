@@ -17,7 +17,8 @@ import { gzipSync } from "node:zlib";
  * Resuelto en llamada, no al importar: bajo vitest+jsdom `import.meta.url` no
  * es un URL de fichero y reventaría al cargar el módulo.
  */
-const distPorDefecto = () => fileURLToPath(new URL("../dist/", import.meta.url));
+const distPorDefecto = () =>
+  fileURLToPath(new URL("../dist/", import.meta.url));
 
 /** KB gzip. Límites de DEPLOYMENT §5.1 / RNF-01. */
 export const LIMITES = { jsInicial: 450, arranque: 180, three: 250 };
@@ -43,10 +44,18 @@ export function chunkDeArranque(dist = distPorDefecto()) {
 
 export function medir(dist = distPorDefecto()) {
   const assets = join(dist, "assets");
-  if (!existsSync(assets)) throw new Error(`No existe ${assets}: ejecuta \`npm run build\` antes.`);
+  if (!existsSync(assets))
+    throw new Error(`No existe ${assets}: ejecuta \`npm run build\` antes.`);
   const js = readdirSync(assets).filter((f) => f.endsWith(".js"));
+  const css = readdirSync(assets).filter((f) => f.endsWith(".css"));
   const arranque = chunkDeArranque(dist);
-  const salida = { jsInicial: 0, arranque: 0, three: null, ficheros: {} };
+  const salida = {
+    jsInicial: 0,
+    arranque: 0,
+    three: null,
+    css: null,
+    ficheros: {},
+  };
   for (const f of js) {
     const bytes = gzipDe(join(assets, f));
     salida.ficheros[f] = bytes;
@@ -56,15 +65,27 @@ export function medir(dist = distPorDefecto()) {
     // detecta por nombre para no tener que mantener una lista de chunks aquí.
     if (/three/i.test(f)) salida.three = bytes;
   }
+  // El CSS no lo mide el presupuesto (ningún doc le pone límite) pero sí lo
+  // compara el baseline (0.7.12), así que se mide igual. `null` si no hay CSS.
+  for (const f of css) {
+    const bytes = gzipDe(join(assets, f));
+    salida.ficheros[f] = bytes;
+    salida.css = (salida.css ?? 0) + bytes;
+  }
   return salida;
 }
 
 /** Incumplimientos del presupuesto, en texto legible. Vacío = todo bien. */
 export function incumplimientos(m) {
   const fallos = [];
-  if (m.jsInicial > LIMITES.jsInicial * KB) fallos.push(`JS inicial ${kb(m.jsInicial)} KB > ${LIMITES.jsInicial} KB`);
-  if (m.arranque > LIMITES.arranque * KB) fallos.push(`chunk de arranque ${kb(m.arranque)} KB > ${LIMITES.arranque} KB`);
-  if (m.three !== null && m.three > LIMITES.three * KB) fallos.push(`chunk three ${kb(m.three)} KB > ${LIMITES.three} KB`);
+  if (m.jsInicial > LIMITES.jsInicial * KB)
+    fallos.push(`JS inicial ${kb(m.jsInicial)} KB > ${LIMITES.jsInicial} KB`);
+  if (m.arranque > LIMITES.arranque * KB)
+    fallos.push(
+      `chunk de arranque ${kb(m.arranque)} KB > ${LIMITES.arranque} KB`,
+    );
+  if (m.three !== null && m.three > LIMITES.three * KB)
+    fallos.push(`chunk three ${kb(m.three)} KB > ${LIMITES.three} KB`);
   return fallos;
 }
 
@@ -74,20 +95,36 @@ const linea = (etiqueta, valor) => `  ${etiqueta.padEnd(14)}${valor}`;
 function main() {
   const m = medir();
   console.log("Bundle (gzip, KB) — límites de DEPLOYMENT §5.1");
-  console.log(linea("JS inicial", `${gulp(m.jsInicial)} / ${LIMITES.jsInicial} KB`));
-  console.log(linea("chunk arranque", `${gulp(m.arranque)} / ${LIMITES.arranque} KB`));
+  console.log(
+    linea("JS inicial", `${gulp(m.jsInicial)} / ${LIMITES.jsInicial} KB`),
+  );
+  console.log(
+    linea("chunk arranque", `${gulp(m.arranque)} / ${LIMITES.arranque} KB`),
+  );
   console.log(
     m.three === null
       ? linea("chunk three", "n/d (three no está en el grafo; se medirá en F1)")
       : linea("chunk three", `${gulp(m.three)} / ${LIMITES.three} KB`),
   );
-  for (const [f, bytes] of Object.entries(m.ficheros).sort((a, b) => b[1] - a[1])) {
+  console.log(
+    m.css === null
+      ? linea("css", "n/d (no hay css en el build)")
+      : linea(
+          "css",
+          `${gulp(m.css)} KB (sin limite; se compara con el baseline)`,
+        ),
+  );
+  for (const [f, bytes] of Object.entries(m.ficheros).sort(
+    (a, b) => b[1] - a[1],
+  )) {
     console.log(`     ${f}  ${gulp(bytes)} KB`);
   }
 
   const fallos = incumplimientos(m);
   if (fallos.length) {
-    console.error(`\nPresupuesto de bundle superado:\n  - ${fallos.join("\n  - ")}`);
+    console.error(
+      `\nPresupuesto de bundle superado:\n  - ${fallos.join("\n  - ")}`,
+    );
     process.exitCode = 1;
   } else {
     console.log("\nPresupuesto OK.");
