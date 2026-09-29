@@ -2,7 +2,7 @@
 
 > **Proyecto:** GAIA 3D  
 > **Versión del Documento:** 1.1  
-> **Fecha:** 2026-09-27  
+> **Fecha:** 2026-09-29  
 > **Alcance:** Fija qué tiene que ser cierto para dar por terminado un micro-paso del [Roadmap](./GAIA_ROADMAP.md). Complementa las reglas de avance paso a paso de [`AGENTS.md`](../AGENTS.md) y los tipos de prueba de [Plan de Testing](./GAIA_TESTING.md).
 
 ---

@@ -2,7 +2,7 @@
 
 > **Proyecto:** GAIA 3D
 > **Versión del Documento:** 1.1
-> **Fecha:** 2026-09-28
+> **Fecha:** 2026-09-29
 > **Alcance:** Cómo se trabaja en este repositorio: el bucle de un micro-paso, los comandos que existen y las reglas de los docs. El _qué_ se instala está en el [README](../README.md) y el _checklist_ de calidad en la [DoD](./GAIA_DOD.md); aquí no se repite ninguno de los dos.
 
 ---

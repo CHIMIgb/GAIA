@@ -1,8 +1,8 @@
 # GAIA — Plan de Testing y Métricas de Rendimiento
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.5  
-> **Fecha:** 2026-09-26
+> **Versión del Documento:** 1.6  
+> **Fecha:** 2026-09-29
 
 ---
 

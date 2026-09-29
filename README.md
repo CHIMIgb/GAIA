@@ -34,9 +34,9 @@
 
 ## Estado
 
-**Fase 0 en curso**: 60 de sus 66 micro-pasos validados. Quedan 6: `0.7.5` y `0.7.13`
-(los dos bloqueados por huecos de documentación, explicados más abajo) y `0.8.12` a
-`0.8.15`, que son el cierre de documentación de la fase. Las fases F1 a F13 no han
+**Fase 0 en curso**: 60 de sus 66 micro-pasos validados; `0.8.12` realizado y pendiente de
+validación. Quedan 5: `0.7.5` y `0.7.13` (los dos bloqueados por huecos de documentación,
+explicados más abajo) y `0.8.13` a `0.8.15`, que son el cierre de documentación de la fase. Las fases F1 a F13 no han
 empezado: 266 micro-pasos.
 
 Lo validado hasta ahora demuestra el contrato universal `{ success, data, error }`, el

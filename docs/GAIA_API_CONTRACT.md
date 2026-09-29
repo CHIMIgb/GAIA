@@ -1,8 +1,8 @@
 # GAIA — Contrato Universal de Comunicación API
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.1  
-> **Fecha:** 2026-09-21  
+> **Versión del Documento:** 1.2  
+> **Fecha:** 2026-09-29
 
 ---
 
@@ -17,21 +17,21 @@ Este documento define el **formato de contrato universal** para toda comunicaci�
 ```json
 {
   "success": true,
-  "data": { },
+  "data": {},
   "error": null
 }
 ```
 
 ### Definición Formal
 
-| Campo              | Tipo                    | Obligatorio | Descripción                                                                 |
-| ------------------ | ----------------------- | :---------: | --------------------------------------------------------------------------- |
-| `success`          | `boolean`               | ✅          | `true` si la operación fue exitosa, `false` si ocurrió un error.            |
-| `data`             | `object \| array \| null` | ✅        | Payload de la respuesta. `null` cuando `success` es `false`.                |
-| `error`            | `object \| null`        | ✅          | Objeto de error. `null` cuando `success` es `true`.                         |
-| `error.code`       | `string`                | ✅*         | Código de error legible por máquina (ej: `"FIRMS_RATE_LIMITED"`).           |
-| `error.message`    | `string`                | ✅*         | Mensaje de error legible por humanos.                                       |
-| `error.details`    | `any`                   | ❌          | Información adicional de depuración (trazas, campos inválidos, etc.).       |
+| Campo           | Tipo                      | Obligatorio | Descripción                                                           |
+| --------------- | ------------------------- | :---------: | --------------------------------------------------------------------- |
+| `success`       | `boolean`                 |     ✅      | `true` si la operación fue exitosa, `false` si ocurrió un error.      |
+| `data`          | `object \| array \| null` |     ✅      | Payload de la respuesta. `null` cuando `success` es `false`.          |
+| `error`         | `object \| null`          |     ✅      | Objeto de error. `null` cuando `success` es `true`.                   |
+| `error.code`    | `string`                  |     ✅*     | Código de error legible por máquina (ej: `"FIRMS_RATE_LIMITED"`).     |
+| `error.message` | `string`                  |     ✅*     | Mensaje de error legible por humanos.                                 |
+| `error.details` | `any`                     |     ❌      | Información adicional de depuración (trazas, campos inválidos, etc.). |
 
 > \* Obligatorio cuando `success` es `false`.
 
@@ -43,10 +43,10 @@ Este documento define el **formato de contrato universal** para toda comunicaci�
 
 `data` y `error` son **mutuamente excluyentes**. Nunca deben estar poblados simultáneamente:
 
-| `success` | `data`       | `error`      |
-| :-------: | :----------: | :----------: |
-| `true`    | Poblado      | `null`       |
-| `false`   | `null`       | Poblado      |
+| `success` | `data`  | `error` |
+| :-------: | :-----: | :-----: |
+|  `true`   | Poblado | `null`  |
+|  `false`  | `null`  | Poblado |
 
 ### 3.2 Consistencia Absoluta
 
@@ -57,15 +57,15 @@ Este documento define el **formato de contrato universal** para toda comunicaci�
 
 El contrato **no reemplaza** los códigos de estado HTTP, los **complementa**:
 
-| Escenario                   | HTTP Status | `success` | `error.code`             |
-| --------------------------- | :---------: | :-------: | ------------------------ |
-| Datos entregados con éxito  | `200`       | `true`    | —                        |
-| Recurso creado              | `201`       | `true`    | —                        |
-| Sin datos (consulta vacía)  | `200`       | `true`    | — (`data` = `[]` o `{}`) |
-| Parámetros inválidos        | `400`       | `false`   | `VALIDATION_ERROR`       |
-| API externa sin respuesta   | `502`       | `false`   | `UPSTREAM_UNAVAILABLE`   |
-| Rate-limit de API externa   | `429`       | `false`   | `UPSTREAM_RATE_LIMITED`  |
-| Error interno del servidor  | `500`       | `false`   | `INTERNAL_SERVER_ERROR`  |
+| Escenario                  | HTTP Status | `success` | `error.code`             |
+| -------------------------- | :---------: | :-------: | ------------------------ |
+| Datos entregados con éxito |    `200`    |  `true`   | —                        |
+| Recurso creado             |    `201`    |  `true`   | —                        |
+| Sin datos (consulta vacía) |    `200`    |  `true`   | — (`data` = `[]` o `{}`) |
+| Parámetros inválidos       |    `400`    |  `false`  | `VALIDATION_ERROR`       |
+| API externa sin respuesta  |    `502`    |  `false`  | `UPSTREAM_UNAVAILABLE`   |
+| Rate-limit de API externa  |    `429`    |  `false`  | `UPSTREAM_RATE_LIMITED`  |
+| Error interno del servidor |    `500`    |  `false`  | `INTERNAL_SERVER_ERROR`  |
 
 ---
 
@@ -226,8 +226,8 @@ El contrato **no reemplaza** los códigos de estado HTTP, los **complementa**:
       {
         "lat": 37.4211,
         "lon": 141.0312,
-        "value_usvh": 1.250,
-        "raw_value": 1.250,
+        "value_usvh": 1.25,
+        "raw_value": 1.25,
         "raw_unit": "uSv/h",
         "station_id": "sf_fukushima_02",
         "alert_level": "critical",
@@ -339,23 +339,23 @@ async function fetchAPI<T>(url: string): Promise<T> {
 }
 
 // Uso:
-const fires = await fetchAPI<FiresPayload>('/api/fires?hours=24');
+const fires = await fetchAPI<FiresPayload>("/api/fires?hours=24");
 ```
 
 ---
 
 ## 6. Catálogo de Códigos de Error
 
-| Código                    | HTTP | Descripción                                        |
-| ------------------------- | :--: | -------------------------------------------------- |
-| `VALIDATION_ERROR`        | 400  | Parámetros de entrada inválidos o fuera de rango.  |
-| `NOT_FOUND`               | 404  | Recurso no encontrado.                             |
-| `UPSTREAM_UNAVAILABLE`    | 502  | API externa (NASA, USGS, Open-Meteo) sin respuesta.|
-| `UPSTREAM_RATE_LIMITED`   | 429  | Cuota de API externa agotada.                      |
-| `UPSTREAM_TIMEOUT`        | 504  | Timeout esperando respuesta de API externa.        |
-| `CACHE_MISS`              | 503  | Sin datos en caché y API externa no disponible.    |
-| `INTERNAL_SERVER_ERROR`   | 500  | Error inesperado del servidor.                     |
+| Código                  | HTTP | Descripción                                         |
+| ----------------------- | :--: | --------------------------------------------------- |
+| `VALIDATION_ERROR`      | 400  | Parámetros de entrada inválidos o fuera de rango.   |
+| `NOT_FOUND`             | 404  | Recurso no encontrado.                              |
+| `UPSTREAM_UNAVAILABLE`  | 502  | API externa (NASA, USGS, Open-Meteo) sin respuesta. |
+| `UPSTREAM_RATE_LIMITED` | 429  | Cuota de API externa agotada.                       |
+| `UPSTREAM_TIMEOUT`      | 504  | Timeout esperando respuesta de API externa.         |
+| `CACHE_MISS`            | 503  | Sin datos en caché y API externa no disponible.     |
+| `INTERNAL_SERVER_ERROR` | 500  | Error inesperado del servidor.                      |
 
 ---
 
-*Este documento complementa la [Especificación Técnica](./GAIA_SPECIFICATION.md) y el [Stack Tecnológico](./GAIA_TECH_STACK.md) del proyecto GAIA.*
+_Este documento complementa la [Especificación Técnica](./GAIA_SPECIFICATION.md) y el [Stack Tecnológico](./GAIA_TECH_STACK.md) del proyecto GAIA._
