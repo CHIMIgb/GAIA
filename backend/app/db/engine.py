@@ -4,9 +4,13 @@ Se crea de forma perezosa (no abre conexión al importar) para que importar el
 paquete `app` no dependa de que PostgreSQL esté accesible.
 """
 
+import logging
+
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 _engine: AsyncEngine | None = None
 _factory: async_sessionmaker[AsyncSession] | None = None
@@ -33,9 +37,18 @@ async def dispose_engine() -> None:
     abre su propio event loop y el siguiente hereda un pool con conexiones atadas
     al loop anterior, que muere con "got Future attached to a different loop" y
     convierte cualquier request en 500.
+
+    Los singletons se sueltan siempre, también si `dispose()` falla: un motor
+    envenenado en la variable de módulo hace fallar todos los tests siguientes, y
+    una conexión de asyncpg solo se puede cerrar en el loop que la abrió, que aquí
+    puede ya estar cerrado. El aviso va al log, que es donde se busca cuando un
+    pool se queda sin cerrar.
     """
     global _engine, _factory
-    if _engine is not None:
-        await _engine.dispose()
-    _engine = None
-    _factory = None
+    motor, _engine, _factory = _engine, None, None
+    if motor is None:
+        return
+    try:
+        await motor.dispose()
+    except Exception as exc:  # noqa: BLE001 - un cierre fallido no puede romper el apagado
+        logger.warning("No se pudo liberar el pool de la BD: %s", exc)
