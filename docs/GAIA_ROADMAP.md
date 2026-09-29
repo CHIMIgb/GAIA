@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.86
+> **Versión del Documento:** 1.87
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-28
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -373,7 +373,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.8.7 — Configuración de editor**
 
-- [x] VS Code settings (format on save), editorconfig. _*(realizado, pendiente de validación: `.editorconfig` fija 2 espacios / LF / 80 columnas como los defaults de Prettier, con `[*.py]` a 4 porque Prettier no tiene parser de Python; `.vscode/settings.json` formatea al guardar y `extensions.json` recomienda la extensión de Prettier. Con `formatOnSave` activo, los 3 ficheros que ya incumplían se normalizan: `App.css`, `index.css` y `shared/tsconfig.json`)*_
+- [x] VS Code settings (format on save), editorconfig. _*(validado: `.editorconfig` fija 2 espacios / LF / 80 columnas como los defaults de Prettier, con `[*.py]` a 4 porque Prettier no tiene parser de Python; `.vscode/settings.json` formatea al guardar y `extensions.json` recomienda la extensión de Prettier. Con `formatOnSave` activo, los 3 ficheros que ya incumplían se normalizan: `App.css`, `index.css` y `shared/tsconfig.json`)*_
 - **Criterio:** formato uniforme entre devs.
 - **Estimado:** ~0.25 h.
 
