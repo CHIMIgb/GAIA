@@ -16,6 +16,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.cors import CORSMiddleware
 
 from app.cache.redis_client import close_redis
+from app.db.engine import dispose_engine
 from app.config import settings
 from app.middleware.access_log import AccessLogMiddleware
 from app.middleware.rate_limit import RateLimitMiddleware
@@ -34,6 +35,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     yield
     await app.state.http.aclose()
     await close_redis()
+    await dispose_engine()
 
 
 # `/docs` y el esquema solo en desarrollo: publicar la API en producción es
