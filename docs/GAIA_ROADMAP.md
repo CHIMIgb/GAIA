@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.76
+> **Versión del Documento:** 1.77
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-28
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -433,8 +433,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.6.14 — Test de CORS y headers**
 
-- [ ] Test de orígenes permitidos y headers de seguridad base.
-- **Criterio:** origen no permitido recibe bloqueo; headers presentes.
+- [ ] Test de orígenes permitidos y headers de seguridad base. _*(realizado, pendiente de validación: el paso ya estaba cubierto y era una casilla sin marcar, no trabajo perdido. `backend/tests/test_security_headers.py` (10 tests) nació en 0.4.5 y cubre los dos lados del criterio: headers presentes —las 5 fijas de `GAIA_SECURITY` §6.2 más la CSP canónica con nonce distinto en cada respuesta— y origen no permitido bloqueado —sin `access-control-allow-origin` y preflight 400—, con los casos permitidos como contraprueba. Se comprobó que el test sirve: con `allow_origins=["*"]` en `main.py` fallan los 2 tests del origen no permitido, y restaurado el allowlist vuelven a pasar los 10. No hizo falta tocar código: el criterio se cumplía.*_
 - **Estimado:** ~0.75 h.
 
 **Paso 0.7.13 — Medición de p95 de frame en dev**
