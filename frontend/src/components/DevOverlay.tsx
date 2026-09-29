@@ -5,9 +5,9 @@
  * así que en el build de producción la rama es código muerto y Vite la elimina del grafo
  * (criterio: "ocultable en prod"). Con `npm run build` no aparece ningún chunk suyo.
  *
- * Los draw calls leen de una fuente registrada por el render de Three.js cuando exista.
- * Hoy no hay renderer —la escena base es 1.1.1— así que se muestran como `n/d` en vez de
- * inventarse un número.
+ * Los draw calls leen de una fuente registrada por el render de Three.js: el motor la
+ * registra al crearse (ROADMAP 1.1.1) y la suelta al destruirse. Sin renderer quedan como
+ * `n/d` en vez de inventarse un número.
  *
  * Estética según `docs/GAIA_VISUAL_DESIGN.md`: telemetría en monoespaciada, sobria, sin
  * iconografía. Tailwind aún no está instalado (llega con el HUD de F7), así que el estilo

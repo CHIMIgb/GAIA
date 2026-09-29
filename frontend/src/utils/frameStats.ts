@@ -48,8 +48,9 @@ export interface LongTaskStats {
 
 /**
  * Estructura mínima de un renderer de Three.js para leer sus draw calls.
- * Deliberadamente estructural: así este módulo no importa Three.js, que todavía no es
- * dependencia (0.7.1) y cuya escena base es 1.1.1.
+ * Deliberadamente estructural, no `WebGLRenderer`: así este módulo no importa Three.js y
+ * la estadística de frame se puede probar sin WebGL. `Engine` (ROADMAP 1.1.1) cumple la
+ * forma con su `renderer` y se registra aquí al arrancar.
  */
 export interface DrawCallsSource {
   info: { render: { calls: number } };

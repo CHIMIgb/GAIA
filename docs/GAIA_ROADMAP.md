@@ -484,7 +484,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.1.1 — Escena three.js base**
 
-- [ ] Escena, cámara y los tres-core básicos (luz ambiental, control de render loop).
+- [ ] Escena, cámara y los tres-core básicos (luz ambiental, control de render loop). _*(realizado, pendiente de validación: `core/Engine.ts` monta escena, cámara, luz y cubo de referencia; `start()` pide el contexto WebGL y el bucle. Fondo `#05070b` de VISUAL_DESIGN §5.1. Criterio verificado en navegador: 60.0/60.0/57.1 FPS con p95 16.7 ms en build de producción, y 1 draw call en el overlay de dev. Bundle: three en chunk propio, 126.1/250 KB.)*_
 - **Criterio:** escena con color de fondo y un cubo de referencia renderiza; se mantiene 60 FPS vacío.
 - **Estimado:** ~2.25 h.
 

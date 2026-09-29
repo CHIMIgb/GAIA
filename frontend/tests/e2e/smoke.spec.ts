@@ -64,9 +64,10 @@ test("el overlay de dev muestra FPS y se oculta con la tecla d", async ({
   // Números en vivo: tras un refresco (250 ms) ya hay muestras de frame.
   await expect(overlay).toContainText("fps");
   await expect(overlay).toContainText("p95");
-  // Sin renderer todavía (la escena base es 1.1.1), así que `n/d` y no un 0 inventado.
-  await expect(overlay).toContainText("draw n/d");
-  await expect(overlay).not.toContainText("draw 0");
+  // Desde 1.1.1 hay renderer, así que los draw calls son los de verdad: el cubo de
+  // referencia es un draw call. Antes eran `n/d` porque el motor no existía todavía.
+  await expect(overlay).toContainText("draw 1");
+  await expect(overlay).not.toContainText("draw n/d");
 
   // El FPS es real: en un navegador con rAF activo sale de 0 y es plausible.
   const fps = await overlay.locator("xpath=.").innerText();
