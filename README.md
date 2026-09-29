@@ -65,7 +65,7 @@ a F6; allí está el detalle de cada paso, su criterio de aceptación y su estim
 
 | Fase                                                                                                         | Nombre                                              | Micro-pasos | Estado                      |
 | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- | ----------: | --------------------------- |
-| [F0](docs/GAIA_ROADMAP.md#2-fase-0--fundación-y-plataforma-compartida)                                       | Fundación y Plataforma Compartida                   |          66 | **En curso** — 62 validados |
+| [F0](docs/GAIA_ROADMAP.md#2-fase-0--fundación-y-plataforma-compartida)                                       | Fundación y Plataforma Compartida                   |          66 | **En curso** — 63 validados |
 | [F1](docs/GAIA_ROADMAP.md#3-fase-1--motor-3d-y-globo-terráqueo)                                              | Motor 3D y Globo Terráqueo                          |          32 | Pendiente                   |
 | [F2](docs/GAIA_ROADMAP.md#4-fase-2--módulo-incendios-nasa-firms--corte-vertical-completo)                    | Módulo Incendios (NASA FIRMS)                       |          30 | Pendiente                   |
 | [F3](docs/GAIA_ROADMAP.md#5-fase-3--módulo-sismos-usgs--corte-vertical-completo)                             | Módulo Sismos (USGS)                                |          27 | Pendiente                   |
