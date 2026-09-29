@@ -34,14 +34,14 @@
 
 ## Estado
 
-**Fase 0 en curso**: 61 de sus 66 micro-pasos validados. Quedan 5: `0.7.5` y `0.7.13` (los dos bloqueados por huecos de documentación,
-explicados más abajo) y `0.8.13` a `0.8.15`, que son el cierre de documentación de la fase. Las fases F1 a F13 no han
-empezado: 266 micro-pasos.
+**F0 cerrada con 2 excepciones** (64 de 66 micro-pasos validados) y **F1 en curso**:
+`1.1.1`, `1.1.2` y `1.2.1` realizados, `1.2.1` pendiente de validación — quedan 29 de
+los 32 de la fase. F2 a F13 no han empezado: 234 micro-pasos.
 
 Lo validado hasta ahora demuestra el contrato universal `{ success, data, error }`, el
 rate-limit con token bucket, las sesiones anónimas sin PII, los headers de seguridad,
 la cobertura por fase en CI, el baseline de rendimiento con gate de regresión y el flujo
-base E2E.
+base E2E. En F1, el globo 3D con cámara orbital y el geoide de radio 1.
 
 Los dos pasos de F0 sin manera de cumplirse hoy, y por qué:
 
@@ -66,7 +66,7 @@ a F6; allí está el detalle de cada paso, su criterio de aceptación y su estim
 | Fase                                                                                                         | Nombre                                              | Micro-pasos | Estado                                       |
 | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- | ----------: | -------------------------------------------- |
 | [F0](docs/GAIA_ROADMAP.md#2-fase-0--fundación-y-plataforma-compartida)                                       | Fundación y Plataforma Compartida                   |          66 | **Cerrada con 2 excepciones** — 64 validados |
-| [F1](docs/GAIA_ROADMAP.md#3-fase-1--motor-3d-y-globo-terráqueo)                                              | Motor 3D y Globo Terráqueo                          |          32 | Pendiente                                    |
+| [F1](docs/GAIA_ROADMAP.md#3-fase-1--motor-3d-y-globo-terráqueo)                                              | Motor 3D y Globo Terráqueo                          |          32 | En curso — 1.1.x validados, 1.2.1 pendiente  |
 | [F2](docs/GAIA_ROADMAP.md#4-fase-2--módulo-incendios-nasa-firms--corte-vertical-completo)                    | Módulo Incendios (NASA FIRMS)                       |          30 | Pendiente                                    |
 | [F3](docs/GAIA_ROADMAP.md#5-fase-3--módulo-sismos-usgs--corte-vertical-completo)                             | Módulo Sismos (USGS)                                |          27 | Pendiente                                    |
 | [F4](docs/GAIA_ROADMAP.md#6-fase-4--módulo-viento-open-meteo--gpu--corte-vertical-completo)                  | Módulo Viento (Open-Meteo + GPU)                    |          33 | Pendiente                                    |
@@ -84,8 +84,10 @@ a F6; allí está el detalle de cada paso, su criterio de aceptación y su estim
 
 ## Puesta en marcha
 
-Versiones, detalle de cada paso y los `docker run` de Redis y PostgreSQL en
-[Despliegue](docs/GAIA_DEPLOYMENT.md) §3.
+Hay dos niveles, porque hoy el frontend todavía no habla con la API: el cliente de
+`frontend/src/services/api.ts` existe, pero ningún módulo lo llama todavía porque los
+datos se cablean en F2-F6. Así que el globo 3D arranca sin backend. Detalle de cada
+paso, servicios y variables en [Despliegue](docs/GAIA_DEPLOYMENT.md) §3.
 
 | Herramienta | Versión | Para qué                            |
 | ----------- | ------- | ----------------------------------- |
@@ -96,6 +98,24 @@ Versiones, detalle de cada paso y los `docker run` de Redis y PostgreSQL en
 | PostgreSQL  | 18      | Base de datos e historial (Alembic) |
 | Docker      | 24+     | Opcional, solo para Redis           |
 
+### Nivel 1 — Solo el globo (sin backend)
+
+Lo mínimo para ver la esfera 3D y orbitarla:
+
+```bash
+git clone <url-del-repo> && cd GAIA
+npm ci                                # workspaces: instala frontend/ y shared/
+npm run dev                           # http://localhost:5173
+```
+
+Vite con HMR; recargar la página basta para volver a aplicar un cambio.
+
+### Nivel 2 — Proyecto completo (globo + backend)
+
+Hace falta Redis, PostgreSQL 18 y la migración de Alembic. El backend arranca
+también sin Redis (responde degradado) y sin PostgreSQL, pero sin ellos no hay
+historial ni caché.
+
 ```bash
 git clone <url-del-repo> && cd GAIA
 
@@ -105,33 +125,43 @@ npm ci
 cd backend && uv sync && cd ..
 
 # Variables: el backend lee .env desde su propio directorio (Settings, env_file).
-cp .env.example backend/.env      # cambiar DATABASE_URL por la clave real
+cp .env.example backend/.env          # cambiar DATABASE_URL por la clave real
 
-# La migración necesita la BD y el rol dedicados ya creados; los `createdb` y
-# `psql` están en DEPLOYMENT §3.2, paso 2. Sin eso, alembic sale con
-# ConnectionRefusedError contra el 5432.
+# Redis (Docker o nativo en :6379) y PostgreSQL 18 nativo — los `createdb` y
+# `psql` están en DEPLOYMENT §3.2. Sin la BD y el rol dedicados, alembic sale
+# con ConnectionRefusedError contra el 5432.
+docker run -d --rm -p 6379:6379 --name gaia-redis redis:7-alpine
 cd backend && uv run alembic upgrade head && cd ..
 ```
 
-Las variables del backend están todas en `.env.example`, que es la plantilla
-versionada: cada una sale con su valor por defecto y el doc que la fija. Las del
-frontend van en `frontend/.env.local` y solo se leen del bundle si empiezan por
-`VITE_` (`DEPLOYMENT` §4.3).
+Y luego, en dos terminales:
 
 ```bash
 # Backend, en una terminal
 cd backend && uv run uvicorn app.main:app --reload --port 8000
 
 # Frontend, en otra
-npm run dev                        # http://localhost:5173
+npm run dev                            # http://localhost:5173
 ```
 
 Comprobar que está en pie:
 
 ```bash
-curl http://localhost:8000/api/health    # {"success": true, "data": {...}, "error": null}
+curl http://localhost:8000/api/health   # {"success": true, "data": {...}, "error": null}
+npm run perf:check                      # presupupuesto de bundle
 npm test                                # unit de los scripts de la raíz y del frontend
 ```
+
+> [!NOTE]
+> En Windows, `uv` puede no estar en el `PATH` de `cmd.exe` aunque esté instalado
+> para tu usuario. `uv sync` y `uv run` fallan con "no se reconoce"; hay que
+> instalarlo para el usuario o añadir su carpeta al `PATH`.
+
+> [!NOTE]
+> Las variables del backend están todas en `.env.example`, que es la plantilla
+> versionada: cada una sale con su valor por defecto y el doc que la fija. El
+> frontend no necesita ninguna hoy; cuando haga falta, van en `frontend/.env.local`
+> y solo se leen del bundle si empiezan por `VITE_` (`DEPLOYMENT` §4.3).
 
 ### Scripts
 
@@ -176,12 +206,13 @@ fecha de cada medición están en [Performance](docs/GAIA_PERFORMANCE.md) §4, q
 donde viven los números: aquí se copian para que se vean de entrada, y cada
 columna dice de qué doc sale cada una.
 
-| Medida                   | Baseline | Objetivo          | Fuente del baseline | Fuente del objetivo           |
-| ------------------------ | -------- | ----------------- | ------------------- | ----------------------------- |
-| JS inicial (gzip)        | 66.8 KiB | ≤ 450 KB          | `PERFORMANCE` §4.1  | `TESTING` §3.4                |
-| Chunk de arranque (gzip) | 66.8 KiB | ≤ 180 KB          | `PERFORMANCE` §4.1  | `TESTING` §3.4                |
-| CSS (gzip)               | 1.44 KiB | sin límite fijado | `PERFORMANCE` §4.1  | —                             |
-| FCP (mediana de 3)       | 352 ms   | < 2 s             | `PERFORMANCE` §4.2  | `SPEC` RNF-06, `TESTING` §3.1 |
+| Medida                   | Baseline   | Objetivo          | Fuente del baseline | Fuente del objetivo           |
+| ------------------------ | ---------- | ----------------- | ------------------- | ----------------------------- |
+| JS inicial (gzip)        | 198.56 KiB | ≤ 450 KB          | `PERFORMANCE` §4.1  | `TESTING` §3.4                |
+| Chunk de arranque (gzip) | 67.17 KiB  | ≤ 180 KB          | `PERFORMANCE` §4.1  | `TESTING` §3.4                |
+| Chunk de Three.js (gzip) | 131.39 KiB | sin límite fijado | `PERFORMANCE` §4.1  | —                             |
+| CSS (gzip)               | 0.35 KiB   | sin límite fijado | `PERFORMANCE` §4.1  | —                             |
+| FCP (mediana de 3)       | 352 ms     | < 2 s             | `PERFORMANCE` §4.2  | `SPEC` RNF-06, `TESTING` §3.1 |
 
 - **Cómo se reproducen:** `npm run perf:check` para el bundle, `npm run fcp` para el
   FCP. El bundle se comprueba en cada CI; el FCP se mide cuando se toca lo que le
@@ -189,8 +220,10 @@ columna dice de qué doc sale cada una.
 - **Baseline no es presupuesto.** El presupuesto dice si se pasa; el baseline dice
   si se ha empeorado. Cuando se mida otra vez se anota la diferencia contra esta
   cifra, no contra el objetivo.
-- **Sin baseline todavía:** FPS, p95 de frame y draw calls dan `n/d` hasta que exista
-  la escena (fase 1). Sus objetivos ya están fijados en `PERFORMANCE` §2.
+- **FPS, p95 y draw calls sin baseline todavía:** la escena existe desde 1.2.1 y da
+  **1 draw call**, pero FPS y p95 no se pueden medir aquí: esta máquina no tiene GPU y
+  Chromium rasteriza por software. Sus objetivos ya están fijados en `PERFORMANCE` §2
+  y la cifra buena la tiene que dar una máquina con GPU (`TESTING` §3).
 
 ## Fuentes de Datos
 
