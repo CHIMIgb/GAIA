@@ -43,6 +43,14 @@ jobs:
       # bundle crece mas de la tolerancia. El FCP sale n/d aqui: medirlo necesita
       # navegador y no entra en este job (queda anotado en `PERFORMANCE` §4).
       - run: npm run perf:baseline
+      # ROADMAP 0.7.15: FPS y p95 de frame en headless, sobre el build que se acaba de
+      # generar (por eso no se llama a `npm run fps`, que rebuilda). NO gatea contra los
+      # 60 FPS de TESTING §3.2: headless no tiene GPU y esa puerta se passesaria siempre.
+      # Lo que exige es que la medicion exista, para que un 0 no se lea como un resultado.
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: npx playwright test --config=playwright.fps.config.ts
+        working-directory: frontend
       - run: npm test
       # 0.7.10: la cobertura se publica por fase del ROADMAP. La puerta son solo
       # las areas cuyo umbral fija un doc (utils y store/actions al 80 % de TESTING

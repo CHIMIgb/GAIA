@@ -9,6 +9,7 @@
     "analyze": "vite build --mode analyze",
     "perf:check": "node scripts/bundle-budget.mjs",
     "fcp": "npm run build && playwright test --config=playwright.fcp.config.ts",
+    "fps": "npm run build && playwright test --config=playwright.fps.config.ts",
     "lint": "oxlint --deny-warnings",
     "preview": "vite preview",
     "test": "vitest run",

@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.80
+> **Versión del Documento:** 1.81
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-28
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -449,8 +449,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.7.15 — Script de medición automática**
 
-- [ ] Script headless para medir FPS/bundle en CI.
-- **Criterio:** el script emite valores usables.
+- [ ] Script headless para medir FPS/bundle en CI. _*(realizado, pendiente de validación: el bundle ya lo medía `perf:check`; faltaba el frame, y ahora hay `frontend/tests/fps/fps.spec.ts` con su config propia, el script `npm run fps` y un paso en el job frontend de CI. La estadística no se reimplementa: importa `computeStats` de `src/utils/frameStats.ts`, el mismo que alimenta el `DevOverlay`, para que el número de CI y el que se ve en pantalla no puedan separarse por una diferencia de aritmética. Medido sobre el build de producción: 59,5 / 59,5 / 60,0 FPS con p95 de 16,7-16,8 ms, 120 frames por carrera en tres carreras. **No se gatea contra los 60 FPS ni el p95 ≤ 18 ms de `TESTING` §3.2**: Chromium headless no tiene GPU, así que esa puerta se pasaría siempre y daría una confianza falsa; lo único que se exige es que la medición exista, porque un 0 o un `n/d` es un fallo silencioso, no un resultado. Mutación: pedir 0 frames al muestreador y el test falla con «la carrera 1 no recogió ningún frame». `tests/fps/**` queda excluido de vitest como `tests/fcp/**`, y `npm test` sigue en 63 y `npm run lint` en 0 avisos.)*_
 - **Estimado:** ~0.75 h.
 
 **Paso 0.7.16 — Ajuste del presupuesto de FCP**
