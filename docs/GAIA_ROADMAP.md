@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.81
+> **Versión del Documento:** 1.82
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-28
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -199,7 +199,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.6.2 — Tests de errores del contrato**
 
-- [ ] Test que valida las respuestas `{success, data, error}` con los 7 códigos del catálogo de la API. _*(validado: los 7 códigos de API_CONTRACT §6 verificados por HTTP; el catálogo está copiado a mano en el test para que un mapeo equivocado no se autovalide. Faltaban 502, 503 y 504. Reverificado al validar: los 7 aparecen en el test y 13 tests de contrato y job en verde. Mutación: mapear el 503 a `UPSTREAM_UNAVAILABLE` en `CODE_BY_STATUS` tumba 3 tests, incluido el que comprueba que la tabla no se desvía del catálogo.)*_
+- [x] Test que valida las respuestas `{success, data, error}` con los 7 códigos del catálogo de la API. _*(validado: los 7 códigos de API_CONTRACT §6 verificados por HTTP; el catálogo está copiado a mano en el test para que un mapeo equivocado no se autovalide. Faltaban 502, 503 y 504. Reverificado al validar: los 7 aparecen en el test y 13 tests de contrato y job en verde. Mutación: mapear el 503 a `UPSTREAM_UNAVAILABLE` en `CODE_BY_STATUS` tumba 3 tests, incluido el que comprueba que la tabla no se desvía del catálogo.)*_
 - **Criterio:** errores conocidos devuelven el código correcto.
 - **Estimado:** ~1.25 h.
 
