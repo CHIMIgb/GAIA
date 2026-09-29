@@ -63,22 +63,22 @@ hito verificable y su propio PR a `main`. Los nombres son los de los encabezados
 [Roadmap](docs/GAIA_ROADMAP.md), sin el sufijo repetido «— Corte Vertical Completo» de F2
 a F6; allí está el detalle de cada paso, su criterio de aceptación y su estimado.
 
-| Fase                                                                                                         | Nombre                                              | Micro-pasos | Estado                                        |
-| ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- | ----------: | --------------------------------------------- |
-| [F0](docs/GAIA_ROADMAP.md#2-fase-0--fundación-y-plataforma-compartida)                                       | Fundación y Plataforma Compartida                   |          66 | **Cubierta con 2 excepciones** — 63 validados |
-| [F1](docs/GAIA_ROADMAP.md#3-fase-1--motor-3d-y-globo-terráqueo)                                              | Motor 3D y Globo Terráqueo                          |          32 | Pendiente                                     |
-| [F2](docs/GAIA_ROADMAP.md#4-fase-2--módulo-incendios-nasa-firms--corte-vertical-completo)                    | Módulo Incendios (NASA FIRMS)                       |          30 | Pendiente                                     |
-| [F3](docs/GAIA_ROADMAP.md#5-fase-3--módulo-sismos-usgs--corte-vertical-completo)                             | Módulo Sismos (USGS)                                |          27 | Pendiente                                     |
-| [F4](docs/GAIA_ROADMAP.md#6-fase-4--módulo-viento-open-meteo--gpu--corte-vertical-completo)                  | Módulo Viento (Open-Meteo + GPU)                    |          33 | Pendiente                                     |
-| [F5](docs/GAIA_ROADMAP.md#7-fase-5--módulo-inundación-nivel-del-mar--corte-vertical-completo)                | Módulo Inundación (Nivel del Mar)                   |          21 | Pendiente                                     |
-| [F6](docs/GAIA_ROADMAP.md#8-fase-6--módulo-radiación-safecast-eurdep-radnet-gmcmap--corte-vertical-completo) | Módulo Radiación (Safecast, EURDEP, RadNet, GMCMap) |          22 | Pendiente                                     |
-| [F7](docs/GAIA_ROADMAP.md#9-fase-7--hud-analítico-interacción-y-time-scrubber)                               | HUD Analítico, Interacción y Time-Scrubber          |          20 | Pendiente                                     |
-| [F8](docs/GAIA_ROADMAP.md#10-fase-8--resiliencia-end-to-end-y-modo-resguardo)                                | Resiliencia End-to-End y Modo Resguardo             |           9 | Pendiente                                     |
-| [F9](docs/GAIA_ROADMAP.md#11-fase-9--seguridad-y-privacidad-hardening)                                       | Seguridad y Privacidad (Hardening)                  |          20 | Pendiente                                     |
-| [F10](docs/GAIA_ROADMAP.md#12-fase-10--optimización-60-fps-y-memoria-gpu)                                    | Optimización 60 FPS y Memoria GPU                   |          15 | Pendiente                                     |
-| [F11](docs/GAIA_ROADMAP.md#13-fase-11--testing-integral-compatibilidad-y-cicd)                               | Testing Integral, Compatibilidad y CI/CD            |          14 | Pendiente                                     |
-| [F12](docs/GAIA_ROADMAP.md#14-fase-12--despliegue-monitoreo-y-operaciones)                                   | Despliegue, Monitoreo y Operaciones                 |          14 | Pendiente                                     |
-| [F13](docs/GAIA_ROADMAP.md#15-fase-13--pulido-final-docs-y-demostración)                                     | Pulido Final, Docs y Demostración                   |           9 | Pendiente                                     |
+| Fase                                                                                                         | Nombre                                              | Micro-pasos | Estado                                       |
+| ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- | ----------: | -------------------------------------------- |
+| [F0](docs/GAIA_ROADMAP.md#2-fase-0--fundación-y-plataforma-compartida)                                       | Fundación y Plataforma Compartida                   |          66 | **Cerrada con 2 excepciones** — 64 validados |
+| [F1](docs/GAIA_ROADMAP.md#3-fase-1--motor-3d-y-globo-terráqueo)                                              | Motor 3D y Globo Terráqueo                          |          32 | Pendiente                                    |
+| [F2](docs/GAIA_ROADMAP.md#4-fase-2--módulo-incendios-nasa-firms--corte-vertical-completo)                    | Módulo Incendios (NASA FIRMS)                       |          30 | Pendiente                                    |
+| [F3](docs/GAIA_ROADMAP.md#5-fase-3--módulo-sismos-usgs--corte-vertical-completo)                             | Módulo Sismos (USGS)                                |          27 | Pendiente                                    |
+| [F4](docs/GAIA_ROADMAP.md#6-fase-4--módulo-viento-open-meteo--gpu--corte-vertical-completo)                  | Módulo Viento (Open-Meteo + GPU)                    |          33 | Pendiente                                    |
+| [F5](docs/GAIA_ROADMAP.md#7-fase-5--módulo-inundación-nivel-del-mar--corte-vertical-completo)                | Módulo Inundación (Nivel del Mar)                   |          21 | Pendiente                                    |
+| [F6](docs/GAIA_ROADMAP.md#8-fase-6--módulo-radiación-safecast-eurdep-radnet-gmcmap--corte-vertical-completo) | Módulo Radiación (Safecast, EURDEP, RadNet, GMCMap) |          22 | Pendiente                                    |
+| [F7](docs/GAIA_ROADMAP.md#9-fase-7--hud-analítico-interacción-y-time-scrubber)                               | HUD Analítico, Interacción y Time-Scrubber          |          20 | Pendiente                                    |
+| [F8](docs/GAIA_ROADMAP.md#10-fase-8--resiliencia-end-to-end-y-modo-resguardo)                                | Resiliencia End-to-End y Modo Resguardo             |           9 | Pendiente                                    |
+| [F9](docs/GAIA_ROADMAP.md#11-fase-9--seguridad-y-privacidad-hardening)                                       | Seguridad y Privacidad (Hardening)                  |          20 | Pendiente                                    |
+| [F10](docs/GAIA_ROADMAP.md#12-fase-10--optimización-60-fps-y-memoria-gpu)                                    | Optimización 60 FPS y Memoria GPU                   |          15 | Pendiente                                    |
+| [F11](docs/GAIA_ROADMAP.md#13-fase-11--testing-integral-compatibilidad-y-cicd)                               | Testing Integral, Compatibilidad y CI/CD            |          14 | Pendiente                                    |
+| [F12](docs/GAIA_ROADMAP.md#14-fase-12--despliegue-monitoreo-y-operaciones)                                   | Despliegue, Monitoreo y Operaciones                 |          14 | Pendiente                                    |
+| [F13](docs/GAIA_ROADMAP.md#15-fase-13--pulido-final-docs-y-demostración)                                     | Pulido Final, Docs y Demostración                   |           9 | Pendiente                                    |
 
 ---
 
