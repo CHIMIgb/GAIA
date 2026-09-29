@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.88
+> **Versión del Documento:** 1.89
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-28
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -379,7 +379,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.8.8 — Convención de commits documentada**
 
-- [x] Documentar `feat/fase-X` y `fix(fase): ...`. _*(realizado, pendiente de validación: la convención queda en `GAIA_CONTRIBUTING` §4 (v1.1): rama `feat/fase-X`, mensaje `<tipo>(fase-N): <nº de paso> <qué cambia y por qué>`, tipos `feat`/`fix`/`docs`/`test`/`chore`/`build`, y el cuerpo citando el doc que lo manda. El scope de fase lo decidió el usuario frente a las dos alternativas que coexistían: el ROADMAP pedía `fix(fase):` y la propia guía decía `docs(0.8.3):`. `AGENTS.md` §Git queda alineado. No se reescribe la historia: el criterio empieza en F1, y este commit es el primero con la forma nueva)*_
+- [x] Documentar `feat/fase-X` y `fix(fase): ...`. _*(validado: la convención queda en `GAIA_CONTRIBUTING` §4 (v1.1): rama `feat/fase-X`, mensaje `<tipo>(fase-N): <nº de paso> <qué cambia y por qué>`, tipos `feat`/`fix`/`docs`/`test`/`chore`/`build`, y el cuerpo citando el doc que lo manda. El scope de fase lo decidió el usuario frente a las dos alternativas que coexistían: el ROADMAP pedía `fix(fase):` y la propia guía decía `docs(0.8.3):`. `AGENTS.md` §Git queda alineado. No se reescribe la historia: el criterio empieza en F1, y este commit es el primero con la forma nueva)*_
 - **Criterio:** la convención se aplica desde F1 en adelante.
 - **Estimado:** ~0.75 h.
 
