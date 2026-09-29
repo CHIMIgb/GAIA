@@ -34,8 +34,7 @@
 
 ## Estado
 
-**Fase 0 en curso**: 60 de sus 66 micro-pasos validados; `0.8.12` realizado y pendiente de
-validación. Quedan 5: `0.7.5` y `0.7.13` (los dos bloqueados por huecos de documentación,
+**Fase 0 en curso**: 61 de sus 66 micro-pasos validados. Quedan 5: `0.7.5` y `0.7.13` (los dos bloqueados por huecos de documentación,
 explicados más abajo) y `0.8.13` a `0.8.15`, que son el cierre de documentación de la fase. Las fases F1 a F13 no han
 empezado: 266 micro-pasos.
 
@@ -66,7 +65,7 @@ a F6; allí está el detalle de cada paso, su criterio de aceptación y su estim
 
 | Fase                                                                                                         | Nombre                                              | Micro-pasos | Estado                      |
 | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- | ----------: | --------------------------- |
-| [F0](docs/GAIA_ROADMAP.md#2-fase-0--fundación-y-plataforma-compartida)                                       | Fundación y Plataforma Compartida                   |          66 | **En curso** — 60 validados |
+| [F0](docs/GAIA_ROADMAP.md#2-fase-0--fundación-y-plataforma-compartida)                                       | Fundación y Plataforma Compartida                   |          66 | **En curso** — 61 validados |
 | [F1](docs/GAIA_ROADMAP.md#3-fase-1--motor-3d-y-globo-terráqueo)                                              | Motor 3D y Globo Terráqueo                          |          32 | Pendiente                   |
 | [F2](docs/GAIA_ROADMAP.md#4-fase-2--módulo-incendios-nasa-firms--corte-vertical-completo)                    | Módulo Incendios (NASA FIRMS)                       |          30 | Pendiente                   |
 | [F3](docs/GAIA_ROADMAP.md#5-fase-3--módulo-sismos-usgs--corte-vertical-completo)                             | Módulo Sismos (USGS)                                |          27 | Pendiente                   |

@@ -1,7 +1,7 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.96
-> **Estado:** En ejecución — Fase 0 en curso: **60 de 66 micro-pasos validados**; 0.8.12 realizado y pendiente de validación; **5 pendientes** (`0.7.5`, `0.7.13`, `0.8.13` a `0.8.15`). Fases F1 a F13 sin empezar.
+> **Versión del Documento:** 1.97
+> **Estado:** En ejecución — Fase 0 en curso: **61 de 66 micro-pasos validados**; **5 pendientes** (`0.7.5`, `0.7.13`, `0.8.13` a `0.8.15`). Fases F1 a F13 sin empezar.
 > **Última actualización:** 2026-09-29
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
 
@@ -407,7 +407,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.8.12 — Metadata del documento**
 
-- [ ] Versión/estado/fecha actualizados en GAIA_ROADMAP. _\*(realizado, pendiente de validación: la cabecera del ROADMAP pasa a v1.96 con la fecha real de hoy y un estado que ya no se limita a decir «Fase 0 en curso» sino que lleva la cuenta — 60 de 66 validados, 0.8.12 realizado, 5 pendientes — que es lo que distingue metadata al día de metadata decorativa. La convención de marcas se mudó de la cabecera a §1.4, donde estaba a medias: decía «`- [ ]` … marcar al terminar», que se lee como que `[x]` significa «hecho», cuando `[x]` es «validado por el usuario» y la barra verde la pone quien valida ([DoD](./GAIA_DOD.md) §1-§2); ahora los cuatro estados están escritos y son comprobables. Al auditar las cabeceras de los 23 ficheros contra la fecha real de su último commit aparecieron 5 desajustes: 2 míos de 0.8.10 (CONTRIBUTING y DoD, a los que subí versión pero no fecha) y 2 preexistentes (API_CONTRACT con fecha anterior a su propio último commit, igual que TESTING), corregidos los cuatro; README y AGENTS.md no declaran versión ni fecha y no entran en el invariante)_*
+- [x] Versión/estado/fecha actualizados en GAIA_ROADMAP. _\*(validado: la cabecera del ROADMAP pasa a v1.96 con la fecha real de hoy y un estado que ya no se limita a decir «Fase 0 en curso» sino que lleva la cuenta — 60 de 66 validados, 0.8.12 realizado, 5 pendientes — que es lo que distingue metadata al día de metadata decorativa. La convención de marcas se mudó de la cabecera a §1.4, donde estaba a medias: decía «`- [ ]` … marcar al terminar», que se lee como que `[x]` significa «hecho», cuando `[x]` es «validado por el usuario» y la barra verde la pone quien valida ([DoD](./GAIA_DOD.md) §1-§2); ahora los cuatro estados están escritos y son comprobables. Al auditar las cabeceras de los 23 ficheros contra la fecha real de su último commit aparecieron 5 desajustes: 2 míos de 0.8.10 (CONTRIBUTING y DoD, a los que subí versión pero no fecha) y 2 preexistentes (API_CONTRACT con fecha anterior a su propio último commit, igual que TESTING), corregidos los cuatro; README y AGENTS.md no declaran versión ni fecha y no entran en el invariante)_*
 - **Criterio:** metadata al día tras cada fase.
 - **Estimado:** ~0.25 h.
 
