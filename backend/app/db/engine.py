@@ -5,8 +5,10 @@ paquete `app` no dependa de que PostgreSQL esté accesible.
 """
 
 import logging
+import os
 
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import AsyncAdaptedQueuePool, NullPool
 
 from app.config import settings
 
@@ -19,7 +21,17 @@ _factory: async_sessionmaker[AsyncSession] | None = None
 def get_engine() -> AsyncEngine:
     global _engine
     if _engine is None:
-        _engine = create_async_engine(settings.DATABASE_URL, pool_pre_ping=True)
+        # El motor es un singleton y las conexiones de un pool viven atadas al event
+        # loop que las abrió. En producción hay uno solo durante toda la vida del
+        # proceso, pero en tests cada `TestClient` abre el suyo: una conexión
+        # heredada revienta con "Event loop is closed" al terminarla, y el fallo
+        # sale en pleno request (500 en texto plano, fuera del handler JSON). Sin
+        # pool no hay conexión que heredar; en local ni se nota porque sin PostgreSQL
+        # `log_request` falla abierto y el pool nunca llega a abrir nada.
+        poolclass = NullPool if "PYTEST_CURRENT_TEST" in os.environ else AsyncAdaptedQueuePool
+        _engine = create_async_engine(
+            settings.DATABASE_URL, pool_pre_ping=True, poolclass=poolclass
+        )
     return _engine
 
 
