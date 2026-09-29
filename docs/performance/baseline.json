@@ -2,9 +2,9 @@
   "schema": 1,
   "_nota": "Baseline de rendimiento (ROADMAP 0.7.12). `metricas` es contra lo que compara `npm run perf:baseline`; `historial` es de dónde sale cada cifra, una entrada por sesión de medición. Las claves llevan la unidad para que el comparador no necesite una tabla de unidades. Un dato sin medir va en `historial` y no en `metricas`: gatear una cifra que nunca se midió es una puerta que se salta sola.",
   "metricas": {
-    "bundle_js_inicial_kib": 192.91,
-    "bundle_chunk_arranque_kib": 66.8,
-    "bundle_chunk_three_kib": 126.11,
+    "bundle_js_inicial_kib": 198.56,
+    "bundle_chunk_arranque_kib": 67.17,
+    "bundle_chunk_three_kib": 131.39,
     "bundle_css_kib": 0.35,
     "fcp_ms": 352
   },
@@ -59,6 +59,20 @@
         "bundle_css_kib": 0.35
       },
       "nota": "Entra Three.js 0.186.1 y el build pasa a dos chunks: `codeSplitting` en `vite.config.ts` saca three al suyo porque el gate mide por separado el arranque (180 KB) y el de three (250 KB). El JS inicial sube de 66.8 a 192.9 KiB, y es el motor entrando, no una regresión: el presupuesto de 450 KiB queda en el 43 % y el chunk de arranque no se mueve. El CSS baja a 0.35 KiB al irse el CSS de arranque de Vite."
+    },
+    {
+      "fecha": "2026-09-29",
+      "origen": "medido con `npm run perf:check` al montar la cámara orbital (1.1.2)",
+      "commit": "b94baca",
+      "node": "v22.19.0",
+      "vite": "8.3.1",
+      "cifras": {
+        "bundle_js_inicial_kib": 198.56,
+        "bundle_chunk_arranque_kib": 67.17,
+        "bundle_chunk_three_kib": 131.39,
+        "bundle_css_kib": 0.35
+      },
+      "nota": "`OrbitControls` entra al chunk de three: +5,3 KiB (126,11 → 131,39), que es el +2,9 % que veía el gate. Crecimiento previsto por el paso, no una regresión, así que el baseline se vuelve a medir. Los controles son de Three.js y no caben en el chunk de arranque por tamaño, no por gusto: el gate los mide con el límite de three."
     }
   ]
 }

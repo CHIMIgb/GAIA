@@ -1,6 +1,6 @@
 # GAIA — Performance
 
-> **Versión del Documento:** 1.5
+> **Versión del Documento:** 1.6
 > **Fecha:** 2026-09-29
 > **Propósito:** presupuestos, umbrales y baselines de rendimiento de GAIA. Referencia, no fuente: los valores canónicos viven en su doc de origen y aquí solo se citan.
 
@@ -83,25 +83,29 @@ mide)`, no como un 0 que parecería una mejora. Es la puerta que sí existe
 
 | Medida                   | Baseline   | Presupuesto                     | Margen                    |
 | ------------------------ | ---------- | ------------------------------- | ------------------------- |
-| JS inicial (gzip)        | 192.91 KiB | ≤ 450 KB (`DEPLOYMENT` §5.1)    | 257 KiB libre, 43 % usado |
-| Chunk de arranque (gzip) | 66.8 KiB   | ≤ 180 KB (`DEPLOYMENT` §5.1)    | 113 KiB libre, 37 % usado |
-| Chunk Three.js           | 126.11 KiB | ≤ 250 KB (`DEPLOYMENT` §5.1)    | 124 KiB libre, 50 % usado |
+| JS inicial (gzip)        | 198.56 KiB | ≤ 450 KB (`DEPLOYMENT` §5.1)    | 251 KiB libre, 44 % usado |
+| Chunk de arranque (gzip) | 67.17 KiB  | ≤ 180 KB (`DEPLOYMENT` §5.1)    | 113 KiB libre, 37 % usado |
+| Chunk Three.js           | 131.39 KiB | ≤ 250 KB (`DEPLOYMENT` §5.1)    | 119 KiB libre, 53 % usado |
 | CSS (gzip)               | 0.35 KiB   | sin límite fijado en ningún doc | —                         |
 
-- **Medido el** 2026-09-29 sobre `de97fce`, con Node v22.19.0 y Vite 8.3.1:
+- **Medido el** 2026-09-29 sobre `b94baca`, con Node v22.19.0 y Vite 8.3.1:
   `npm run build && npm run perf:check`.
 - **Dos chunks desde 1.1.1.** Antes de entrar Three.js el build era un solo chunk
   (`index-*.js`, 21 módulos) y React iba dentro del arranque; con el motor montado,
   `codeSplitting` en `frontend/vite.config.ts` saca Three.js a `three-*.js` y deja el
-  arranque en 66.8 KiB. No es decoración: el gate mide por separado el arranque (180 KB)
+  arranque en 67.17 KiB. No es decoración: el gate mide por separado el arranque (180 KB)
   y el de three (250 KB) y localiza este último por el nombre del fichero, así que sin
-  el split los 192 KiB del motor caerían dentro del arranque y se medirían contra un
+  el split los 198 KiB del motor caerían dentro del arranque y se medirían contra un
   límite que `DEPLOYMENT` §5.1 nunca puso para él.
-- **El salto del JS inicial (66.8 → 192.91 KiB) es el motor entrando**, no una regresión:
+- **El salto del JS inicial (66.8 → 198.56 KiB) es el motor entrando**, no una regresión:
   es lo que anticipa `PROJECT_STRUCTURE` §7 ("el bundle es hoy un único chunk porque la
   grafo es React + Valtio... todavía no hay `three`") y lo que fija el 43 % de los 450 KiB
-  de presupuesto. El chunk de arranque no se mueve, que es justo lo que distingue "ha
-  entrado Three.js" de "ha crecido la app".
+  de presupuesto. `OrbitControls` añade 5,3 KiB más en 1.1.2, dentro del chunk de three.
+- **Cuándo se vuelve a medir el baseline:** cuando el cambio que engorda el bundle es
+  deliberado —una dependencia o una funcionalidad nueva—, no cuando aparece una delta sin
+  explicación. Un gate que se re-declara en cada commit no distingue "ha entrado la cámara
+  orbital" de "ha subido esbuild a 8.3.2", que es justo lo que tiene que distinguir. Cada
+  re-medición deja su entrada en el historial de `baseline.json` con su `commit`.
 - **Dos cifras para la misma medida:** el footer de Vite y `perf:check` no coinciden
   porque no es el mismo nivel de compresión ni la misma base. Gana la de `perf:check`,
   que es la que se compara contra el presupuesto y contra el baseline, porque es la que

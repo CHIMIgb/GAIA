@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.104
+> **Versión del Documento:** 1.105
 > **Estado:** Fase 0 **cerrada con dos excepciones** — 64 de 66 micro-pasos validados; los 2 pendientes (`0.7.5`, `0.7.13`) no son cumplibles con los docs actuales y quedan anotados como tal. **Fase 1 en curso**; F2 a F13 sin empezar.
 > **Última actualización:** 2026-09-29
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -484,13 +484,13 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.1.1 — Escena three.js base**
 
-- [ ] Escena, cámara y los tres-core básicos (luz ambiental, control de render loop). _*(realizado, pendiente de validación: `core/Engine.ts` monta escena, cámara, luz y cubo de referencia; `start()` pide el contexto WebGL y el bucle. Fondo `#05070b` de VISUAL_DESIGN §5.1. Criterio verificado en navegador: 60.0/60.0/57.1 FPS con p95 16.7 ms en build de producción, y 1 draw call en el overlay de dev. Bundle: three en chunk propio, 126.1/250 KB.)*_
+- [x] Escena, cámara y los tres-core básicos (luz ambiental, control de render loop). _*(validado: `core/Engine.ts` monta escena, cámara, luz y cubo de referencia; `start()` pide el contexto WebGL y el bucle. Fondo `#05070b` de VISUAL_DESIGN §5.1. Bundle: three en chunk propio. **Corrección de la validación:** el "60.0/60.0/57.1 FPS" que se anotar aquí era falso. `encajar()` retornaba antes de tiempo —la llamaba `start()` cuando `this.renderer` todavía era `null`— así que el lienzo nunca se dimensionó y se renderizó en su 300x150 por defecto (45 000 px) estirado a 1280x800; el FPS era cómodo porque eran 22 veces menos píxeles. Lo detecta y arregla 1.1.2, y el E2E de ese paso comprueba el buffer para que no vuelva a pasar en verde.)*_
 - **Criterio:** escena con color de fondo y un cubo de referencia renderiza; se mantiene 60 FPS vacío.
 - **Estimado:** ~2.25 h.
 
 **Paso 1.1.2 — Cámara orbital**
 
-- [ ] `OrbitControls` con límites (pendiente y zoom con mínimo/distancia), manejo de resize.
+- [ ] `OrbitControls` con límites (pendiente y zoom con mínimo/distancia), manejo de resize. _*(realizado, pendiente de validación: `core/CameraController.ts` y `core/Resizer.ts`, los dos ficheros que asigna PROJECT_STRUCTURE §5.1. Criterio verificado en navegador real: orbitar mueve la cámara, el zoom clava en 1.05 y 6 sin entrar en el globo ni perderlo, y el arrastre por encima de la horizontal se detiene en ±0.05 rad de los polos en vez de dar la voltereta. Resize: aspect 1.6 → 0.7 al pasar a 700x1000, lienzo y buffer siguiendo. Auto-rotación de fondo a los 31 s y corte inmediato al tocar, como pide VISUAL_DESIGN §10, e inercia anulada con `prefers-reduced-motion`. Sin errores de consola. **El 60 FPS no se puede verificar aquí:** esta máquina no tiene GPU y Chromium rasteriza por software; con el lienzo ya dimensionado a 1 024 000 px da 36.7 FPS, y con el bug de 1.1.1 a 45 000 px daba 60. La cifra buena la tiene que dar una máquina con GPU, según TESTING §3.*)_
 - **Criterio:** se puede orbitar, hacer zoom dentado límites y resize correcto; sin "volteretas" en polos.
 - **Estimado:** ~2.25 h.
 
@@ -2379,7 +2379,7 @@ Cada fase se divide jerárquicamente así:
 | Fase | RF / RNF cubiertos                       | Estado                                             |
 | ---- | ---------------------------------------- | -------------------------------------------------- |
 | F0   | RNF-01 (baseline), RNF-07 (base headers) | **Cerrada con 2 excepciones** — 64 de 66 validados |
-| F1   | RF-01, RF-02, RNF-06, RNF-07 (globo)     | En curso — desde el paso 1.1.1                     |
+| F1   | RF-01, RF-02, RNF-06, RNF-07 (globo)     | En curso — 1.1.1 validado, 1.1.2 pendiente         |
 | F2   | RF-03, RF-04, RNF-02, RNF-03, RNF-05     | Pendiente                                          |
 | F3   | RF-07, RF-08, RNF-02, RNF-03             | Pendiente                                          |
 | F4   | RF-05, RF-06, RNF-01, RNF-03             | Pendiente                                          |
