@@ -1,7 +1,7 @@
 # GAIA — Definición de Terminado (DoD)
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.0  
+> **Versión del Documento:** 1.1  
 > **Fecha:** 2026-09-27  
 > **Alcance:** Fija qué tiene que ser cierto para dar por terminado un micro-paso del [Roadmap](./GAIA_ROADMAP.md). Complementa las reglas de avance paso a paso de [`AGENTS.md`](../AGENTS.md) y los tipos de prueba de [Plan de Testing](./GAIA_TESTING.md).
 
@@ -45,7 +45,7 @@ Los estados que usa el ROADMAP son:
 - [ ] El test **falla si el comportamiento se rompe** (ver [§4](#4-mutación-cómo-se-sabe-que-el-test-sirve)).
 - [ ] La **suite completa** pasa en verde.
 - [ ] El **commit** está hecho con prefijo semántico (`feat:`, `fix:`, `docs:`, `chore:`,
-      `refactor:`, `test:`) y en la rama del paso (`feat/fase-X`).
+      `refactor:`, `test:`) y en la rama de su fase (`feat/fase-X`, una por fase).
 - [ ] El ROADMAP refleja el estado real del paso: la barra `- [x]` verde solo cuando está
       `validated`, y el texto entre paréntesis dice qué se hizo y con qué evidencia.
 - [ ] Los valores técnicos que se tocan son los de su **doc de origen**; si un doc no fija el

@@ -75,8 +75,17 @@ qué significa cada estado está en la [DoD](./GAIA_DOD.md) §1-§2.
 
 ## 4. Ramas y commits
 
-**Rama:** una por fase, `feat/fase-X` (p. ej. `feat/fase-0`). El número de fase sale de
-ahí y es el que va en el scope del commit.
+**Rama:** una por fase, `feat/fase-X` (p. ej. `feat/fase-0`), con X de 0 a 13. El
+número de fase sale de ahí y es el que va en el scope del commit.
+
+**Sin sufijo de feature.** La unidad de revisión es la fase, no el grupo: cada fase
+cierra con un paso propio del ROADMAP —"Commit del hito `feat/fase-X`"— cuyo criterio es
+literalmente _"CI pasa; se puede revisar el diff de la fase como unidad"_, y ese PR es lo
+que entra en `main`. Con 88 grupos en 14 fases, una rama por grupo daría 88 ramas para no
+revisar nada más pequeño que la fase.
+
+**`main`** es la rama de integración: recibe el PR del hito de cada fase y no lleva
+trabajo a medias. Todo commit del día a día va a la rama de su fase.
 
 **Mensaje:** `<tipo>(fase-N): <nº de paso> <qué cambia y por qué>`
 
