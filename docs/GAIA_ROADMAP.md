@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.77
+> **Versión del Documento:** 1.78
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-28
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -199,7 +199,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.6.2 — Tests de errores del contrato**
 
-- [ ] Test que valida las respuestas `{success, data, error}` con los 7 códigos del catálogo de la API. _*(realizado, pendiente de validación: los 7 códigos de API_CONTRACT §6 verificados por HTTP; el catálogo está copiado a mano en el test para que un mapeo equivocado no se autovalide. Faltaban 502, 503 y 504.)*_
+- [ ] Test que valida las respuestas `{success, data, error}` con los 7 códigos del catálogo de la API. _*(validado: los 7 códigos de API_CONTRACT §6 verificados por HTTP; el catálogo está copiado a mano en el test para que un mapeo equivocado no se autovalide. Faltaban 502, 503 y 504. Reverificado al validar: los 7 aparecen en el test y 13 tests de contrato y job en verde. Mutación: mapear el 503 a `UPSTREAM_UNAVAILABLE` en `CODE_BY_STATUS` tumba 3 tests, incluido el que comprueba que la tabla no se desvía del catálogo.)*_
 - **Criterio:** errores conocidos devuelven el código correcto.
 - **Estimado:** ~1.25 h.
 
@@ -229,7 +229,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.6.7 — Test de API log**
 
-- [ ] Test de escritura/consulta de `api_log` y retención. _*(realizado, pendiente de validación: escritura, consulta SQL, purga e idempotencia ya los cubrían los tests de 0.3.3 contra PostgreSQL real —4 en verde ejecutados con el Python de Windows—; faltaban el comando que programa el cron de DEPLOYMENT §3.2 y el valor de retención, ambos ahora con test sin BD para que también corran en el CI.)*_
+- [x] Test de escritura/consulta de `api_log` y retención. _*(validado: escritura, consulta SQL, purga e idempotencia ya los cubrían los tests de 0.3.3 contra PostgreSQL real —4 en verde ejecutados con el Python de Windows—; faltaban el comando que programa el cron de DEPLOYMENT §3.2 y el valor de retención, ambos ahora con test sin BD para que también corran en el CI. Reverificado al validar: los 4 tests de BD contra el PostgreSQL local y los 2 del job en verde. Mutación: bajar `RETENTION_DAYS` de 90 a 30 tumba el test de retención.)*_
 - **Criterio:** logs correctos y limpieza programada.
 - **Estimado:** ~1 h.
 
@@ -356,7 +356,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.8.4 — Templates de issue/PR**
 
-- [x] Plantillas con checklist (RFC3339, RF/RNF, tests). _(realizado, pendiente de validación: dos issue forms y una plantilla de PR en `.github/`)_
+- [x] Plantillas con checklist (RFC3339, RF/RNF, tests). _(validado: dos issue forms y una plantilla de PR en `.github/`)_
 - **Criterio:** issues/PRs con estructura consistente.
 - **Estimado:** ~0.75 h.
 
@@ -433,7 +433,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.6.14 — Test de CORS y headers**
 
-- [ ] Test de orígenes permitidos y headers de seguridad base. _*(realizado, pendiente de validación: el paso ya estaba cubierto y era una casilla sin marcar, no trabajo perdido. `backend/tests/test_security_headers.py` (10 tests) nació en 0.4.5 y cubre los dos lados del criterio: headers presentes —las 5 fijas de `GAIA_SECURITY` §6.2 más la CSP canónica con nonce distinto en cada respuesta— y origen no permitido bloqueado —sin `access-control-allow-origin` y preflight 400—, con los casos permitidos como contraprueba. Se comprobó que el test sirve: con `allow_origins=["*"]` en `main.py` fallan los 2 tests del origen no permitido, y restaurado el allowlist vuelven a pasar los 10. No hizo falta tocar código: el criterio se cumplía.*_
+- [x] Test de orígenes permitidos y headers de seguridad base. _*(validado: el paso ya estaba cubierto y era una casilla sin marcar, no trabajo perdido. `backend/tests/test_security_headers.py` (10 tests) nació en 0.4.5 y cubre los dos lados del criterio: headers presentes —las 5 fijas de `GAIA_SECURITY` §6.2 más la CSP canónica con nonce distinto en cada respuesta— y origen no permitido bloqueado —sin `access-control-allow-origin` y preflight 400—, con los casos permitidos como contraprueba. Se comprobó que el test sirve: con `allow_origins=["*"]` en `main.py` fallan los 2 tests del origen no permitido, y restaurado el allowlist vuelven a pasar los 10. No hizo falta tocar código: el criterio se cumplía.*_
 - **Estimado:** ~0.75 h.
 
 **Paso 0.7.13 — Medición de p95 de frame en dev**
