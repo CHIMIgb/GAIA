@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.94
+> **Versión del Documento:** 1.95
 > **Estado:** En ejecución — Fase 0 en curso. Convención de marca: `- [x]` = paso validado; un paso realizado y aún sin validar lleva `- [ ]` con el sufijo _*(realizado, pendiente de validación)*_.
 > **Última actualización:** 2026-09-28
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -397,7 +397,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.8.11 — Mapa de fases en README**
 
-- [x] Tabla resumen de las 14 fases con enlaces al ROADMAP. _*(realizado, pendiente de validación: el README gana la sección «Mapa de fases» con las 14 filas (nombre, micro-pasos, estado) y un ancla a la sección de cada fase en el ROADMAP. El ancla se calculó con el algoritmo de `github-slugger`, que reemplaza **cada** espacio por un guion, así que las que tienen em dash llevan dos guiones seguidos; los 14 se comprobaron contra los encabezados reales. Los micro-pasos de cada fila son los que declara el propio ROADMAP en su «Ruta de ejecución», no un recuento mío: contrastados, 332 declarados = 332 checkboxes. Los nombres son literales de los encabezados (sin el sufijo «— Corte Vertical Completo» de F2-F6). Y el «Estado», que decía «validados hasta 0.5.1» cuando el real era 0.8.10, ahora dice 60 de 66 y explica por qué `0.7.5` y `0.7.13` no se pueden cumplir hoy)*_
+- [x] Tabla resumen de las 14 fases con enlaces al ROADMAP. _*(validado: el README gana la sección «Mapa de fases» con las 14 filas (nombre, micro-pasos, estado) y un ancla a la sección de cada fase en el ROADMAP. El ancla se calculó con el algoritmo de `github-slugger`, que reemplaza **cada** espacio por un guion, así que las que tienen em dash llevan dos guiones seguidos; los 14 se comprobaron contra los encabezados reales. Los micro-pasos de cada fila son los que declara el propio ROADMAP en su «Ruta de ejecución», no un recuento mío: contrastados, 332 declarados = 332 checkboxes. Los nombres son literales de los encabezados (sin el sufijo «— Corte Vertical Completo» de F2-F6). Y el «Estado», que decía «validados hasta 0.5.1» cuando el real era 0.8.10, ahora dice 60 de 66 y explica por qué `0.7.5` y `0.7.13` no se pueden cumplir hoy)*_
 - **Criterio:** README refleja el roadmap y su estado.
 - **Estimado:** ~0.75 h.
 
