@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.105
+> **Versión del Documento:** 1.106
 > **Estado:** Fase 0 **cerrada con dos excepciones** — 64 de 66 micro-pasos validados; los 2 pendientes (`0.7.5`, `0.7.13`) no son cumplibles con los docs actuales y quedan anotados como tal. **Fase 1 en curso**; F2 a F13 sin empezar.
 > **Última actualización:** 2026-09-29
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -490,7 +490,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.1.2 — Cámara orbital**
 
-- [ ] `OrbitControls` con límites (pendiente y zoom con mínimo/distancia), manejo de resize. _*(realizado, pendiente de validación: `core/CameraController.ts` y `core/Resizer.ts`, los dos ficheros que asigna PROJECT_STRUCTURE §5.1. Criterio verificado en navegador real: orbitar mueve la cámara, el zoom clava en 1.05 y 6 sin entrar en el globo ni perderlo, y el arrastre por encima de la horizontal se detiene en ±0.05 rad de los polos en vez de dar la voltereta. Resize: aspect 1.6 → 0.7 al pasar a 700x1000, lienzo y buffer siguiendo. Auto-rotación de fondo a los 31 s y corte inmediato al tocar, como pide VISUAL_DESIGN §10, e inercia anulada con `prefers-reduced-motion`. Sin errores de consola. **El 60 FPS no se puede verificar aquí:** esta máquina no tiene GPU y Chromium rasteriza por software; con el lienzo ya dimensionado a 1 024 000 px da 36.7 FPS, y con el bug de 1.1.1 a 45 000 px daba 60. La cifra buena la tiene que dar una máquina con GPU, según TESTING §3.*)_
+- [x] `OrbitControls` con límites (pendiente y zoom con mínimo/distancia), manejo de resize. _*(validado: `core/CameraController.ts` y `core/Resizer.ts`, los dos ficheros que asigna PROJECT_STRUCTURE §5.1. Criterio verificado en navegador real: orbitar mueve la cámara, el zoom clava en 1.05 y 6 sin entrar en el globo ni perderlo, y el arrastre por encima de la horizontal se detiene en ±0.05 rad de los polos en vez de dar la voltereta. Resize: aspect 1.6 → 0.7 al pasar a 700x1000, lienzo y buffer siguiendo. Auto-rotación de fondo a los 31 s y corte inmediato al tocar, como pide VISUAL_DESIGN §10, e inercia anulada con `prefers-reduced-motion`. Sin errores de consola. **El 60 FPS no se puede verificar aquí:** esta máquina no tiene GPU y Chromium rasteriza por software; con el lienzo ya dimensionado a 1 024 000 px da 36.7 FPS, y con el bug de 1.1.1 a 45 000 px daba 60. La cifra buena la tiene que dar una máquina con GPU, según TESTING §3.*)_
 - **Criterio:** se puede orbitar, hacer zoom dentado límites y resize correcto; sin "volteretas" en polos.
 - **Estimado:** ~2.25 h.
 
@@ -498,7 +498,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.2.1 — Esfera base con textura de color**
 
-- [ ] Geoide (`SphereGeometry` con radio 1) + material con textura base (env or static color).
+- [ ] Geoide (`SphereGeometry` con radio 1) + material con textura base (env or static color). _*(realizado, pendiente de validación: `modules/globe/GlobeModule.ts` (orquestador) y `TerrainMesh.ts` (la esfera), los dos ficheros que nombra PROJECT_STRUCTURE §1. Radio 1 exacto y normales analíticas verificados vértice a vértice (error 3·10⁻⁸): en una esfera de radio 1 la normal correcta es la posición normalizada, así que el test compara eso y se pone rojo si alguien recalcula normales por cara o pone `flatShading`. Las "bandas" del criterio se hacen medibles: el apartamiento de la silueta respecto a la circunferencia es R·(1−cos(π/N)), que con 128x64 da 0,29 px en el peor encuadre (limbo pegado al borde de 1920) y 4,62 px con los 32 segmentos por defecto de Three; el test corta en 0,5 px y verificado que se rompe bajando a 32. El cubo de andamiaje de 1.1.1 se retira y lo sustituye el geoide. 1 draw call, sin errores de consola. **Color plano, no textura:** la textura satelital es del paso 1.4.1 con su TileManager y su LOD, y el criterio de este paso admite "env or static color". Degradado a 16 FPS en la rasterización por software de esta máquina, que no tiene GPU: son 16 384 triángulos en un draw call, coste que una GPU no nota y SwiftShader sí; el número de segmentos es la palanca si ever hace falta bajarlo.)*_
 - **Criterio:** esfera renderiza con detalles; normales correctas (sin bandas visible).
 - **Estimado:** ~2.25 h.
 
@@ -2379,7 +2379,7 @@ Cada fase se divide jerárquicamente así:
 | Fase | RF / RNF cubiertos                       | Estado                                             |
 | ---- | ---------------------------------------- | -------------------------------------------------- |
 | F0   | RNF-01 (baseline), RNF-07 (base headers) | **Cerrada con 2 excepciones** — 64 de 66 validados |
-| F1   | RF-01, RF-02, RNF-06, RNF-07 (globo)     | En curso — 1.1.1 validado, 1.1.2 pendiente         |
+| F1   | RF-01, RF-02, RNF-06, RNF-07 (globo)     | En curso — 1.1.x validados, 1.2.1 pendiente        |
 | F2   | RF-03, RF-04, RNF-02, RNF-03, RNF-05     | Pendiente                                          |
 | F3   | RF-07, RF-08, RNF-02, RNF-03             | Pendiente                                          |
 | F4   | RF-05, RF-06, RNF-01, RNF-03             | Pendiente                                          |

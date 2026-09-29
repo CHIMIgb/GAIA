@@ -1,6 +1,6 @@
 /**
  * Motor de renderizado Three.js (ROADMAP 1.1.1 — escena, cámara, luz y bucle;
- * 1.1.2 — cámara orbital y resize).
+ * 1.1.2 — cámara orbital y resize; 1.2.1 — geoide).
  *
  * El constructor monta el grafo de escena, que es solo Three.js y se puede probar sin
  * navegador. `start()` pide el contexto WebGL y arranca el bucle: es el punto donde la
@@ -10,21 +10,19 @@
  * La cámara orbital (`CameraController`) y el resize (`Resizer`) se crean en `start()` y
  * no en el constructor por lo mismo: los dos necesitan un nodo del DOM con medidas.
  *
- * Ubicación según `docs/GAIA_PROJECT_STRUCTURE.md` §1 (`core/`). El cubo de referencia es
- * andamiaje de 1.1.1: la esfera real entra en 1.2.1.
+ * Ubicación según `docs/GAIA_PROJECT_STRUCTURE.md` §1 (`core/`). El cubo de andamiaje de
+ * 1.1.1 se retiró en 1.2.1, cuando el geoide lo sustituyó.
  */
 import {
   AmbientLight,
-  BoxGeometry,
   Color,
   DirectionalLight,
-  Mesh,
-  MeshStandardMaterial,
   PerspectiveCamera,
   Scene,
   WebGLRenderer,
 } from "three";
 
+import { GlobeModule } from "../modules/globe/GlobeModule";
 import { registerDrawCallsSource } from "../utils/frameStats";
 
 import { CameraController } from "./CameraController";
@@ -32,13 +30,12 @@ import { Resizer } from "./Resizer";
 
 /** `--gaia-bg` de GAIA_VISUAL_DESIGN §5.1. */
 const FONDO_ESPACIO = 0x05070b;
-/** `--gaia-accent` de GAIA_VISUAL_DESIGN §5.1: el único acento del sistema. */
-const ACENTO = 0x3fd8c9;
 
 export class Engine {
   readonly escena: Scene;
   readonly camara: PerspectiveCamera;
-  readonly referencia: Mesh;
+  /** El globo terráqueo. El motor lo monta pero no lo toca: quien lo gobierna es el módulo. */
+  readonly globo: GlobeModule;
 
   private readonly canvas: HTMLCanvasElement;
   private renderer: WebGLRenderer | null = null;
@@ -52,21 +49,19 @@ export class Engine {
     this.escena.background = new Color(FONDO_ESPACIO);
 
     this.camara = new PerspectiveCamera(45, 1, 0.1, 100);
+    // A 4 radios se ve el planeta entero con hueco de sobra: el campo de visión es de 45°
+    // y desde ahí el globo ocupa unos dos tercios del alto.
     this.camara.position.set(0, 0, 4);
 
     this.escena.add(new AmbientLight(0xffffff, 0.8));
-    // La direccional no está en el criterio de este paso, pero sin ella el cubo sale
-    // plano: la luz ambiente reparte la misma intensidad a todas las caras y no se ve
-    // que es un cubo. Una línea para que la referencia sirva de referencia.
+    // La direccional no está en el criterio de 1.1.1, pero sin ella la esfera sale plana:
+    // la luz ambiente reparte la misma intensidad a toda la superficie y no se ve que hay
+    // volumen. La dirección y el terminador de verdad llegan en 1.2.2.
     const clave = new DirectionalLight(0xffffff, 0.6);
     clave.position.set(2, 3, 4);
     this.escena.add(clave);
 
-    this.referencia = new Mesh(
-      new BoxGeometry(1, 1, 1),
-      new MeshStandardMaterial({ color: ACENTO }),
-    );
-    this.escena.add(this.referencia);
+    this.globo = new GlobeModule(this.escena);
   }
 
   /** Pide el contexto WebGL, dimensiona el lienzo y empieza a renderizar. */
@@ -88,8 +83,7 @@ export class Engine {
     // hacía el motor en 1.1.1.
     this.resizer = new Resizer(this.canvas, this.camara, renderer);
 
-    const paso = (marca: number): void => {
-      this.referencia.rotation.y = marca * 0.0006;
+    const paso = (): void => {
       // Sin este `update()` ni la inercia del drag ni el giro de fondo avanzan: es lo que
       // hace `OrbitControls` en cada frame (PROJECT_STRUCTURE §5.1).
       this.camaraCtrl?.update();
@@ -108,8 +102,7 @@ export class Engine {
     this.camaraCtrl?.dispose();
     this.resizer = null;
     this.camaraCtrl = null;
-    this.referencia.geometry.dispose();
-    (this.referencia.material as MeshStandardMaterial).dispose();
+    this.globo.dispose();
     this.renderer?.dispose();
     this.renderer = null;
   }
