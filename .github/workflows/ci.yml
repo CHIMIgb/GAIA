@@ -34,6 +34,10 @@ jobs:
       # regla si no la conoce. Vive en la raíz porque la boundary atraviesa los
       # dos workspaces.
       - run: npm run lint:imports
+      # Enlaces cruzados de los docs (ROADMAP 0.8.14). Va aqui y no en un job propio porque es
+      # otro check estatico de la raiz que no necesita navegador ni servicios, igual que los dos
+      # de arriba. Sin red: un check que sale a internet mide la disponibilidad de otro sitio.
+      - run: npm run check:links
       - run: npm run build
       # Presupuesto de bundle: falla el CI si dist/ se pasa de los límites de
       # RNF-01. Sin `|| true`, que es justo lo que se quita abajo.

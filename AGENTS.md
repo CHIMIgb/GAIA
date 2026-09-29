@@ -60,7 +60,7 @@ Todos los docs de `docs/` comparten valores canónicos en paralelo. Al editar cu
 
 ## Verificación (hay framework: úsalo antes deuros greps)
 
-- Comandos reales, desde la raíz: `npm run lint`, `npm run lint:imports`, `npm run typecheck`, `npm test`,
+- Comandos reales, desde la raíz: `npm run lint`, `npm run lint:imports`, `npm run check:links`, `npm run typecheck`, `npm test`,
   `npm run test:front`, `npm run build`, `npm run perf:baseline` (y `perf:check` como gate de regresión).
 - Backend: `cd backend && .venv/bin/python -m pytest` → **73 pasan y 8 se saltan en local**, y no es un fallo: los
   8 saltados son los que hablan con PostgreSQL y el fixture hace `skip` si no hay servidor. En CI corren los 81

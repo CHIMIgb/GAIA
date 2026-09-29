@@ -1,7 +1,7 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.99
-> **Estado:** En ejecución — Fase 0 en curso: **62 de 66 micro-pasos validados**; **3 pendientes** (`0.7.5`, `0.7.13`, `0.8.15`). Fases F1 a F13 sin empezar.
+> **Versión del Documento:** 1.100
+> **Estado:** En ejecución — Fase 0 en curso: **62 de 66 micro-pasos validados**; 0.8.14 realizado y pendiente de validación; **3 pendientes** (`0.7.5`, `0.7.13`, `0.8.15`). Fases F1 a F13 sin empezar.
 > **Última actualización:** 2026-09-29
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
 
@@ -419,7 +419,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 0.8.14 — Enlaces cruzados**
 
-- [ ] Revisar todos los `./GAIA_*.md` referenciados existen.
+- [ ] Revisar todos los `./GAIA_*.md` referenciados existen. _\*(realizado, pendiente de validación: 231 enlaces internos en `docs/` + `README.md` + `AGENTS.md`, y no hay ni un roto: ni ficheros ni anclas. Pero el paso no se queda en un «lo he mirado», porque eso caduca en cuanto alguien añade un enlace: el check queda en `scripts/check-links.mjs` (`npm run check:links`) y en el CI, junto a `lint` y `lint:imports` que también son checks estáticos de la raíz. Sin dependencias nuevas y sin red, que un check que sale a internet mide la disponibilidad de otro sitio y no la de este repo. El slug se calcula como lo hace `github-slugger` (minúsculas, sin puntuación, **cada** espacio → un guion sin colapsar), que es lo que hace que los títulos con em dash lleven dos guiones y no fallen; y los bloques de código se ignoran, porque un ejemplo de markdown dentro de un fence no es un enlace del documento. Lo importante: **probé el comprobador antes de creérmelo**. Mi primera versión con un fichero inexistente inyectado se callaba — y el motivo era que la comprobación de anclas llevaba `const [ruta, , ancla] = dest.split("#")`, un hueco de más para un array de dos elementos, así que `ancla` era `undefined` siempre y esa mitad del check no se ejecutaba nunca. Parecía que el repo estaba impecable porque media comprobación no miraba nada. Un check que no ha sidoRONDA... probado contra un caso roto no es un check)_*
 - **Criterio:** sin enlaces rotos en los docs.
 - **Estimado:** ~0.75 h.
 

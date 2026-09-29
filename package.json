@@ -12,6 +12,7 @@
     "build": "npm run build -w frontend",
     "lint": "npm run lint -w frontend",
     "lint:imports": "eslint .",
+    "check:links": "node scripts/check-links.mjs",
     "typecheck": "npm run typecheck -w shared",
     "perf:baseline": "node scripts/perf-baseline.mjs",
     "perf:check": "npm run perf:check -w frontend",
