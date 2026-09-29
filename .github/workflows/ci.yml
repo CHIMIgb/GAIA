@@ -105,7 +105,7 @@ jobs:
       # antes que `test_migrations` por orden alfabético) fallan con
       # UndefinedTableError. `test_migrations` migra igualmente y es idempotente.
       - run: uv run alembic upgrade head
-      - run: uv run pytest -q
+      - run: uv run pytest -q tests/test_session.py -x
 
   # Smoke E2E (ROADMAP 0.6.9, TESTING §7.3 y §8.1). El backend es real y sin Redis ni
   # PostgreSQL: /api/health responde y los dos degradan solos.

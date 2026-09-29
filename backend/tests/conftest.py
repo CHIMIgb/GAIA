@@ -31,7 +31,7 @@ def client() -> Iterator[TestClient]:
     # test, el pool de Redis sobrevive al loop que lo creó y la petición siguiente
     # muere con "Event loop is closed" → 500. Dentro del `with` hay un solo loop por
     # test y el lifespan lo cierra limpio.
-    with TestClient(app, raise_server_exceptions=False) as test_client:
+    with TestClient(app, raise_server_exceptions=True)  # DIAGNOSTICO TEMPORAL as test_client:
         yield test_client
 
 
