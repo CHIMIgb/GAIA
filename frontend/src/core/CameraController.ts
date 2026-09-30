@@ -44,11 +44,11 @@ const DISTANCIA_MINIMA = 1.25;
 /** Lejos del todo, con sitio para el halo atmosférico de 1.2.2. */
 const DISTANCIA_MAXIMA = 6;
 /**
- * Zoom por defecto (el `position.set` de `Engine`): dos radios. El campo de visión es de
- * 45°, así que el globo entra a media pantalla, y es el nivel z2 de la escalera de textura
- * —uno de los tres que `precargar()` deja listos en segundo plano—.
+ * Zoom por defecto (el `position.set` de `Engine`): 1.8 radios, pedido del usuario. El campo
+ * de visión es de 45°, así que el globo entra a media pantalla; en la escalera de textura
+ * cae en la banda de z3.
  */
-export const DISTANCIA_POR_DEFECTO = 2;
+export const DISTANCIA_POR_DEFECTO = 1.8;
 /**
  * Velocidad del arrastre, sobre el 1.0 por defecto de `TrackballControls`: el usuario
  * pidió "más sensibilidad" al girar. Es la única rueda de ajuste de este archivo —si

@@ -51,6 +51,13 @@ const nuevoManager = (fallaEn?: (url: string) => boolean) => {
   };
 };
 
+/** Cámara mínima que necesita el atlas de vista (la que `TileManager` recibe por frame). */
+const camara = (x: number, y: number, z: number, fov = 45) => ({
+  position: new Vector3(x, y, z),
+  fov,
+  aspect: 16 / 9,
+});
+
 describe("TileManager — descarga y empacado (ROADMAP 1.4.1)", () => {
   it("precarga los tres niveles (1 + 4 + 16 tiles) y compone un atlas por nivel", async () => {
     const { gestionado, deps } = nuevoManager();
@@ -89,73 +96,50 @@ describe("TileManager — descarga y empacado (ROADMAP 1.4.1)", () => {
   });
 });
 
-describe("TileManager — niveles de contacto perezosos (z3/z4)", () => {
-  it("no los precarga: los pide al acercarse la cámara", async () => {
+describe("TileManager — atlas de vista en vez de atlas del mundo entero", () => {
+  it("por debajo de 2 radios no pide ningún atlas global, solo el de vista", async () => {
     const { gestionado, deps } = nuevoManager();
     await gestionado.precargar();
-    expect(urls(deps)).toHaveLength(21); // solo los tres base
 
-    // 1.5 está en la banda pura de z4: pide sus 256 tiles, y solo esos.
-    gestionado.sincronizar(1.5);
-    await vi.waitFor(() => expect(urls(deps)).toHaveLength(21 + 256));
-    expect(urls(deps).some((u) => u.startsWith("https://tile.test/4/"))).toBe(
-      true,
-    );
-
-    // El atlas de z4 (4096²) queda en pantalla.
-    const u = gestionado["material"].uniforms;
-    await vi.waitFor(() =>
-      expect(u.u_atlasA.value).toBeInstanceOf(CanvasTexture),
-    );
-    expect(u.u_tieneAtlas.value).toBe(1);
-    expect(u.u_cruce.value).toBe(0);
-
-    // Y se compuso con los 256 tiles y su lado 16: un atlas en negro no serviría
-    // de nada, y es lo que sale si el mapa que se compone llega vacío.
-    const [mapaCompuesto, ladoCompuesto] =
-      deps.componerAtlas.mock.calls.at(-1)!;
-    expect((mapaCompuesto as Map<string, ImageBitmap>).size).toBe(256);
-    expect(ladoCompuesto).toBe(16);
-    gestionado.dispose();
-  });
-
-  it("pide z3 solo si la cámara se para en su banda [1.9, 2.2)", async () => {
-    const { gestionado, deps } = nuevoManager();
-    await gestionado.precargar();
-    gestionado.sincronizar(2.05);
-    await vi.waitFor(() => expect(urls(deps)).toHaveLength(21 + 64));
-    expect(urls(deps).some((u) => u.startsWith("https://tile.test/3/"))).toBe(
-      true,
-    );
-    expect(urls(deps).some((u) => u.startsWith("https://tile.test/4/"))).toBe(
-      false,
-    );
-    gestionado.dispose();
-  });
-
-  it("no guarda los tiles sueltos de los niveles profundos (el atlas ya los tiene)", async () => {
-    const { gestionado, deps } = nuevoManager();
-    await gestionado.precargar();
-    gestionado.sincronizar(1.5);
+    // El zoom por defecto (1.8) entra directamente en la banda del atlas de vista: z3 y
+    // z4 ya no existen en la escalera, así que no se piden ni se componen.
+    gestionado.sincronizar(1.8, camara(0, 0, 1.8));
     await vi.waitFor(
-      () => expect(deps.componerAtlas).toHaveBeenCalledTimes(4), // z0, z1, z2 y z4
+      () => expect(deps.componerAtlas).toHaveBeenCalledTimes(4), // z0, z1, z2 y el cap
+    );
+    // El nivel va en el segmento 4 de la URL ({z}/{y}/{x}); buscar "/3/" a pelo también
+    // casaría con la columna x=3 de un tile de z5.
+    const niveles = urls(deps).map((u) => u.split("/")[3]);
+    expect(niveles.some((z) => z === "3" || z === "4")).toBe(false);
+    // El atlas de vista se compone con su rectángulo, no como el mundo entero.
+    const [, cols, rows] = deps.componerAtlas.mock.calls.at(-1)!;
+    expect(cols * rows).toBeLessThan(256);
+    gestionado.dispose();
+  });
+
+  it("no guarda los tiles sueltos del atlas de vista (el atlas ya los tiene)", async () => {
+    const { gestionado, deps } = nuevoManager();
+    await gestionado.precargar();
+    gestionado.sincronizar(1.8, camara(0, 0, 1.8));
+    await vi.waitFor(
+      () => expect(deps.componerAtlas).toHaveBeenCalledTimes(4), // z0, z1, z2 y el cap
     );
     await vi.waitFor(() => expect(gestionado["tiles"].size).toBe(21));
-    // Solo los tres base siguen en caché; los 256 tiles de z4 se liberaron ya.
+    // Solo los tres base siguen en caché; los tiles del cap se liberan al componer.
     expect(imagenFalsa.close).toHaveBeenCalled();
     gestionado.dispose();
   });
 
-  it("mientras z3 no llega, sigue pintando con z2 (no se queda a color base)", async () => {
-    const { gestionado } = nuevoManager((u) =>
-      u.startsWith("https://tile.test/3/"),
+  it("mientras el atlas de vista no llega, sigue pintando con z2 (no a color base)", async () => {
+    const { gestionado } = nuevoManager(
+      (u) => !u.startsWith("https://tile.test/1/"),
     );
     await gestionado.precargar();
-    gestionado.sincronizar(2.0); // banda de z3, que aún no existe
+    gestionado.sincronizar(1.8, camara(0, 0, 1.8)); // banda del cap, que aún no existe
     const u = gestionado["material"].uniforms;
     expect(u.u_tieneAtlas.value).toBe(1);
     expect(u.u_atlasA.value).toBeInstanceOf(CanvasTexture); // el de z2
-    expect(u.u_cruce.value).toBe(0); // sin z3 no hay mezcla
+    expect(u.u_cruce.value).toBe(0); // sin cap no hay mezcla
     gestionado.dispose();
   });
 
@@ -256,11 +240,6 @@ describe("TileManager — atlas de vista (cap)", () => {
    * `rectDeCap(7, {lat:0,lon:0}, 1.4, 22.5, 16/9)` — z7 es el nivel más detallado que
    * cabe en el atlas con tiles de 256 px.
    */
-  const camara = (x: number, y: number, z: number, fov = 45) => ({
-    position: new Vector3(x, y, z),
-    fov,
-    aspect: 16 / 9,
-  });
   const deZ7 = (deps: Record<string, ReturnType<typeof vi.fn>>) =>
     urls(deps).filter((u) => u.includes("/7/"));
 
@@ -316,12 +295,12 @@ describe("TileManager — atlas de vista (cap)", () => {
     // también casaría con z3/z4.
     const { gestionado, deps } = nuevoManager((u) => u.split("/")[3] === "7");
     await gestionado.precargar();
-    // Primero el atlas global de z4 (banda [1.65, 1.9)), que es la reserva.
-    gestionado.sincronizar(1.7);
+    // Primero un atlas global (a 2.5 radios la banda pura es z2), que es la reserva.
+    gestionado.sincronizar(2.5);
     await vi.waitFor(() =>
       expect(
-        urls(deps).filter((t) => t.startsWith("https://tile.test/4/")),
-      ).toHaveLength(256),
+        urls(deps).filter((t) => t.startsWith("https://tile.test/2/")),
+      ).toHaveLength(16),
     );
     const u = gestionado["material"].uniforms;
     await vi.waitFor(() =>

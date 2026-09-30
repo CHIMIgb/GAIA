@@ -46,9 +46,11 @@ const ESCALERA: readonly EntradaNivel[] = [
   { nivel: 0, umbral: Number.POSITIVE_INFINITY, cap: false }, // z0: siempre
   { nivel: 1, umbral: DISTANCIA_BASE, cap: false }, // z1 (3.6) — heredado de 1.3.1
   { nivel: 2, umbral: DISTANCIA_DETALLE, cap: false }, // z2 (2.2) — heredado de 1.3.1
-  { nivel: 3, umbral: 1.9, cap: false }, // z3 — primer nivel de contacto
-  { nivel: 4, umbral: 1.65, cap: false }, // z4 — contacto, atlas 4096²
-  { nivel: 6, umbral: 1.5, cap: true }, // z6 — atlas de vista, nitidez del contacto
+  { nivel: 6, umbral: 2, cap: true }, // atlas de vista desde 2 radios (el zoom por defecto
+  // es 1.8): con atlas del mundo entero el planeta se ve borroso salvo muy lejos, porque
+  // un z6 entero serían 4096 tiles en una textura 16384² (1 GB). El atlas de vista baja
+  // solo los tiles del rectángulo que se está viendo, así que el nivel sale del propio
+  // presupuesto en vez del de un atlas fijo.
 ];
 
 /**

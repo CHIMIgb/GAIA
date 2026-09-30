@@ -48,9 +48,8 @@ export class Engine {
     this.escena.background = new Color(FONDO_ESPACIO);
 
     this.camara = new PerspectiveCamera(45, 1, 0.1, 100);
-    // Zoom por defecto pedido por el usuario: 2 radios (`DISTANCIA_POR_DEFECTO`), con el
-    // campo de visión de 45° el globo entra a media pantalla. Es el nivel z2 de la escalera
-    // de textura, uno de los tres que `precargar()` deja listos en segundo plano.
+    // Zoom por defecto pedido por el usuario: 1.8 radios (`DISTANCIA_POR_DEFECTO`), con el
+    // campo de visión de 45° el globo entra a media pantalla.
     this.camara.position.set(0, 0, DISTANCIA_POR_DEFECTO);
 
     this.escena.add(new AmbientLight(0xffffff, 0.8));

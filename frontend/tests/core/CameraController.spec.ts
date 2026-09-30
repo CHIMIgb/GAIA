@@ -88,10 +88,12 @@ describe("CameraController — cámara orbital (ROADMAP 1.1.2)", () => {
     };
 
     // El factor va con la altura sobre la superficie (d − 1) contra el zoom por defecto
-    // (2 radios): en la vista de arranque se gira como siempre, a 1.25 el giro es un 25 %
-    // y a 6 radios el tope lo deja en el doble. Ni se para del todo ni se desborda.
+    // (1.8 radios): en la vista de arranque se gira como siempre, en el zoom máximo (1.25,
+    // a 0.25 de la superficie) el giro es un 31 % y a 6 radios el tope lo deja en el doble.
+    // Ni se para del todo ni se desborda.
+    const alturaPorDefecto = DISTANCIA_POR_DEFECTO - 1;
     expect(a(DISTANCIA_POR_DEFECTO)).toBeCloseTo(1.8, 6);
-    expect(a(1.25)).toBeCloseTo(1.8 * 0.25, 6);
+    expect(a(1.25)).toBeCloseTo((1.8 * 0.25) / alturaPorDefecto, 6);
     expect(a(6)).toBeCloseTo(1.8 * 2, 6);
   });
 
