@@ -1,8 +1,8 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.113
+> **Versión del Documento:** 1.114
 > **Estado:** Fase 0 **cerrada con dos excepciones** — 64 de 66 micro-pasos validados; los 2 pendientes (`0.7.5`, `0.7.13`) no son cumplibles con los docs actuales y quedan anotados como tal. **Fase 1 en curso**; F2 a F13 sin empezar.
-> **Última actualización:** 2026-09-29
+> **Última actualización:** 2026-09-30
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
 
 ## 1. Introducción y Método
@@ -502,10 +502,10 @@ Cada fase se divide jerárquicamente así:
 - **Criterio:** esfera renderiza con detalles; normales correctas (sin bandas visible).
 - **Estimado:** ~2.25 h.
 
-**Paso 1.2.2 — Atmósfera día/noche (ShaderMaterial)**
+**Paso 1.2.2 — Atmósfera (ShaderMaterial; día/noche retirado)**
 
-- [x] Shader de atmósfera: día/noche (terminator) y glown frontal. _*(validado: de validación: `modules/globe/AtmosphereMesh.ts` (el `ShaderMaterial`) y el `GlobeModule.ts` de 1.2.1, que lo monta. **Shader único, no cáscara exterior:** decisión propia de este paso, la que dejó el lado noche dentro del mismo material en vez de en una segunda malla; da el terminador, el lado noche y el brillo de borde en 1 draw call, verificado (antes 1, sigue 1). Por eso el `MeshStandardMaterial` de 1.2.1 sale sustituido y la `DirectionalLight` del motor se retira: con las dos el terminador se dibujaba dos veces. El sol es un uniform `solDireccion` fijo en el espacio, con la misma `(2,3,4)` que tenía la luz, para que la cámara orbital vaya enseñando el terminador. Los tres parámetros del criterio son `uniform` ajustables en caliente (`AtmosphereMesh.parametros`): exponente del falloff, intensidad y color, más el factor de noche; los defaults salen de VISUAL_DESIGN §4 y §5.1 (acento `#3FD8C9`, intensidad 0.35 y exponente 3 por "opacidad baja, no un halo de neón" y "muy sutil"). Verificado en navegador real: luminancia media 12.6 de día contra 1.4 de noche (ratio 9.1, la noche se apaga multiplicando la base por 0.12 y no pintando luces urbanas, que §4 prohíbe por defecto), pico de resplandor 34.6 en el limbo del terminador, 0 errores de consola. 7 tests nuevos más 2 en el `GlobeModule`.)*_
-- **Criterio:** el lado noche se ve oscuro con brillo de borde; parámetros ajustables.
+- [x] Shader de atmósfera: día/noche (terminator) y glown frontal. _*(validado: de validación: `modules/globe/AtmosphereMesh.ts` (el `ShaderMaterial`) y el `GlobeModule.ts` de 1.2.1, que lo monta. **Shader único, no cáscara exterior:** decisión propia de este paso, la que dejó el lado noche dentro del mismo material en vez de en una segunda malla; da el terminador, el lado noche y el brillo de borde en 1 draw call, verificado (antes 1, sigue 1). Por eso el `MeshStandardMaterial` de 1.2.1 sale sustituido y la `DirectionalLight` del motor se retira: con las dos el terminador se dibujaba dos veces. El sol es un uniform `solDireccion` fijo en el espacio, con la misma `(2,3,4)` que tenía la luz, para que la cámara orbital vaya enseñando el terminador. Los tres parámetros del criterio son `uniform` ajustables en caliente (`AtmosphereMesh.parametros`): exponente del falloff, intensidad y color, más el factor de noche; los defaults salen de VISUAL_DESIGN §4 y §5.1 (acento `#3FD8C9`, intensidad 0.35 y exponente 3 por "opacidad baja, no un halo de neón" y "muy sutil"). Verificado en navegador real: luminancia media 12.6 de día contra 1.4 de noche (ratio 9.1, la noche se apaga multiplicando la base por 0.12 y no pintando luces urbanas, que §4 prohíbe por defecto), pico de resplandor 34.6 en el limbo del terminador, 0 errores de consola. 7 tests nuevos más 2 en el `GlobeModule`.)*_ _Cambio posterior (antes de validar 1.4.1, commit `caa5eaa`): **el usuario pidió quitar el día/noche** — "que siempre se vea clara cualquier parte del planeta". El shader ya no tiene `solDireccion` ni `ladoNoche`: la iluminación es uniforme y solo queda el brillo del limbo (uniforme alrededor del disco, sin terminador que acentuar). `AtmosphereMesh.parametros` conserva exponente/intensidad/color; el factor de noche desaparece. Alineado con `GAIA_VISUAL_DESIGN.md` §4 (v1.3)._* Los pasos de pulido del terminador de esta fase (`1.9.4` "Terminador correcto") quedan pendientes de decisión: con la iluminación uniforme no hay terminador que corregir.*_
+- **Criterio:** el globo se ve siempre claro (sin lado noche ni terminador) con brillo sutil del limbo; parámetros ajustables.
 - **Estimado:** ~3.25 h.
 
 **Paso 1.3 — Elevación y topografía**
