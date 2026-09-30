@@ -40,7 +40,24 @@ export const COMANDOS = [
     comando: `uv run uvicorn app.main:app --reload --port ${PUERTO_BACKEND}`,
     cwd: resolve(RAIZ, "backend"),
   },
-  { nombre: "frontend", comando: "npm run dev", cwd: RAIZ },
+  {
+    nombre: "frontend",
+    // `--host 127.0.0.1` no es decorativo: sin él el dev server de Vite 8 escucha solo
+    // en `[::1]`, así que `curl 127.0.0.1:5173` da ECONNREFUSED. Es lo mismo que ya
+    // documenta `playwright.config.ts` para el E2E.
+    //
+    // `--strictPort` para que el fallo sea visible: sin él, si el 5173 está ocupado
+    // Vite se salta al 5174 y el mensaje de "Listo" de arriba quedaría mintiendo.
+    // `vite` y no `npm run dev`: el `npm run dev` de la raíz es `-w frontend`, y sus
+    // flags `--port=...` se los queda npm en vez de pasarlos a Vite, que con Vite 8
+    // aborta con `Unused args` (y npm avisa por las tres líneas de "Unknown cli
+    // config"). Invocando el binario no hay capa npm que se los quite.
+    //
+    // `playwright.config.ts` sigue con la forma vieja `npm run dev -- --port`, que
+    // aún aguanta porque su comando no pasa por el script de la raíz.
+    comando: `npx vite --port ${PUERTO_FRONTEND} --host 127.0.0.1 --strictPort`,
+    cwd: resolve(RAIZ, "frontend"),
+  },
 ];
 
 /** Sondeo TCP: decide si hay que levantar Redis. Un `fetch` no sirve, Redis no habla HTTP. */
@@ -144,10 +161,22 @@ async function main() {
     });
   }
 
-  log(
-    `Listo: frontend en http://localhost:${PUERTO_FRONTEND}, API en http://localhost:${PUERTO_BACKEND}/api/health`,
-  );
-  log("Ctrl+C para pararlo todo.");
+  // "Listo" solo cuando los puertos contestan de verdad. Imprimirlo al lanzar mentiría:
+  // uvicorn tarda un par de segundos en abrir el 8000, y con `--strictPort` un 5173
+  // ocupado sale como fallo y no como salto al 5174.
+  for (const [nombre, puerto] of [
+    ["frontend", PUERTO_FRONTEND],
+    ["API", PUERTO_BACKEND],
+  ]) {
+    let listo = false;
+    for (let i = 0; i < 60 && !listo && !saliendo; i++) {
+      listo = await puertoAbierto(puerto, "127.0.0.1", 1000);
+      if (!listo) await new Promise((r) => setTimeout(r, 1000));
+    }
+    if (listo) log(`${nombre} escuchando en http://localhost:${puerto}`);
+    else if (!saliendo) aviso(`${nombre} no abrió el ${puerto} en 60 s.`);
+  }
+  if (!saliendo) log("Ctrl+C para pararlo todo.");
 }
 
 // Solo cuando se ejecuta, no cuando un test importa los helpers.
