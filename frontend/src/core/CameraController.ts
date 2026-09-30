@@ -36,6 +36,12 @@ import type { Camera } from "three";
 const DISTANCIA_MINIMA = 1.4;
 /** Lejos del todo, con sitio para el halo atmosférico de 1.2.2. */
 const DISTANCIA_MAXIMA = 6;
+/**
+ * Velocidad del arrastre, sobre el 1.0 por defecto de `TrackballControls`: el usuario
+ * pidió "más sensibilidad" al girar. Es la única rueda de ajuste de este archivo —si
+ *arece nerviosa, se toca aquí y nada más—.
+ */
+const VELOCIDAD_ROTACION = 1.8;
 /** "Auto-rotación solo en idle > 30 s" (VISUAL_DESIGN §10). */
 const IDLE_AUTO_ROTATE_MS = 30_000;
 /**
@@ -48,6 +54,26 @@ const PASO_FONDO = RAD_POR_SEGUNDO_FONDO / 60;
 /** El eje del planeta: hacia arriba, lo único que no se toca al girar de fondo. */
 const EJE_Y = new Vector3(0, 1, 0);
 const CONSULTA_MOVIMIENTO = "(prefers-reduced-motion: reduce)";
+
+/**
+ * `TrackballControls` con los dos ejes a la misma sensibilidad (pedido del usuario).
+ *
+ * El arcball normaliza cada eje por la mitad de su dimensión (`screen.width/2` para el
+ * horizontal, `screen.height/2` para el vertical), así que en un lienzo apaisado el
+ * arrastre vertical gira bastante más que el horizontal: a 1280×720 el horizontal va a
+ * 0.56 del vertical. Igualando los dos denominadores al lado corto —el alto en un lienzo
+ * apaisado— las sensibilidades coinciden y, de paso, el arrastre horizontal deja de ir a
+ * la mitad. Solo cambia dónde se midió el arrastre: ni la cámara, ni el zoom, ni el giro
+ * de fondo se ven afectados.
+ */
+class ControlesSimetricos extends TrackballControls {
+  override handleResize(): void {
+    super.handleResize();
+    const lado = Math.min(this.screen.width, this.screen.height);
+    this.screen.width = lado;
+    this.screen.height = lado;
+  }
+}
 
 export class CameraController {
   readonly controles: TrackballControls;
@@ -63,9 +89,10 @@ export class CameraController {
   private temporizador: ReturnType<typeof setTimeout> | undefined;
 
   constructor(camara: Camera, canvas: HTMLCanvasElement) {
-    const controles = new TrackballControls(camara, canvas);
+    const controles = new ControlesSimetricos(camara, canvas);
     controles.minDistance = DISTANCIA_MINIMA;
     controles.maxDistance = DISTANCIA_MAXIMA;
+    controles.rotateSpeed = VELOCIDAD_ROTACION;
     // Pedido del usuario antes de validar 1.4.1: sin arrastre con el clic derecho
     // (el pan de TrackballControls) — el planeta solo se rota, no se arrastra.
     controles.mouseButtons.RIGHT = null;
@@ -76,6 +103,12 @@ export class CameraController {
     const reducido = window.matchMedia(CONSULTA_MOVIMIENTO).matches;
     controles.staticMoving = reducido;
     this.controles = controles;
+
+    // Ni `TrackballControls` ni `OrbitControls` escuchan `resize` (su `handleResize()`
+    // solo corre en el constructor), así que sin esto el arrastre se mediría contra el
+    // tamaño viejo del lienzo en cuanto cambia la ventana. El `Resizer` ya escucha el
+    // mismo evento para el aspect ratio; son dos consumidores legítimos del mismo resize.
+    window.addEventListener("resize", this.alRedimensionar);
 
     if (!reducido) {
       controles.addEventListener("start", this.alAgarrar);
@@ -97,6 +130,10 @@ export class CameraController {
     }
   }
 
+  private readonly alRedimensionar = (): void => {
+    this.controles.handleResize();
+  };
+
   private readonly alAgarrar = (): void => {
     this.giraEnFondo = false;
     clearTimeout(this.temporizador);
@@ -112,6 +149,7 @@ export class CameraController {
   /** Sin esto, la vista desmontada por React seguiría respondiendo al ratón. */
   dispose(): void {
     clearTimeout(this.temporizador);
+    window.removeEventListener("resize", this.alRedimensionar);
     this.controles.removeEventListener("start", this.alAgarrar);
     this.controles.removeEventListener("end", this.alSoltar);
     this.controles.dispose();

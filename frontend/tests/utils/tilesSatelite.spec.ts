@@ -23,10 +23,11 @@ describe("tilesSatelite — URL y geometría (ROADMAP 1.4.1)", () => {
     );
   });
 
-  it("el lado del nivel es 2^zoom (1, 2, 4)", () => {
+  it("el lado del nivel es 2^zoom (1, 2, 4, 8, 16)", () => {
     expect(ladoDeZoom(0)).toBe(1);
-    expect(ladoDeZoom(1)).toBe(2);
     expect(ladoDeZoom(2)).toBe(4);
+    expect(ladoDeZoom(3)).toBe(8);
+    expect(ladoDeZoom(4)).toBe(16);
   });
 
   it("mapea lon/lat al tile XYZ correcto", () => {
@@ -49,11 +50,13 @@ describe("tilesSatelite — URL y geometría (ROADMAP 1.4.1)", () => {
 });
 
 describe("tilesSatelite — niveles por distancia (ROADMAP 1.4.1)", () => {
-  it("elige el nivel por distancia, alineado con el LOD de elevación", () => {
+  it("elige el nivel por distancia: z0-z2 con los umbrales de 1.3.1 y z3/z4 de contacto", () => {
     expect(zoomParaDistancia(6)).toBe(0);
     expect(zoomParaDistancia(2.9)).toBe(1);
-    expect(zoomParaDistancia(1.2)).toBe(2);
-    expect(zoomParaDistancia(0.5)).toBe(2);
+    expect(zoomParaDistancia(1.2)).toBe(4); // el zoom de contacto (cámara a 1.4)
+    expect(zoomParaDistancia(0.5)).toBe(4);
+    expect(zoomParaDistancia(1.8)).toBe(3); // entre el umbral de z4 y el de z3
+    expect(zoomParaDistancia(1.94)).toBe(2); // dentro de la banda de z3, ya en z2 puro
   });
 
   it("lejos (≥ 4.5) no cruza: solo el nivel 0", () => {
@@ -80,7 +83,29 @@ describe("tilesSatelite — niveles por distancia (ROADMAP 1.4.1)", () => {
     expect(medio.peso).toBeLessThan(0.6);
   });
 
-  it("cerca (< 2.2) usa solo el nivel 2", () => {
-    expect(nivelesConFade(1.2)).toEqual({ zoomA: 2, zoomB: 2, peso: 0 });
+  it("cerca (< 1.65) usa solo el nivel 4, el de contacto", () => {
+    expect(nivelesConFade(1.2)).toEqual({ zoomA: 4, zoomB: 4, peso: 0 });
+  });
+
+  it("la banda [1.9, 2.2) cruza z3 → z2, recortada para no invadir z2", () => {
+    // z3 entra a 1.9 y su banda nominal sería 1.9×1.25=2.375, pero se recorta al
+    // umbral de z2 (2.2): a los 2.15 ya se está casi en z2, no mezclando a medias,
+    // y a los 2.2 la banda de z3 ha terminado.
+    const inicio = nivelesConFade(1.9);
+    expect(inicio.zoomA).toBe(3);
+    expect(inicio.zoomB).toBe(2);
+    expect(inicio.peso).toBeCloseTo(0, 5);
+    expect(nivelesConFade(2.05).peso).toBeCloseTo(0.5, 2);
+    expect(nivelesConFade(2.15).peso).toBeCloseTo(5 / 6, 2);
+    // A los 2.2 termina la banda de z3 y arranca la de z2 → z1 (peso 0: aún z2 puro).
+    expect(nivelesConFade(2.2)).toEqual({ zoomA: 2, zoomB: 1, peso: 0 });
+  });
+
+  it("la banda [1.65, 1.9) cruza z4 → z3", () => {
+    const inicio = nivelesConFade(1.65);
+    expect(inicio.zoomA).toBe(4);
+    expect(inicio.zoomB).toBe(3);
+    expect(inicio.peso).toBeCloseTo(0, 5);
+    expect(nivelesConFade(1.775).peso).toBeCloseTo(0.5, 2);
   });
 });

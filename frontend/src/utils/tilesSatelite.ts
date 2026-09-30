@@ -18,7 +18,51 @@ import {
 /** Límite del esquema XYZ: mercator no cubre los polos por encima de ±85,05°. */
 export const LAT_LIMITE = 85.05112878;
 
-/** Nº de tiles por lado en el nivel: 1 (z0), 2 (z1), 4 (z2). */
+/**
+ * Último nivel que se sirve. Con el atlas entero por nivel (una textura por zoom), z4 es
+ * el techo práctico: son 256 tiles de 256 px en un atlas 4096².
+ */
+export const ZOOM_MAXIMO = 4;
+
+/**
+ * Distancia de cámara (en radios) a la que entra cada nivel.
+ *
+ * z0–z2 heredan los umbrales del LOD de elevación de 1.3.1 (`DISTANCIA_BASE` 3.6 y
+ * `DISTANCIA_DETALLE` 2.2), para que relieve y textura cambien a la vez y no haya dos
+ * palancas independientes. z3 y z4 son nuevos: son los que hacen falta para el zoom de
+ * contacto (la cámara baja a 1.4). Con solo z2 el atlas de 1024² se magnifica ~5× en el
+ * zoom máximo y el planeta se ve borroso —el defecto que reportó el usuario—; z4 lo deja
+ * casi 1:1.
+ */
+const UMBRAL_POR_ZOOM = [
+  Number.POSITIVE_INFINITY, // z0: siempre
+  DISTANCIA_BASE, // z1 (3.6) — heredado de 1.3.1
+  DISTANCIA_DETALLE, // z2 (2.2) — heredado de 1.3.1
+  1.9, // z3 — primer nivel de contacto
+  1.65, // z4 — el más cercano; la cámara baja a 1.4
+];
+
+/**
+ * Ancho de la banda de cruce: 25 % por encima del umbral, el de 1.4.1. Se recorta al
+ * umbral del nivel superior para que la banda de un nivel nunca invada el terreno puro
+ * del siguiente (sin el recorte, la banda de z3 —1.9×1.25=2.375— se comería el tramo
+ * [2.2, 2.375) de z2).
+ */
+const BANDA = 1.25;
+
+/** Fin de la banda de cruce del nivel `z`: ya dentro de su zona pura o de la del anterior. */
+function bandaDe(z: number): number {
+  return Math.min(UMBRAL_POR_ZOOM[z] * BANDA, UMBRAL_POR_ZOOM[z - 1]);
+}
+
+/** Nivel más detallado que ya está activo a esa distancia (el nivel puro, sin mezcla). */
+export function zoomParaDistancia(distancia: number): number {
+  let z = 0;
+  while (z < ZOOM_MAXIMO && distancia < UMBRAL_POR_ZOOM[z + 1]) z++;
+  return z;
+}
+
+/** Nº de tiles por lado en el nivel: 1 (z0), 2 (z1), 4 (z2), 8 (z3), 16 (z4). */
 export function ladoDeZoom(zoom: number): number {
   return 2 ** zoom;
 }
@@ -29,17 +73,6 @@ export function ladoDeZoom(zoom: number): number {
  */
 export function urlTileEsri(z: number, y: number, x: number): string {
   return `https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`;
-}
-
-/**
- * Nivel por distancia de cámara, alineado con el LOD de elevación (1.3.1): la
- * misma `DISTANCIA_DETALLE` 2.2 y `DISTANCIA_BASE` 3.6 radios. Así el detalle
- * satelital cambia a la vez que el DEM, no hay dos palancas independientes.
- */
-export function zoomParaDistancia(distancia: number): number {
-  if (distancia < DISTANCIA_DETALLE) return 2;
-  if (distancia < DISTANCIA_BASE) return 1;
-  return 0;
 }
 
 /**
@@ -69,7 +102,8 @@ export function tileDeLonLat(
 /**
  * Cruce entre niveles para que el cambio de distancia «no salte» (criterio de
  * 1.4.1): devuelve el nivel actual, el siguiente más lejano y el peso del
- * segundo, con banda de transición del 25 % por encima de cada umbral.
+ * segundo, con banda de transición del 25 % por encima de cada umbral. La misma
+ * regla para los cinco niveles (`bandaDe` recorta cada banda para que no se solapen).
  *
  * Ejemplo en la banda [3.6, 4.5): el nivel A es z1, el B z0 y `peso` crece de 0 a
  * 1 al alejarse, de forma que el globo se queda con z0 cuando pasa de 4.5.
@@ -79,21 +113,15 @@ export function nivelesConFade(distancia: number): {
   zoomB: number;
   peso: number;
 } {
-  if (distancia < DISTANCIA_DETALLE) return { zoomA: 2, zoomB: 2, peso: 0 };
-  const bandaIzq = DISTANCIA_DETALLE * 1.25;
-  if (distancia < bandaIzq)
-    return {
-      zoomA: 2,
-      zoomB: 1,
-      peso: (distancia - DISTANCIA_DETALLE) / (bandaIzq - DISTANCIA_DETALLE),
-    };
-  if (distancia < DISTANCIA_BASE) return { zoomA: 1, zoomB: 1, peso: 0 };
-  const bandaBase = DISTANCIA_BASE * 1.25;
-  if (distancia < bandaBase)
-    return {
-      zoomA: 1,
-      zoomB: 0,
-      peso: (distancia - DISTANCIA_BASE) / (bandaBase - DISTANCIA_BASE),
-    };
-  return { zoomA: 0, zoomB: 0, peso: 0 };
+  // El nivel A es el más detallado que ya tiene banda abierta a esta distancia.
+  let z = 0;
+  while (z < ZOOM_MAXIMO && distancia < bandaDe(z + 1)) z++;
+  if (z === 0 || distancia < UMBRAL_POR_ZOOM[z])
+    return { zoomA: z, zoomB: z, peso: 0 };
+  const banda = bandaDe(z);
+  return {
+    zoomA: z,
+    zoomB: z - 1,
+    peso: (distancia - UMBRAL_POR_ZOOM[z]) / (banda - UMBRAL_POR_ZOOM[z]),
+  };
 }

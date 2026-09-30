@@ -80,6 +80,33 @@ describe("CameraController — cámara orbital (ROADMAP 1.1.2)", () => {
     expect(nuevo().controles.mouseButtons.RIGHT).toBeNull();
   });
 
+  it("gira más rápido que el 1.0 por defecto de TrackballControls", () => {
+    // Pedido del usuario: "más sensibilidad" al girar. El valor exacto es la única
+    // constante de ajuste del archivo (VELOCIDAD_ROTACION = 1.8).
+    expect(nuevo().controles.rotateSpeed).toBeGreaterThan(1);
+  });
+
+  it("mide el arrastre igual en horizontal y en vertical", () => {
+    const { controles } = nuevo();
+
+    // El arcball normaliza cada eje por la mitad de su dimensión, así que sin más el
+    // arrastre horizontal gira a `alto/ancho` del vertical (0.56 a 1280×720). Con los
+    // dos lados de la pantalla igualados, la sensibilidad es la misma en ambos ejes.
+    expect(controles.screen.width).toBe(controles.screen.height);
+  });
+
+  it("remeasure el arrastre cuando cambia el tamaño de la ventana", () => {
+    const ctrl = nuevo();
+    const espia = vi.spyOn(ctrl.controles, "handleResize");
+
+    window.dispatchEvent(new Event("resize"));
+
+    // Ni TrackballControls ni OrbitControls escuchan `resize` (su `handleResize()` solo
+    // corre en el constructor): sin esto, tras redimensionar la ventana el arrastre se
+    // mediría contra el tamaño viejo del lienzo.
+    expect(espia).toHaveBeenCalled();
+  });
+
   it("deja la cámara quieta hasta que el usuario la mueve", () => {
     // VISUAL_DESIGN §10 no pide rotación propia al cargar: con el globo girando solo,
     // un punto de incendio se escapa de debajo del cursor mientras se intenta leer.
