@@ -44,6 +44,9 @@ function Lienzo() {
     // Relieve por LOD (ROADMAP 1.3.1). Los heightmaps van empaquetados en el build,
     // así que esto no toca red: solo decodifica los PNG locales.
     void motor.globo.iniciarElevacion();
+    // Textura satelital (ROADMAP 1.4.1): descarga los tres niveles Esri en segundo
+    // plano; hasta que llega el nivel 0 el globo se ve con el color base.
+    void motor.globo.iniciarTextura();
     return () => motor.dispose();
   }, []);
 

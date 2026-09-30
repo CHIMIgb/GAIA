@@ -17,6 +17,10 @@
  * globales al material y el `onBeforeRender` de la malla reparte el peso entre niveles
  * según la distancia de la cámara (`ElevationLOD`). Los assets se cargan en `source`
  * como URLs de Vite y se leen a través del `TextureLoader` de `iniciarElevacion()`.
+ * Desde 1.4.1 entra la textura satelital: `iniciarTextura()` crea el `TileManager`
+ * (descarga los tres niveles Esri y los empaca en atlas) y su `sincronizar()` se cuela
+ * en el mismo `onBeforeRender`, así el reparto por distancia de textura y relieve va en
+ * un solo punto por frame.
  */
 import { LinearFilter, Texture, TextureLoader } from "three";
 
@@ -26,6 +30,7 @@ import elevacionBaja from "../../assets/textures/elevacion_baja.png";
 import { AtmosphereMesh } from "./AtmosphereMesh";
 import { ESCALA_ELEVACION, NIVEL_MAR, pesoNivel } from "./ElevationLOD";
 import { TerrainMesh } from "./TerrainMesh";
+import { TileManager } from "./TileManager";
 
 import type { Scene } from "three";
 
@@ -38,6 +43,7 @@ export class GlobeModule {
   private readonly terreno: TerrainMesh;
   private nivelBajo: Texture | null = null;
   private nivelAlto: Texture | null = null;
+  private tiles: TileManager | null = null;
   private suelto = false;
 
   constructor(escena: Scene) {
@@ -88,9 +94,34 @@ export class GlobeModule {
     u.nivelMar.value = NIVEL_MAR;
     // El frame siguiente lo ajusta `onBeforeRender`; aquí deja el globo liso de arranque.
     u.pesoNivelAlto.value = 0;
+    this.programarLODPorDistancia();
+  }
+
+  /**
+   * Enchufa la textura satelital (1.4.1): crea el `TileManager` con los atlas Esri y
+   * arranca la descarga en segundo plano. No necesita `await` para el primer frame:
+   * hasta que el nivel 0 llegue, `u_tieneAtlas = 0` y el globo es el color base.
+   */
+  iniciarTextura(): void {
+    if (this.tiles) return;
+    this.tiles = new TileManager(this.atmosfera.material);
+    void this.tiles.precargar();
+    this.programarLODPorDistancia();
+  }
+
+  /**
+   * Reparto por distancia en el único hook por frame de la malla: el peso entre los dos
+   * heightmaps (1.3.1) y el cruce de niveles del atlas (1.4.1) salen de la misma
+   * distancia de cámara, así que comparten `onBeforeRender`. Si aún no hay textura
+   * (`iniciarTextura()` sin llamar o sin niveles listos), `sincronizar` es un no-op.
+   */
+  private programarLODPorDistancia(): void {
     this.malla.onBeforeRender = (_rend, _escena, camara) => {
       if (this.suelto) return;
-      u.pesoNivelAlto.value = pesoNivel(camara.position.length());
+      const distancia = camara.position.length();
+      this.atmosfera.material.uniforms.pesoNivelAlto.value =
+        pesoNivel(distancia);
+      this.tiles?.sincronizar(distancia);
     };
   }
 
@@ -104,6 +135,8 @@ export class GlobeModule {
   dispose(): void {
     this.suelto = true;
     this.limpiarTexturas();
+    this.tiles?.dispose();
+    this.tiles = null;
     // El `onBeforeRender` queda, pero con `suelto` no toca los uniforms; ponerlo a
     // `null` no compila porque Three lo declara como método, y reemplazarlo por un
     // noop solo esconde la misma cosa.

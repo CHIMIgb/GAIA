@@ -27,7 +27,12 @@
  * se recorta a ese mínimo (0 = nivel del mar) antes de escalar, así los océanos son
  * planos en la superficie terrestre y la batimetría no hace hoyos; el valor lo fija
  * la constante `NIVEL_MAR` de `ElevationLOD`, y `desplazamiento()` es el espejo CPU.
- * La textura satelital de 1.4.1 entra por el uniform `textura`, que hoy no se usa.
+ * La textura satelital de 1.4.1 entra por los uniforms `u_atlasA`/`u_atlasB`
+ * (`sampler2D` de dos niveles), `u_cruce` (peso del fade entre ellos, tabla de
+ * `nivelesConFade`) y `u_tieneAtlas` (0 = no hay textura, se pinta `colorTierra`).
+ * El fragment convierte la `uv` equirectangular a mercator con la MISMA fórmula que
+ * `tilesSatelite.ts` (patrón `decodeTerrarium`/GLSL: el atlas se compone en esa
+ * proyección, así que muestrear en la propia coordenada mercator evita costuras).
  */
 import { Color, Mesh, ShaderMaterial, SphereGeometry, Vector3 } from "three";
 
@@ -65,7 +70,8 @@ const COLOR_ACENTO = new Color(0x3fd8c9);
  *   3. `borde` = pow(1 - dot(vista, n), exponenteBorde). Da 1 en el limbo —donde la
  *      normal es perpendicular a la vista— y cae a 0 de cara. Multiplicado por `luz`, el
  *      resplandor del acento vive en la franja del terminador y no en toda la esfera.
- *      `textura` queda declarado para que 1.4.1 no cambie la forma del shader.
+ *      La textura satelital entra por `u_atlasA`/`u_atlasB`, crossfade con `u_cruce`;
+ *      con `u_tieneAtlas = 0` el globo es el color base de 1.2.1.
  */
 const vertexShader = /* glsl */ `
 uniform sampler2D nivelBajo;
@@ -75,14 +81,16 @@ uniform float escalaElevacion;
 uniform float nivelMar;
 varying vec3 vNormalMundo;
 varying vec3 vPosicionMundo;
+varying vec2 vUv;
 void main() {
   vec2 cuadr = vec2(uv.x, 1.0 - uv.y);
-  float bajo = (texture2D(nivelBajo, cuadr).r * 65536.0 + texture2D(nivelBajo, cuadr).g * 256.0 + texture2D(nivelBajo, cuadr).b) - 32768.0;
-  float alto = (texture2D(nivelAlto, cuadr).r * 65536.0 + texture2D(nivelAlto, cuadr).g * 256.0 + texture2D(nivelAlto, cuadr).b) - 32768.0;
+  float bajo = (texture2D(nivelBajo, cuadr).r * 256.0 + texture2D(nivelBajo, cuadr).g + texture2D(nivelBajo, cuadr).b / 256.0) - 32768.0;
+  float alto = (texture2D(nivelAlto, cuadr).r * 256.0 + texture2D(nivelAlto, cuadr).g + texture2D(nivelAlto, cuadr).b / 256.0) - 32768.0;
   float elevacion = max(mix(bajo, alto, pesoNivelAlto), nivelMar);
   vec3 pos = position * (1.0 + elevacion * escalaElevacion);
   vNormalMundo = normalize(mat3(modelMatrix) * normal);
   vPosicionMundo = (modelMatrix * vec4(pos, 1.0)).xyz;
+  vUv = uv;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
 }
 `;
@@ -94,13 +102,25 @@ uniform vec3 solDireccion;
 uniform float intensidadBorde;
 uniform float exponenteBorde;
 uniform float ladoNoche;
-uniform sampler2D textura;
+uniform sampler2D u_atlasA;
+uniform sampler2D u_atlasB;
+uniform float u_cruce;
+uniform float u_tieneAtlas;
 varying vec3 vNormalMundo;
 varying vec3 vPosicionMundo;
+varying vec2 vUv;
 void main() {
+  vec3 superficie = colorTierra;
+  if (u_tieneAtlas > 0.5) {
+    vec2 merc = vec2(fract(vUv.x + 0.25), 0.5 - log(tan(3.141592653589793 / 4.0 + radians(vUv.y * 180.0 - 90.0) / 2.0)) / (2.0 * 3.141592653589793));
+    merc = clamp(merc, 0.0, 0.99999);
+    vec3 a = texture2D(u_atlasA, merc).rgb;
+    vec3 b = texture2D(u_atlasB, merc).rgb;
+    superficie = mix(a, b, u_cruce);
+  }
   vec3 n = normalize(vNormalMundo);
   float luz = smoothstep(-0.12, 0.28, dot(n, solDireccion));
-  vec3 color = mix(colorTierra * ladoNoche, colorTierra, luz);
+  vec3 color = mix(superficie * ladoNoche, superficie, luz);
   vec3 vista = normalize(cameraPosition - vPosicionMundo);
   float borde = pow(1.0 - max(dot(vista, n), 0.0), exponenteBorde);
   color += colorAcento * borde * luz * intensidadBorde;
@@ -141,7 +161,12 @@ export class AtmosphereMesh {
         intensidadBorde: { value: opciones.intensidad ?? 0.35 },
         exponenteBorde: { value: opciones.exponente ?? 3.0 },
         ladoNoche: { value: opciones.noche ?? 0.12 },
-        textura: { value: null },
+        // Textura satelital de 1.4.1: apagada por defecto; la encienden
+        // `u_tieneAtlas` (0 = color base) y los atlas que vincula `TileManager`.
+        u_atlasA: { value: null },
+        u_atlasB: { value: null },
+        u_cruce: { value: 0 },
+        u_tieneAtlas: { value: 0 },
         // Elevación de 1.3.1: apagada por defecto (escala 0), la enciende
         // `GlobeModule.cargarElevacion()`. `nivelMar` (1.3.2) es el mínimo de la
         // elevación: aplanar océanos; el valor lo pone la constante `NIVEL_MAR`.
