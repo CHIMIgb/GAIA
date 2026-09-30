@@ -53,6 +53,7 @@ import {
   type RectCap,
   urlTileEsri,
   uvDeCap,
+  zoomDeCap,
 } from "../../utils/tilesSatelite";
 
 /** Clave de caché de un tile; `z/y/x`, el mismo orden que la plantilla de la URL. */
@@ -130,17 +131,18 @@ const componerAtlasProd = (
   rows: number,
   x0 = 0,
   y0 = 0,
+  pxTile = PX_TILE,
 ): HTMLCanvasElement => {
   const canvas = document.createElement("canvas");
-  canvas.width = cols * PX_TILE;
-  canvas.height = rows * PX_TILE;
+  canvas.width = cols * pxTile;
+  canvas.height = rows * pxTile;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("sin contexto 2D para el atlas");
   // La fila 0 del esquema XYZ es el norte y el canvas dibuja fila 0 arriba:
   // el atlas queda en la misma orientación que muestrea el shader.
   for (const [clave, imagen] of tiles) {
     const [, y, x] = clave.split("/").map(Number);
-    ctx.drawImage(imagen, (x - x0) * PX_TILE, (y - y0) * PX_TILE);
+    ctx.drawImage(imagen, (x - x0) * pxTile, (y - y0) * pxTile);
   }
   return canvas;
 };
@@ -153,7 +155,10 @@ export interface TileManagerDeps {
     rows: number,
     x0?: number,
     y0?: number,
+    pxTile?: number,
   ) => HTMLCanvasElement;
+  /** Píxeles por tile de la fuente del atlas de vista (256 en Esri, 512 en MapTiler). */
+  pxTile?: number;
   url: (z: number, y: number, x: number) => string;
 }
 
@@ -165,8 +170,10 @@ export class TileManager {
   private readonly enCurso = new Set<number>();
   /** Momento (ms) en que cada nivel se perdió, para no reintentarlo cada frame. */
   private readonly perdidos = new Map<number, number>();
-  /** Atlas de vista vigente (z6): su rectángulo y su textura. Uno solo, el último. */
+  /** Atlas de vista vigente: su rectángulo y su textura. Uno solo, el último aplicado. */
   private cap: { rect: RectCap; textura: Texture } | null = null;
+  /** Ancho en píxeles de un tile de la fuente del atlas de vista. */
+  private readonly pxTile: number;
   private capEnCurso: string | null = null;
   private capPerdido: { clave: string; momento: number } | null = null;
   private suelto = false;
@@ -179,6 +186,7 @@ export class TileManager {
       url: urlTileEsri,
       ...deps,
     };
+    this.pxTile = deps?.pxTile ?? PX_TILE;
   }
 
   /** Prepara los tres niveles base en segundo plano (1 + 4 + 16 tiles). Idempotente. */
@@ -268,6 +276,7 @@ export class TileManager {
         rect.rows,
         rect.x0,
         rect.y0,
+        this.pxTile,
       );
       const anterior = this.cap;
       this.cap = { rect, textura };
@@ -325,9 +334,10 @@ export class TileManager {
     rows: number,
     x0 = 0,
     y0 = 0,
+    pxTile = PX_TILE,
   ): Texture {
     const atlas = new CanvasTexture(
-      this.deps.componerAtlas(tiles, cols, rows, x0, y0),
+      this.deps.componerAtlas(tiles, cols, rows, x0, y0, pxTile),
     );
     atlas.flipY = false; // fila 0 del esquema XYZ = norte = fila 0 del canvas
     atlas.minFilter = LinearFilter;
@@ -374,19 +384,22 @@ export class TileManager {
   }
 
   /** Rectángulo de vista del nivel cap para la cámara en `distancia` radios. */
-  private rectDeVista(
-    z: number,
-    distancia: number,
-    camara: VistaCamara,
-  ): RectCap {
-    const p = camara.position;
-    return rectDeCap(
-      z,
-      centroVista(p.x, p.y, p.z),
-      distancia,
-      (camara.fov ?? 45) / 2,
-      camara.aspect ?? 1,
+  private rectDeVista(distancia: number, camara: VistaCamara): RectCap | null {
+    const centro = centroVista(
+      camara.position.x,
+      camara.position.y,
+      camara.position.z,
     );
+    const medioFov = (camara.fov ?? 45) / 2;
+    const aspecto = camara.aspect ?? 1;
+    // El nivel no es fijo: es el más detallado que cabe en el atlas para lo que la
+    // pantalla cubre ahora (`zoomDeCap`). Al acercarse la cámara sube de z, y por eso el
+    // contacto no se ve borroso sin gastar un atlas global. Si ni el nivel más grueso
+    // cabe en el atlas, no hay cap y se sigue con los atlas globales.
+    const z = zoomDeCap(centro, distancia, medioFov, aspecto, this.pxTile);
+    return z === null
+      ? null
+      : rectDeCap(z, centro, distancia, medioFov, aspecto);
   }
 
   /**
@@ -406,9 +419,10 @@ export class TileManager {
     if (zoomB !== zoomA && !esCap(zoomB) && !this.atlases.has(zoomB))
       void this.asegurarNivel(zoomB);
     // El atlas de vista se pide al entrar en la banda de z6 y se recompone solo si la
-    // cámara se ha salido del rectángulo que cubre.
+    // cámara se ha salido del rectángulo que cubre (el nivel lo elige `zoomDeCap`).
     if (esCap(zoomA) && camara) {
-      void this.asegurarCap(this.rectDeVista(zoomA, distancia, camara));
+      const rect = this.rectDeVista(distancia, camara);
+      if (rect) void this.asegurarCap(rect);
     }
     const cap = this.cap?.textura ?? null;
     const a = (esCap(zoomA) ? cap : null) ?? this.atlasDe(zoomA);

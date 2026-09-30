@@ -9,6 +9,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   LAT_LIMITE,
+  LADO_MAX_CAP,
+  PXS_MAX_CAP,
   arcoEnPantalla,
   centroVista,
   esCap,
@@ -20,6 +22,7 @@ import {
   urlTileEsri,
   uvDeCap,
   vMercator,
+  zoomDeCap,
   zoomParaDistancia,
 } from "../../src/utils/tilesSatelite";
 
@@ -213,21 +216,37 @@ describe("tilesSatelite — atlas de vista (cap de z6)", () => {
   });
 
   it("cerca de los polos el rectángulo se estira en vertical y topa en el techo", () => {
-    const ecuador = rectDeCap(
-      6,
-      { lat: 0, lon: 0 },
-      1.4,
-      FOV / 2,
-      ASPECTO_16_9,
-    );
-    const media = rectDeCap(6, { lat: 60, lon: 0 }, 1.4, FOV / 2, ASPECTO_16_9);
-    const polo = rectDeCap(6, { lat: 80, lon: 0 }, 1.4, FOV / 2, ASPECTO_16_9);
-    expect(media.rows).toBeGreaterThan(ecuador.rows);
-    expect(polo.rows).toBeGreaterThan(media.rows);
-    expect(polo.rows).toBe(16); // tope de 4096 px por eje
+    const filas = (lat: number) =>
+      rectDeCap(6, { lat, lon: 0 }, 1.4, FOV / 2, ASPECTO_16_9).rows;
+    expect(filas(60)).toBeGreaterThan(filas(0));
+    expect(filas(80)).toBeGreaterThan(filas(60));
+    // En mercator el alto se dispara hacia latitudes altas (~75°): ahí lo que corta es el
+    // techo del atlas (24 tiles de 256 px = 6144 px), no el nivel. Más al norte el alto
+    // vuelve a encogerse porque la proyección se aplana en el límite del esquema.
+    expect(filas(75)).toBe(LADO_MAX_CAP);
     // Y nunca se sale del nivel.
+    const polo = rectDeCap(6, { lat: 75, lon: 0 }, 1.4, FOV / 2, ASPECTO_16_9);
     expect(polo.y0).toBeGreaterThanOrEqual(0);
     expect(polo.y0 + polo.rows).toBeLessThanOrEqual(64);
+  });
+
+  it("el nivel del cap sube al acercarse y lo tops el atlas, no el zoom", () => {
+    const centro = { lat: 0, lon: 0 };
+    const z = (distancia: number, px = 256) =>
+      zoomDeCap(centro, distancia, FOV / 2, ASPECTO_16_9, px);
+    // En el contacto el atlas da para z7 (91 px/grado, lo que pide un DPR 2); más lejos
+    // el marco abierto no cabe y baja a z6. z8 no sale nunca: pediría ~8448 px por eje.
+    expect(z(1.4)).toBe(7);
+    expect(z(1.5)).toBe(7);
+    expect(z(1.55)).toBe(6);
+    expect(z(1.65)).toBe(6);
+    const rect = rectDeCap(z(1.4), centro, 1.4, FOV / 2, ASPECTO_16_9);
+    expect(rect.cols * 256).toBeLessThanOrEqual(PXS_MAX_CAP);
+    expect(rect.rows * 256).toBeLessThanOrEqual(PXS_MAX_CAP);
+    // Con tiles de 512 px el mismo atlas llega a la misma densidad un nivel más abajo:
+    // lo que manda es el ancho del tile, no cuántos se piden.
+    expect(z(1.4, 512)).toBe(6);
+    expect(z(1.65, 512)).toBe(5);
   });
 
   it("uvDeCap da el rectángulo mercator que viaja al uniform del shader", () => {

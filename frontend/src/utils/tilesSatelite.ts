@@ -195,10 +195,10 @@ export function arcoEnPantalla(
  * alrededor del punto que la cámara tiene debajo, con `MARGEN_CAP` tiles de holgura por
  * lado para que aguante un pan antes de tener que recomponerse.
  *
- * El marco de la pantalla no es cuadrado (con 16:9 y fov 45° abarca ~78° de longitud y
- * ~20° de latitud en el zoom de contacto), así que el rectángulo tampoco: sale un atlas
- * apaisado, que es justo lo que abarata el nivel —en z6 son unas decenas de tiles en vez
- * de los 4096 del mundo entero—. La holgura vertical se mide en coordenadas mercator
+ * El marco de la pantalla no es cuadrado (con 16:9 y fov 45° abarca ~39,5° de longitud
+ * y ~19,8° de latitud en el zoom de contacto), así que el rectángulo tampoco: sale un
+ * atlas apaisado, que es justo lo que abarata el nivel —en z6 son unas decenas de tiles
+ * en vez de los 4096 del mundo entero—. La holgura vertical se mide en coordenadas mercator
  * (vMercator) porque la proyección no es lineal con la latitud, y que se estire cerca de
  * los polos es justo lo que salva a la resolución.
  */
@@ -213,8 +213,91 @@ export interface RectCap {
 /** Tiles de holgura a cada lado del rectángulo de vista. */
 const MARGEN_CAP = 2;
 
-/** Techo por eje: 16 tiles de 256 px = 4096 px, un tamaño de textura cómodo y acotado. */
-const LADO_MAX_CAP = 16;
+/**
+ * Rango del atlas de vista. z6 es el que entra por el umbral de la escalera; el nivel
+ * concreto lo elige `zoomDeCap` según lo que quepa, y puede bajar a z5 (tiles de 512 px
+ * necesitan un nivel menos para la misma densidad) pero nunca sube de z8.
+ *
+ * ponytail: el techo es el atlas, no el zoom. z7 en el zoom máximo (cámara a 1.4 radios,
+ * fov 45, 16:9) necesita un rectángulo de 19×12 tiles de 256 px, o sea 4864×3072 px
+ * (~57 MB de VRAM) para los 91 px/grado que pide un DPR 2. z8 pediría 6144×4864 (~114 MB)
+ * y se acerca al `maxTextureSize` de las GPUs, así que no entra. Subir `PXS_MAX_CAP` es el
+ * ajuste si se acepta ese coste.
+ */
+export const ZOOM_CAP_MINIMO = 5;
+export const ZOOM_CAP_MAXIMO = 8;
+
+/** Techo del atlas de vista por eje: 24 tiles de 256 px (6144 px) y 6144 px de textura. */
+export const LADO_MAX_CAP = 24;
+export const PXS_MAX_CAP = 6144;
+
+/**
+ * Tamaño del rectángulo de vista *sin recortar*: cuántos tiles de `z` hay que bajar para
+ * tapar el marco más la holgura. Es lo que decide si un nivel entra en el atlas; el
+ * recorte a `LADO_MAX_CAP` de `rectDeCap` es solo la red de seguridad para los polos.
+ */
+function medirCap(
+  z: number,
+  centro: { lat: number; lon: number },
+  distancia: number,
+  medioFovVerticalGrados: number,
+  aspecto: number,
+): { cols: number; rows: number } {
+  const lado = ladoDeZoom(z);
+  // El medio fov horizontal sale del vertical y del aspecto: el marco es más ancho que
+  // alto, y el rectángulo de tiles debe reflejarlo en vez de salir cuadrado.
+  const medioFovHorizontalGrados =
+    (Math.atan(Math.tan((medioFovVerticalGrados * Math.PI) / 180) * aspecto) *
+      180) /
+    Math.PI;
+  const semiHorizontal = arcoEnPantalla(distancia, medioFovHorizontalGrados);
+  const semiVertical = arcoEnPantalla(distancia, medioFovVerticalGrados);
+  const filasPorVertical =
+    2 *
+    Math.abs(vMercator(centro.lat + semiVertical) - vMercator(centro.lat)) *
+    lado;
+  return {
+    cols: Math.ceil((2 * semiHorizontal * lado) / 360) + 2 * MARGEN_CAP,
+    rows: Math.ceil(filasPorVertical) + 2 * MARGEN_CAP,
+  };
+}
+
+/**
+ * Nivel del atlas de vista: el más detallado cuyo rectángulo quepa en el atlas, o `null`
+ * si ninguno cabe (entonces no hay atlas de vista y se pinta con el global, que es lo que
+ * ya sabe hacer `TileManager` sin cap).
+ *
+ * El nivel sube conforme la cámara se acerca (más cerca, menos grados que cubrir) y es lo
+ * que hace que el contacto no se vea borroso: a 1.4 radios con tiles de 256 px salen z7
+ * (91 px/grado) y a 1.65 radios, con el marco mucho más abierto, solo cabe z6. Con tiles de
+ * 512 px el mismo atlas alcanza la misma densidad un nivel más abajo, porque lo que manda
+ * es el ancho del tile, no su número.
+ */
+export function zoomDeCap(
+  centro: { lat: number; lon: number },
+  distancia: number,
+  medioFovVerticalGrados: number,
+  aspecto: number,
+  pxTile: number,
+): number | null {
+  for (let z = ZOOM_CAP_MAXIMO; z >= ZOOM_CAP_MINIMO; z--) {
+    const { cols, rows } = medirCap(
+      z,
+      centro,
+      distancia,
+      medioFovVerticalGrados,
+      aspecto,
+    );
+    if (
+      cols <= LADO_MAX_CAP &&
+      rows <= LADO_MAX_CAP &&
+      cols * pxTile <= PXS_MAX_CAP &&
+      rows * pxTile <= PXS_MAX_CAP
+    )
+      return z;
+  }
+  return null;
+}
 
 /** Rectángulo de vista del nivel `z` para una cámara en `distancia` radios. */
 export function rectDeCap(
@@ -226,23 +309,15 @@ export function rectDeCap(
 ): RectCap {
   const lado = ladoDeZoom(z);
   const techo = Math.min(LADO_MAX_CAP, lado);
-  // El medio fov horizontal sale del vertical y del aspecto: el marco es más ancho que
-  // alto, y el rectángulo de tiles debe reflejarlo en vez de salir cuadrado.
-  const medioFovHorizontalGrados =
-    (Math.atan(Math.tan((medioFovVerticalGrados * Math.PI) / 180) * aspecto) *
-      180) /
-    Math.PI;
-  const semiHorizontal = arcoEnPantalla(distancia, medioFovHorizontalGrados);
-  const semiVertical = arcoEnPantalla(distancia, medioFovVerticalGrados);
-  const cols = Math.min(
-    techo,
-    Math.ceil((2 * semiHorizontal * lado) / 360) + 2 * MARGEN_CAP,
+  const medido = medirCap(
+    z,
+    centro,
+    distancia,
+    medioFovVerticalGrados,
+    aspecto,
   );
-  const filasPorVertical =
-    2 *
-    Math.abs(vMercator(centro.lat + semiVertical) - vMercator(centro.lat)) *
-    lado;
-  const rows = Math.min(techo, Math.ceil(filasPorVertical) + 2 * MARGEN_CAP);
+  const cols = Math.min(techo, medido.cols);
+  const rows = Math.min(techo, medido.rows);
   const centroTile = tileDeLonLat(centro.lon, centro.lat, z);
   return {
     z,
