@@ -86,7 +86,7 @@ export class Engine {
 
     const paso = (): void => {
       // Sin este `update()` ni la inercia del drag ni el giro de fondo avanzan: es lo que
-      // hace `OrbitControls` en cada frame (PROJECT_STRUCTURE §5.1).
+      // hace `TrackballControls` en cada frame (PROJECT_STRUCTURE §5.1).
       this.camaraCtrl?.update();
       renderer.render(this.escena, this.camara);
       this.frame = requestAnimationFrame(paso);

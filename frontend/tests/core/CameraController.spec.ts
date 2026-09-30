@@ -1,7 +1,7 @@
 /**
  * Cámara orbital (ROADMAP 1.1.2).
  *
- * `OrbitControls` vive en el hilo principal y solo necesita DOM, que jsdom tiene, así
+ * `TrackballControls` vive en el hilo principal y solo necesita DOM, que jsdom tiene, así
  * que aquí se prueba de verdad: los límites, el disparo de la auto-rotación por
  * inactividad y el corte de la inercia con `prefers-reduced-motion`. La sensación del
  * gesto no se puede probar en jsdom; eso lo comprueba `tests/fps/fps.spec.ts` en
@@ -12,6 +12,7 @@
  * obligar a que el doc cambie con él, no a que el código se lleve la cifra por delante.
  */
 import { PerspectiveCamera } from "three";
+import { TrackballControls } from "three/examples/jsm/controls/TrackballControls.js";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { CameraController } from "../../src/core/CameraController";
@@ -54,13 +55,15 @@ describe("CameraController — cámara orbital (ROADMAP 1.1.2)", () => {
     expect(controles.maxDistance).toBeGreaterThan(controles.minDistance);
   });
 
-  it("no deja pasar la cámara por encima de los polos", () => {
+  it("gira libremente sin polos: la cámara no tiene restricción polar", () => {
     const { controles } = nuevo();
 
-    // La "voltereta" del criterio es el salto de guiñada al cruzar el polo, donde el
-    // ángulo polar degenera. Dejar el intervalo cerrado en [0, π] lo provoca.
-    expect(controles.minPolarAngle).toBeGreaterThan(0);
-    expect(controles.maxPolarAngle).toBeLessThan(Math.PI);
+    // Pedido del usuario: que el arrastre vertical no se ataque en los polos.
+    // TrackballControls rota por cuaterniones (arcball) y no tiene ángulo polar que
+    // clampar —nada de minPolarAngle/maxPolarAngle—, así que cruza por encima y por
+    // debajo del globo sin volteretas ni bloqueo.
+    expect(controles).toBeInstanceOf(TrackballControls);
+    expect(controles).not.toHaveProperty("minPolarAngle");
   });
 
   it("el zoom máximo se queda fuera de la superficie (1.4, pedido del usuario)", () => {
@@ -72,71 +75,88 @@ describe("CameraController — cámara orbital (ROADMAP 1.1.2)", () => {
   });
 
   it("el clic derecho no arrastra el planeta (sin pan)", () => {
-    // Pedido del usuario: OrbitControls reserva el botón derecho para el pan; a null
-    // no hay acción asignada y el clic derecho no mueve la cámara.
+    // Pedido del usuario: TrackballControls reserva el botón derecho para el pan; a
+    // null no hay acción asignada y el clic derecho no mueve la cámara.
     expect(nuevo().controles.mouseButtons.RIGHT).toBeNull();
   });
 
   it("deja la cámara quieta hasta que el usuario la mueve", () => {
     // VISUAL_DESIGN §10 no pide rotación propia al cargar: con el globo girando solo,
     // un punto de incendio se escapa de debajo del cursor mientras se intenta leer.
-    expect(nuevo().controles.autoRotate).toBe(false);
+    expect(nuevo().giraEnFondo).toBe(false);
   });
 
-  it("auto-rota a los 30 s de inactividad y se detiene al tocar la cámara", () => {
+  it("el giro de fondo orbita la cámara despacio, sin zoom", () => {
+    const camara = new PerspectiveCamera(45, 1, 0.1, 100);
+    camara.position.set(0, 0, 3);
+    const ctrl = new CameraController(camara, document.createElement("canvas"));
+    const antes = camara.position.clone();
+
+    ctrl.giraEnFondo = true;
+    ctrl.update();
+    const despues = camara.position.clone();
+
+    // Orbita: cambia de sitio, pero a la misma distancia del globo.
+    expect(despues.equals(antes)).toBe(false);
+    expect(despues.length()).toBeCloseTo(antes.length(), 5);
+    // "A velocidad mínima" (VISUAL_DESIGN §10): un frame apenas se nota (≈0,05°).
+    expect(antes.angleTo(despues)).toBeLessThan(0.005);
+  });
+
+  it("gira en fondo a los 30 s de inactividad y se detiene al tocar la cámara", () => {
     vi.useFakeTimers();
-    const { controles } = nuevo();
+    const ctrl = nuevo();
 
     vi.advanceTimersByTime(IDLE_MS - 1);
-    expect(controles.autoRotate).toBe(false);
+    expect(ctrl.giraEnFondo).toBe(false);
 
     vi.advanceTimersByTime(1);
-    expect(controles.autoRotate).toBe(true);
-    // "a velocidad mínima" (VISUAL_DESIGN §10): el valor por defecto de OrbitControls
-    // es 2.0, que se nota; esto es un giro de fondo.
-    expect(controles.autoRotateSpeed).toBeLessThan(1);
+    expect(ctrl.giraEnFondo).toBe(true);
 
-    // `start` es el evento que OrbitControls emite al empezar a arrastrar: el usuario
+    // `start` es el evento que TrackballControls emite al empezar a arrastrar: el usuario
     // manda y el giro se corta en el acto, sin esperar a que el temporizador expire.
-    controles.dispatchEvent({ type: "start" });
-    expect(controles.autoRotate).toBe(false);
+    ctrl.controles.dispatchEvent({ type: "start" });
+    expect(ctrl.giraEnFondo).toBe(false);
   });
 
   it("vuelve a contar los 30 s tras cada interacción", () => {
     vi.useFakeTimers();
-    const { controles } = nuevo();
+    const ctrl = nuevo();
 
     vi.advanceTimersByTime(IDLE_MS);
-    expect(controles.autoRotate).toBe(true);
+    expect(ctrl.giraEnFondo).toBe(true);
 
-    // `start` y `end` son los dos eventos que OrbitControls emite al empezar y al soltar.
-    controles.dispatchEvent({ type: "start" });
-    expect(controles.autoRotate).toBe(false);
+    // `start` y `end` son los dos eventos que TrackballControls emite al empezar y al
+    // soltar.
+    ctrl.controles.dispatchEvent({ type: "start" });
+    expect(ctrl.giraEnFondo).toBe(false);
 
     // El contador arranca al soltar, no al agarrar: treinta segundos con el dedo en la
     // pantalla no son treinta segundos de inactividad.
     vi.advanceTimersByTime(IDLE_MS);
-    controles.dispatchEvent({ type: "end" });
+    ctrl.controles.dispatchEvent({ type: "end" });
     vi.advanceTimersByTime(IDLE_MS - 1);
-    expect(controles.autoRotate).toBe(false);
+    expect(ctrl.giraEnFondo).toBe(false);
 
     vi.advanceTimersByTime(1);
-    expect(controles.autoRotate).toBe(true);
+    expect(ctrl.giraEnFondo).toBe(true);
   });
 
-  it("con prefers-reduced-motion quita la inercia y la auto-rotación", () => {
+  it("con prefers-reduced-motion quita la inercia y el giro de fondo", () => {
     vi.useFakeTimers();
     vi.spyOn(window, "matchMedia").mockReturnValue({
       matches: true,
     } as MediaQueryList);
-    const { controles } = nuevo();
+    const ctrl = nuevo();
 
     // VISUAL_DESIGN §10: "se inhibe inercia, auto-rotación y transiciones de panel".
-    expect(controles.enableDamping).toBe(false);
+    // En TrackballControls la inercia se corta con `staticMoving = true`, no con un
+    // `enableDamping` como en OrbitControls.
+    expect(ctrl.controles.staticMoving).toBe(true);
 
     // Ni aunque el usuario no toque nada: con movimiento reducido no hay giro de fondo.
     vi.advanceTimersByTime(IDLE_MS * 10);
-    expect(controles.autoRotate).toBe(false);
+    expect(ctrl.giraEnFondo).toBe(false);
   });
 
   it("con movimiento normal deja la inercia suave del drag", () => {
@@ -145,7 +165,7 @@ describe("CameraController — cámara orbital (ROADMAP 1.1.2)", () => {
     } as MediaQueryList);
 
     // "El globo rota de forma fluida tras el drag con inercia suave" (VISUAL_DESIGN §10).
-    expect(nuevo().controles.enableDamping).toBe(true);
+    expect(nuevo().controles.staticMoving).toBe(false);
   });
 
   it("suelta los eventos del lienzo al destruirse", () => {
