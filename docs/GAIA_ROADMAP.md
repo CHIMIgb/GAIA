@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.114
+> **Versión del Documento:** 1.115
 > **Estado:** Fase 0 **cerrada con dos excepciones** — 64 de 66 micro-pasos validados; los 2 pendientes (`0.7.5`, `0.7.13`) no son cumplibles con los docs actuales y quedan anotados como tal. **Fase 1 en curso**; F2 a F13 sin empezar.
 > **Última actualización:** 2026-09-30
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -490,8 +490,8 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.1.2 — Cámara orbital**
 
-- [x] `OrbitControls` con límites (pendiente y zoom con mínimo/distancia), manejo de resize. _*(validado: `core/CameraController.ts` y `core/Resizer.ts`, los dos ficheros que asigna PROJECT_STRUCTURE §5.1. Criterio verificado en navegador real: orbitar mueve la cámara, el zoom clava en 1.05 y 6 sin entrar en el globo ni perderlo, y el arrastre por encima de la horizontal se detiene en ±0.05 rad de los polos en vez de dar la voltereta. Resize: aspect 1.6 → 0.7 al pasar a 700x1000, lienzo y buffer siguiendo. Auto-rotación de fondo a los 31 s y corte inmediato al tocar, como pide VISUAL_DESIGN §10, e inercia anulada con `prefers-reduced-motion`. Sin errores de consola. **El 60 FPS no se puede verificar aquí:** esta máquina no tiene GPU y Chromium rasteriza por software; con el lienzo ya dimensionado a 1 024 000 px da 36.7 FPS, y con el bug de 1.1.1 a 45 000 px daba 60. La cifra buena la tiene que dar una máquina con GPU, según TESTING §3.*)_
-- **Criterio:** se puede orbitar, hacer zoom dentado límites y resize correcto; sin "volteretas" en polos.
+- [x] `OrbitControls` con límites (pendiente y zoom con mínimo/distancia), manejo de resize. _*(validado: `core/CameraController.ts` y `core/Resizer.ts`, los dos ficheros que asigna PROJECT_STRUCTURE §5.1. Criterio verificado en navegador real: orbitar mueve la cámara, el zoom clava en 1.05 y 6 sin entrar en el globo ni perderlo, y el arrastre por encima de la horizontal se detiene en ±0.05 rad de los polos en vez de dar la voltereta. Resize: aspect 1.6 → 0.7 al pasar a 700x1000, lienzo y buffer siguiendo. Auto-rotación de fondo a los 31 s y corte inmediato al tocar, como pide VISUAL_DESIGN §10, e inercia anulada con `prefers-reduced-motion`. Sin errores de consola. **El 60 FPS no se puede verificar aquí:** esta máquina no tiene GPU y Chromium rasteriza por software; con el lienzo ya dimensionado a 1 024 000 px da 36.7 FPS, y con el bug de 1.1.1 a 45 000 px daba 60. La cifra buena la tiene que dar una máquina con GPU, según TESTING §3.*)_ _Cambio posterior (antes de validar 1.4.1, commit `5f8afdb`): **la cámara pasa de `OrbitControls` a `TrackballControls`** —lo pidió el usuario al atascarse el arrastre vertical en los polos—. Es arcball (rota por cuaterniones): sin ángulo polar que clampar, el cruce de polos es continuo y no hay volteretas ni bloqueo; el horizonte deja de tener un "arriba" fijo. El giro de fondo de §10 se aplica en `CameraController.update()` (yaw orbital al ritmo del antiguo `autoRotate` a 0.5, ≈3°/s) porque `TrackballControls` no trae `autoRotate` desde el refactor de controles de three r150+; la inercia se corta con `staticMoving = true` en vez de `enableDamping`. El zoom mínimo lo fijó el usuario en 1.4 (antes 1.05) y el clic derecho quedó sin pan, también por petición suya. Verificado en navegador: seis arrastres verticales largos cruzan el polo y siguen (el disco cambia en cada uno; con el clamp antiguo se congelaba al segundo), zoom máximo al 1.4 con la superficie debajo y clic derecho sin pan (stats del disco idénticos). Chunk `three` 132.2 → 130.8 KB. Alineado con `GAIA_PROJECT_STRUCTURE.md` §5.1 y `GAIA_PERFORMANCE.md`._
+- **Criterio:** se puede orbitar libremente (sin polos ni bloqueo), hacer zoom dentado límites y resize correcto; sin "volteretas".
 - **Estimado:** ~2.25 h.
 
 **Paso 1.2 — Esfera y atmósfera**
@@ -608,7 +608,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.9.2 — Test de límites de cámara**
 
-- [ ] Test de límites de pendiente/zoom del OrbitControls.
+- [ ] Test de límites de pendiente/zoom del control de cámara (`TrackballControls`).
 - **Criterio:** la cámara respeta los límites al forzar input.
 - **Estimado:** ~1 h.
 

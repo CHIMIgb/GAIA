@@ -1,7 +1,7 @@
 # GAIA — Performance
 
-> **Versión del Documento:** 2.7
-> **Fecha:** 2026-09-29
+> **Versión del Documento:** 2.8
+> **Fecha:** 2026-09-30
 > **Propósito:** presupuestos, umbrales y baselines de rendimiento de GAIA. Referencia, no fuente: los valores canónicos viven en su doc de origen y aquí solo se citan.
 
 ## 1. Regla de este documento
@@ -108,7 +108,9 @@ mide)`, no como un 0 que parecería una mejora. Es la puerta que sí existe
 - **El salto del JS inicial (66.8 → 198.56 KiB) es el motor entrando**, no una regresión:
   es lo que anticipa `PROJECT_STRUCTURE` §7 ("el bundle es hoy un único chunk porque la
   grafo es React + Valtio... todavía no hay `three`") y lo que fija el 43 % de los 450 KiB
-  de presupuesto. `OrbitControls` añade 5,3 KiB más en 1.1.2, dentro del chunk de three.
+  de presupuesto. `OrbitControls` añadió 5,3 KiB más en 1.1.2; hoy el control de cámara es
+  `TrackballControls` (1.1.2 revisado antes de validar 1.4.1), 1,4 KiB más ligero dentro del
+  chunk de three (132.2 → 130.8 KB gzip).
 - **Cuándo se vuelve a medir el baseline:** cuando el cambio que engorda el bundle es
   deliberado —una dependencia o una funcionalidad nueva—, no cuando aparece una delta sin
   explicación. Un gate que se re-declara en cada commit no distingue "ha entrado la cámara

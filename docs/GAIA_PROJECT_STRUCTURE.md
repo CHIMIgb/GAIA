@@ -1,8 +1,8 @@
 # GAIA — Estructura del Proyecto
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.7  
-> **Fecha:** 2026-09-28
+> **Versión del Documento:** 1.8  
+> **Fecha:** 2026-09-30
 
 ---
 
@@ -39,7 +39,7 @@ frontend/
 │   ├── core/                          ← Motor de renderizado Three.js
 │   │   ├── Engine.ts                  ← Clase principal: crea Scene, Camera, Renderer, ejecuta render loop
 │   │   ├── SceneManager.ts            ← Gestión de objetos en la escena (add/remove/dispose)
-│   │   ├── CameraController.ts        ← OrbitControls + zoom limits + damping
+│   │   ├── CameraController.ts        ← TrackballControls + zoom limits + giro de fondo
 │   │   ├── Clock.ts                   ← deltaTime, elapsed, FPS counter
 │   │   ├── Resizer.ts                 ← Listener de resize + actualización de aspect ratio y pixel ratio
 │   │   └── Stats.ts                   ← Integración de stats.js + lectura de renderer.info (draw calls, triangles)
@@ -307,14 +307,14 @@ GAIA/
 
 ### 5.1 `frontend/src/core/` — Motor de Renderizado
 
-| Archivo               | Responsabilidad                                                                                                                                                                                                                        |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Engine.ts`           | Clase principal. Crea `WebGLRenderer`, `Scene`, `PerspectiveCamera`. Ejecuta el `requestAnimationFrame` loop. Llama a `update()` en cada módulo activo y `render()` en cada frame. Expone `renderer.info` para métricas de draw calls. |
-| `SceneManager.ts`     | Registra y desregistra módulos en la escena. Gestiona el ciclo de vida: `init()` → `update(dt)` → `dispose()`. Garantiza que `dispose()` se invoque al remover cualquier objeto.                                                       |
-| `CameraController.ts` | Wrapper de `OrbitControls`. Configura límites de zoom (min/max distance), damping, auto-rotate inicial y restricción de ángulo polar.                                                                                                  |
-| `Clock.ts`            | Encapsula `THREE.Clock`. Expone `deltaTime`, `elapsedTime` y un contador de FPS rolling (media de últimos 60 frames).                                                                                                                  |
-| `Resizer.ts`          | Escucha `window.resize`. Actualiza `camera.aspect`, `camera.updateProjectionMatrix()` y `renderer.setSize()`. Gestiona `devicePixelRatio` con cap a 2.0 para rendimiento.                                                              |
-| `Stats.ts`            | Integración opcional de `stats.js`. Lee `renderer.info.render.calls` (draw calls) y `renderer.info.memory` (geometrías, texturas en VRAM) para el panel de debug.                                                                      |
+| Archivo               | Responsabilidad                                                                                                                                                                                                                                 |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Engine.ts`           | Clase principal. Crea `WebGLRenderer`, `Scene`, `PerspectiveCamera`. Ejecuta el `requestAnimationFrame` loop. Llama a `update()` en cada módulo activo y `render()` en cada frame. Expone `renderer.info` para métricas de draw calls.          |
+| `SceneManager.ts`     | Registra y desregistra módulos en la escena. Gestiona el ciclo de vida: `init()` → `update(dt)` → `dispose()`. Garantiza que `dispose()` se invoque al remover cualquier objeto.                                                                |
+| `CameraController.ts` | Wrapper de `TrackballControls` (arcball: giro libre sin polos ni voltereta). Configura límites de zoom (min/max distance), inercia (`staticMoving`), el giro de fondo por inactividad de VISUAL_DESIGN §10 y desactiva el pan del clic derecho. |
+| `Clock.ts`            | Encapsula `THREE.Clock`. Expone `deltaTime`, `elapsedTime` y un contador de FPS rolling (media de últimos 60 frames).                                                                                                                           |
+| `Resizer.ts`          | Escucha `window.resize`. Actualiza `camera.aspect`, `camera.updateProjectionMatrix()` y `renderer.setSize()`. Gestiona `devicePixelRatio` con cap a 2.0 para rendimiento.                                                                       |
+| `Stats.ts`            | Integración opcional de `stats.js`. Lee `renderer.info.render.calls` (draw calls) y `renderer.info.memory` (geometrías, texturas en VRAM) para el panel de debug.                                                                               |
 
 ---
 

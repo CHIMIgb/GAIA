@@ -72,7 +72,7 @@
         "bundle_chunk_three_kib": 131.39,
         "bundle_css_kib": 0.35
       },
-      "nota": "`OrbitControls` entra al chunk de three: +5,3 KiB (126,11 → 131,39), que es el +2,9 % que veía el gate. Crecimiento previsto por el paso, no una regresión, así que el baseline se vuelve a medir. Los controles son de Three.js y no caben en el chunk de arranque por tamaño, no por gusto: el gate los mide con el límite de three."
+      "nota": "`OrbitControls` entró al chunk de three: +5,3 KiB (126,11 → 131,39), que es el +2,9 % que veía el gate. Crecimiento previsto por el paso, no una regresión, así que el baseline se vuelve a medir. Los controles son de Three.js y no caben en el chunk de arranque por tamaño, no por gusto: el gate los mide con el límite de three. (El control de cámara es hoy `TrackballControls`, desde el cambio de 1.1.2 revisado antes de validar 1.4.1: 130,8 KB gzip en el chunk de three.)"
     },
     {
       "fecha": "2026-09-29",
