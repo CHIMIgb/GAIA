@@ -21,7 +21,10 @@ import {
 } from "three";
 import { describe, expect, it, vi } from "vitest";
 
-import { ESCALA_ELEVACION } from "../../../src/modules/globe/ElevationLOD";
+import {
+  ESCALA_ELEVACION,
+  NIVEL_MAR,
+} from "../../../src/modules/globe/ElevationLOD";
 import { GlobeModule } from "../../../src/modules/globe/GlobeModule";
 
 const montado = () => {
@@ -150,6 +153,8 @@ describe("GlobeModule — elevación por LOD (ROADMAP 1.3.1)", () => {
     expect(u.nivelBajo.value).toBe(baja);
     expect(u.nivelAlto.value).toBe(alta);
     expect(u.escalaElevacion.value).toBe(ESCALA_ELEVACION);
+    // 1.3.2: el mínimo de la elevación se fija desde la constante canónica.
+    expect(u.nivelMar.value).toBe(NIVEL_MAR);
     // Por defecto está apagado (escala 0): sin cargarElevacion no hay relieve.
   });
 

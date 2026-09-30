@@ -24,7 +24,7 @@ import elevacionAlta from "../../assets/textures/elevacion_alta.png";
 import elevacionBaja from "../../assets/textures/elevacion_baja.png";
 
 import { AtmosphereMesh } from "./AtmosphereMesh";
-import { ESCALA_ELEVACION, pesoNivel } from "./ElevationLOD";
+import { ESCALA_ELEVACION, NIVEL_MAR, pesoNivel } from "./ElevationLOD";
 import { TerrainMesh } from "./TerrainMesh";
 
 import type { Scene } from "three";
@@ -84,6 +84,8 @@ export class GlobeModule {
     u.nivelBajo.value = baja;
     u.nivelAlto.value = alta;
     u.escalaElevacion.value = ESCALA_ELEVACION;
+    // 1.3.2: los océanos son planos en la superficie terrestre (el mar lo dibuja F2).
+    u.nivelMar.value = NIVEL_MAR;
     // El frame siguiente lo ajusta `onBeforeRender`; aquí deja el globo liso de arranque.
     u.pesoNivelAlto.value = 0;
     this.malla.onBeforeRender = (_rend, _escena, camara) => {

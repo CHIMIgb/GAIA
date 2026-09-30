@@ -23,8 +23,11 @@
  * heightmaps, decodifica la elevación en metros (fórmula Terrarium de
  * `GAIA_GLOBE_TEXTURES` §2.1) y desplaza el vértice a lo largo de su normal. Lo apaga
  * `escalaElevacion = 0`, que es el default: sin `cargarElevacion()` el globo es la
- * esfera lisa de 1.2.1. La textura satelital de 1.4.1 entra por el uniform
- * `textura`, que hoy no se usa.
+ * esfera lisa de 1.2.1. La normalización de 1.3.2 entra por `nivelMar`: la elevación
+ * se recorta a ese mínimo (0 = nivel del mar) antes de escalar, así los océanos son
+ * planos en la superficie terrestre y la batimetría no hace hoyos; el valor lo fija
+ * la constante `NIVEL_MAR` de `ElevationLOD`, y `desplazamiento()` es el espejo CPU.
+ * La textura satelital de 1.4.1 entra por el uniform `textura`, que hoy no se usa.
  */
 import { Color, Mesh, ShaderMaterial, SphereGeometry, Vector3 } from "three";
 
@@ -69,13 +72,15 @@ uniform sampler2D nivelBajo;
 uniform sampler2D nivelAlto;
 uniform float pesoNivelAlto;
 uniform float escalaElevacion;
+uniform float nivelMar;
 varying vec3 vNormalMundo;
 varying vec3 vPosicionMundo;
 void main() {
   vec2 cuadr = vec2(uv.x, 1.0 - uv.y);
   float bajo = (texture2D(nivelBajo, cuadr).r * 65536.0 + texture2D(nivelBajo, cuadr).g * 256.0 + texture2D(nivelBajo, cuadr).b) - 32768.0;
   float alto = (texture2D(nivelAlto, cuadr).r * 65536.0 + texture2D(nivelAlto, cuadr).g * 256.0 + texture2D(nivelAlto, cuadr).b) - 32768.0;
-  vec3 pos = position * (1.0 + mix(bajo, alto, pesoNivelAlto) * escalaElevacion);
+  float elevacion = max(mix(bajo, alto, pesoNivelAlto), nivelMar);
+  vec3 pos = position * (1.0 + elevacion * escalaElevacion);
   vNormalMundo = normalize(mat3(modelMatrix) * normal);
   vPosicionMundo = (modelMatrix * vec4(pos, 1.0)).xyz;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
@@ -138,11 +143,13 @@ export class AtmosphereMesh {
         ladoNoche: { value: opciones.noche ?? 0.12 },
         textura: { value: null },
         // Elevación de 1.3.1: apagada por defecto (escala 0), la enciende
-        // `GlobeModule.cargarElevacion()`.
+        // `GlobeModule.cargarElevacion()`. `nivelMar` (1.3.2) es el mínimo de la
+        // elevación: aplanar océanos; el valor lo pone la constante `NIVEL_MAR`.
         nivelBajo: { value: null },
         nivelAlto: { value: null },
         pesoNivelAlto: { value: 0 },
         escalaElevacion: { value: 0 },
+        nivelMar: { value: 0 },
       },
       vertexShader,
       fragmentShader,

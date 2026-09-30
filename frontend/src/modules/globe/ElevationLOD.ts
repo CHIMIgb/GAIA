@@ -13,12 +13,16 @@
  *   pesa 1, a partir de 3.6 pesa 0, entre medias se cruza. La cámara orbital de
  *   1.1.2 se mueve entre 1.05 y 6 radios, así que el rango cubre todo su curso.
  * - `ESCALA_ELEVACION` 2,5e-6 radios por metro: el Everest (8848 m) mueve un 2,2 %
- *   del radio, es visible de verdad sin que el globo parezca "peludo". El paso
- *   1.3.2 ajusta ese rango para dejar océanos planos.
+ *   del radio, es visible de verdad sin que el globo parezca "peludo".
+ * - `NIVEL_MAR` (1.3.2) aplana lo que está bajo el nivel del mar: en la superficie
+ *   terrestre los océanos son planos y la batimetría no hace hoyos — el mar lo
+ *   dibuja F2 (módulo de océanos), no la tierra. El threshold entra como uniform
+ *   `nivelMar` al shader, y `desplazamiento()` es su espejo CPU para tests.
  */
 export const DISTANCIA_DETALLE = 2.2;
 export const DISTANCIA_BASE = 3.6;
 export const ESCALA_ELEVACION = 2.5e-6;
+export const NIVEL_MAR = 0;
 
 /** Cuánto pesa el nivel alto de detalle a una distancia dada (0 = solo nivel bajo). */
 export function pesoNivel(distancia: number): number {
@@ -33,7 +37,7 @@ export function pesoNivel(distancia: number): number {
   return 1 - suave;
 }
 
-/** Metros de Terrarium → fracción de radio del globo. */
+/** Metros de Terrarium → fracción de radio, con océanos aplanados (1.3.2). */
 export function desplazamiento(metros: number): number {
-  return metros * ESCALA_ELEVACION;
+  return Math.max(metros, NIVEL_MAR) * ESCALA_ELEVACION;
 }
