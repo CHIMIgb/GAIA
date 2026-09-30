@@ -8,8 +8,13 @@
  * cruce para la distancia pedida (misma tabla que `nivelesConFade`). Los niveles
  * de contacto z3/z4 no se precargan: se piden desde `sincronizar` y, mientras
  * llegan, el globo se queda con el nivel anterior.
+ *
+ * El nivel z6 es un atlas de vista: con cámara en `sincronizar` baja solo el
+ * rectángulo de tiles que la pantalla cubre, lo empaca en un atlas `cols×rows` y
+ * manda su rectángulo mercator en `u_rectA`. Sin cámara no hay cap y todo sigue
+ * con los atlas globales.
  */
-import { CanvasTexture, ShaderMaterial } from "three";
+import { CanvasTexture, ShaderMaterial, Vector3, Vector4 } from "three";
 import { describe, expect, it, vi } from "vitest";
 
 import { TileManager } from "../../../src/modules/globe/TileManager";
@@ -22,6 +27,7 @@ const material = () =>
     uniforms: {
       u_atlasA: { value: null },
       u_atlasB: { value: null },
+      u_rectA: { value: new Vector4(0, 0, 1, 1) },
       u_cruce: { value: 0 },
       u_tieneAtlas: { value: 0 },
     },
@@ -34,9 +40,9 @@ const nuevoManager = (fallaEn?: (url: string) => boolean) => {
       if (fallaEn?.(url)) throw new Error(`tile caído ${url}`);
       return imagenFalsa;
     }),
-    componerAtlas: vi.fn((_tiles, lado) => {
+    componerAtlas: vi.fn((_tiles, cols, rows) => {
       // Sin jsdom ni canvas: la textura solo se sube a GPU en el renderer real.
-      return { width: 256 * lado, height: 256 * lado } as HTMLCanvasElement;
+      return { width: 256 * cols, height: 256 * rows } as HTMLCanvasElement;
     }),
   });
   return {
@@ -241,5 +247,111 @@ describe("TileManager — cruce de niveles por distancia (ROADMAP 1.4.1)", () =>
     const u = gestionado["material"].uniforms;
     expect(CanvasTexture.prototype.dispose).toHaveBeenCalledTimes(3);
     expect(u.u_tieneAtlas.value).toBe(0);
+  });
+});
+
+describe("TileManager — atlas de vista de z6 (cap)", () => {
+  /** Cámara sobre el ecuador en lon 0: el rectángulo de vista es el de `rectDeCap(6, {lat:0,lon:0}, 1.4, 22.5, 16/9)`. */
+  const camara = (x: number, y: number, z: number, fov = 45) => ({
+    position: new Vector3(x, y, z),
+    fov,
+    aspect: 16 / 9,
+  });
+  const deZ6 = (deps: Record<string, ReturnType<typeof vi.fn>>) =>
+    urls(deps).filter((u) => u.includes("/6/"));
+
+  it("en el zoom de contacto baja solo el rectángulo que ve la pantalla", async () => {
+    const { gestionado, deps } = nuevoManager();
+    await gestionado.precargar();
+    gestionado.sincronizar(1.4, camara(0, 0, 1.4));
+
+    // 12×8 = 96 tiles de z6, no los 4096 de un atlas global de ese nivel (y menos que
+    // los 256 del z4 global que ya se descarga al bajar de 1.65).
+    await vi.waitFor(() => expect(deZ6(deps)).toHaveLength(96));
+    expect(deZ6(deps)).toContain("https://tile.test/6/28/26"); // orden {z}/{y}/{x}
+
+    const u = gestionado["material"].uniforms;
+    await vi.waitFor(() =>
+      expect(u.u_atlasA.value).toBeInstanceOf(CanvasTexture),
+    );
+    // El cap se sube asíncrono, así que el uniform del rectángulo lo fija el frame
+    // siguiente (en la app, los 60 por segundo de `onBeforeRender`).
+    gestionado.sincronizar(1.4, camara(0, 0, 1.4));
+    expect(u.u_tieneAtlas.value).toBe(1);
+    // El rectángulo mercator del cap viaja en u_rectA (x=u0, z=ancho), que es lo que
+    // le dice al shader qué parte del atlas es real.
+    expect(u.u_rectA.value.x).toBeCloseTo(26 / 64, 6);
+    expect(u.u_rectA.value.z).toBeCloseTo(12 / 64, 6);
+    // Y el atlas global se queda en B, que es lo que se ve fuera del rectángulo.
+    expect(u.u_atlasB.value).toBeInstanceOf(CanvasTexture);
+    expect(u.u_atlasA.value).not.toBe(u.u_atlasB.value);
+    expect(u.u_cruce.value).toBe(0); // zona pura de z6
+
+    // El atlas sale apaisado y anclado a su origen en el nivel.
+    const [, cols, rows, x0, y0] = deps.componerAtlas.mock.calls.at(-1)!;
+    expect([cols, rows, x0, y0]).toEqual([12, 8, 26, 28]);
+    gestionado.dispose();
+  });
+
+  it("sin cámara no hay cap: sigue con los atlas globales", async () => {
+    const { gestionado, deps } = nuevoManager();
+    await gestionado.precargar();
+    gestionado.sincronizar(1.4);
+
+    expect(deZ6(deps)).toHaveLength(0);
+    const u = gestionado["material"].uniforms;
+    await vi.waitFor(() =>
+      expect(u.u_atlasA.value).toBeInstanceOf(CanvasTexture),
+    );
+    expect(u.u_rectA.value.toArray()).toEqual([0, 0, 1, 1]); // mundo entero
+    gestionado.dispose();
+  });
+
+  it("un tile caído tumba el cap y el globo se queda con el atlas global", async () => {
+    // Solo z6 (el segmento 4 de la URL), que en x6 también casaría con z3/z4.
+    const { gestionado, deps } = nuevoManager((u) => u.split("/")[3] === "6");
+    await gestionado.precargar();
+    // Primero el atlas global de z4 (banda [1.65, 1.9)), que es la reserva.
+    gestionado.sincronizar(1.7);
+    await vi.waitFor(() =>
+      expect(
+        urls(deps).filter((t) => t.startsWith("https://tile.test/4/")),
+      ).toHaveLength(256),
+    );
+    const u = gestionado["material"].uniforms;
+    await vi.waitFor(() =>
+      expect(u.u_atlasA.value).toBeInstanceOf(CanvasTexture),
+    );
+
+    // Ahora el cap, que se cae entero (todo o nada).
+    gestionado.sincronizar(1.4, camara(0, 0, 1.4));
+    await vi.waitFor(() => expect(deZ6(deps).length).toBeGreaterThan(0));
+    gestionado.sincronizar(1.4, camara(0, 0, 1.4));
+
+    expect(u.u_atlasA.value).toBe(u.u_atlasB.value); // los dos slots con z4
+    expect(u.u_rectA.value.toArray()).toEqual([0, 0, 1, 1]); // mundo entero
+    expect(u.u_cruce.value).toBe(0);
+    expect(u.u_tieneAtlas.value).toBe(1); // ni hueco negro ni color base
+    gestionado.dispose();
+  });
+
+  it("no recompone el mismo rectángulo y solo lo rehace si la cámara sale de él", async () => {
+    const { gestionado, deps } = nuevoManager();
+    await gestionado.precargar();
+    gestionado.sincronizar(1.4, camara(0, 0, 1.4));
+    await vi.waitFor(() => expect(deZ6(deps)).toHaveLength(96));
+
+    // `sincronizar` corre por frame: con la cámara quieta no se vuelve a pedir nada.
+    gestionado.sincronizar(1.4, camara(0, 0, 1.4));
+    gestionado.sincronizar(1.4, camara(0, 0, 1.4));
+    expect(deZ6(deps)).toHaveLength(96);
+
+    // La cámara se va 30° al este: otro rectángulo, otras peticiones.
+    gestionado.sincronizar(
+      1.4,
+      camara(1.4 * Math.sin(0.5236), 0, 1.4 * Math.cos(0.5236)),
+    );
+    await vi.waitFor(() => expect(deZ6(deps)).toHaveLength(192));
+    gestionado.dispose();
   });
 });

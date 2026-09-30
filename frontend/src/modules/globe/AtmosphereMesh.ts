@@ -33,11 +33,13 @@
  * La textura satelital de 1.4.1 entra por los uniforms `u_atlasA`/`u_atlasB`
  * (`sampler2D` de dos niveles), `u_cruce` (peso del fade entre ellos, tabla de
  * `nivelesConFade`) y `u_tieneAtlas` (0 = no hay textura, se pinta `colorTierra`).
+ * `u_rectA` (u0, v0, ancho, alto) es el rectángulo mercator que cubre A: el mundo entero
+ * para los atlas globales z0-z4, y solo la región visible para el atlas de vista de z6.
  * El fragment convierte la `uv` equirectangular a mercator con la MISMA fórmula que
  * `tilesSatelite.ts` (patrón `decodeTerrarium`/GLSL: el atlas se compone en esa
  * proyección, así que muestrear en la propia coordenada mercator evita costuras).
  */
-import { Color, Mesh, ShaderMaterial, SphereGeometry } from "three";
+import { Color, Mesh, ShaderMaterial, SphereGeometry, Vector4 } from "three";
 
 /** Radio del geoide. Compartido con `TerrainMesh`: es el contrato de 1.2.1. */
 const RADIO = 1;
@@ -98,6 +100,7 @@ uniform float intensidadBorde;
 uniform float exponenteBorde;
 uniform sampler2D u_atlasA;
 uniform sampler2D u_atlasB;
+uniform vec4 u_rectA;
 uniform float u_cruce;
 uniform float u_tieneAtlas;
 varying vec3 vNormalMundo;
@@ -108,9 +111,17 @@ void main() {
   if (u_tieneAtlas > 0.5) {
     vec2 merc = vec2(fract(vUv.x + 0.25), 0.5 - log(tan(3.141592653589793 / 4.0 + radians(vUv.y * 180.0 - 90.0) / 2.0)) / (2.0 * 3.141592653589793));
     merc = clamp(merc, 0.0, 0.99999);
-    vec3 a = texture2D(u_atlasA, merc).rgb;
     vec3 b = texture2D(u_atlasB, merc).rgb;
-    superficie = mix(a, b, u_cruce);
+    // El atlas A puede ser un atlas de vista (z6), que solo cubre el rectángulo
+    // mercator u_rectA (u0, v0, ancho, alto): dentro se muestra con su uv local y
+    // fuera se cae al atlas global B, que sí cubre el mundo entero. Con un atlas
+    // global, u_rectA es (0,0,1,1) y esto es el muestreo directo de antes.
+    vec2 local = (merc - u_rectA.xy) / u_rectA.zw;
+    if (local.x >= 0.0 && local.x <= 1.0 && local.y >= 0.0 && local.y <= 1.0) {
+      superficie = mix(texture2D(u_atlasA, local).rgb, b, u_cruce);
+    } else {
+      superficie = b;
+    }
   }
   vec3 n = normalize(vNormalMundo);
   vec3 color = superficie;
@@ -153,6 +164,10 @@ export class AtmosphereMesh {
         // `u_tieneAtlas` (0 = color base) y los atlas que vincula `TileManager`.
         u_atlasA: { value: null },
         u_atlasB: { value: null },
+        // Rectángulo mercator (u0, v0, ancho, alto) que cubre el atlas A. Por defecto el
+        // mundo entero, que es el caso de los atlas globales z0-z4; `TileManager` lo
+        // estrecha al rectángulo de vista cuando A es el atlas de vista de z6.
+        u_rectA: { value: new Vector4(0, 0, 1, 1) },
         u_cruce: { value: 0 },
         u_tieneAtlas: { value: 0 },
         // Elevación de 1.3.1: apagada por defecto (escala 0), la enciende

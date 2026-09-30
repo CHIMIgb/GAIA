@@ -19,42 +19,64 @@
  * - Los tres niveles base (z0-z2, 21 tiles, ~250 KB) se precargan en segundo plano al
  *   arrancar: el cambio de distancia entre ellos es instantáneo. z3 y z4 son 64 y 256
  *   tiles, así que NO se precargan: se piden en `sincronizar` cuando la cámara se acerca
- *   (z3 al pasar de 1.9 radios, z4 al pasar de 1.65). El primero que entre casi agota el
- *   detalle y el segundo es el que arregla el defecto reportado —con solo z2 el atlas se
- *   magnifica ~5× en el zoom máximo y el planeta se ve borroso—, así que el techo de
- *   1.4.1 sube a z4: son 4096², ~67 MB de textura que solo se pagan al acercarse del
- *   todo. Si el nivel no llega, `sincronizar` deja al globo en el anterior.
+ *   (z3 al pasar de 1.9 radios, z4 al pasar de 1.65).
+ * - **El nivel z6 es un atlas de vista**, no del mundo entero: un atlas global en z6 serían
+ *   4096 tiles y una textura 16384² (1 GB), y con solo z4 el atlas se magnifica ~6× en el
+ *   zoom máximo (cámara a 1.4 radios), que es el defecto que reportó el usuario de "todo
+ *   sigue borroso". De z6 solo se baja el rectángulo de tiles que la pantalla está viendo
+ *   (`rectDeCap`: 96 tiles en un atlas 3072×2048 en el zoom de contacto) y su rectángulo
+ *   mercator viaja al uniform `u_rectA`, con el que el shader sabe qué parte del atlas es
+ *   real. Fuera de él (o mientras el cap viejo se recompone) se pinta el atlas global más
+ *   detallado que haya, que sí cubre el mundo entero. Así z6 es 4× más nítido que z4 con
+ *   menos tiles que z4.
  * - El cruce entre niveles va con un fade (uniform `u_cruce`), que es el "sin saltos de
- *   textura evidentes" del criterio.
+ *   textura evidentes" del criterio: el cap de z6 se funde con z4 en su banda [1.5, 1.65).
  *
  * El `cargarImagen`/`componerAtlas`/`url` van inyectados para poder probar el
  * cableado sin red ni canvas 2D; los defaults son la implementación de producción.
  */
-import { CanvasTexture, LinearFilter, ShaderMaterial, Texture } from "three";
+import {
+  CanvasTexture,
+  LinearFilter,
+  type ShaderMaterial,
+  type Texture,
+  type Vector3,
+} from "three";
 
 import {
-  ZOOM_MAXIMO,
+  centroVista,
+  esCap,
+  estaEnEscalera,
   ladoDeZoom,
   nivelesConFade,
+  rectDeCap,
+  type RectCap,
   urlTileEsri,
+  uvDeCap,
 } from "../../utils/tilesSatelite";
 
 /** Clave de caché de un tile; `z/y/x`, el mismo orden que la plantilla de la URL. */
 const claveTile = (z: number, x: number, y: number) => `${z}/${y}/${x}`;
 
+/** Clave del rectángulo de vista, para no recomponerlo mientras siga cubriendo la vista. */
+const claveCap = (r: RectCap) => `${r.z}/${r.x0}/${r.y0}/${r.cols}x${r.rows}`;
+
 /** Píxeles por lado de un tile Esri (GAIA_GLOBE_TEXTURES §1.1: 256×256). */
 const PX_TILE = 256;
 
+/** Rectángulo mercator del mundo entero: el caso de los atlas globales z0-z4. */
+const MUNDO_ENTERO = { u0: 0, v0: 0, ancho: 1, alto: 1 };
+
 /**
  * Tiles en vuelo a la vez. De uno en uno, los 256 de z4 serían 256 viajes de ida y
- * vuelta; el proveedor aguenta bien este paralelismo y el tiempo cae a una fracción.
+ * vuelta; el proveedor aguanta bien este paralelismo y el tiempo cae a una fracción.
  */
 const TILES_POR_LOTE = 12;
 
 /**
  * Intentos por tile antes de dar el nivel por perdido. El "todo o nada" de 1.4.1 es
  * correcto con 16 tiles, pero con 256 de z4 es casi seguro que uno se encuentre con
- * una respuesta del CDN sin cabeceras CORS (lo seencontró la verificación en
+ * una respuesta del CDN sin cabeceras CORS (lo encontró la verificación en
  * navegador: un 429/5xx aislado tumba el nivel entero). Con un reintento por tile se
  * recupera casi siempre, y además solo se vuelve a pedir el que faltaba: los otros 255
  * ya están en caché y no se redescargan.
@@ -81,27 +103,44 @@ const esperar = (ms: number): Promise<void> =>
  */
 const NIVEL_SIN_CACHE = 3;
 
+/**
+ * Lo mínimo de la cámara que necesita el atlas de vista. `PerspectiveCamera` lo cumple
+ * tal cual; el `fov` es el vertical (45° en `Engine`) y el `aspecto`, el del viewport.
+ */
+export interface VistaCamara {
+  position: Vector3;
+  fov?: number;
+  aspect?: number;
+}
+
 const cargarImagenProd = async (url: string): Promise<ImageBitmap> => {
   const respuesta = await fetch(url);
   if (!respuesta.ok) throw new Error(`tile Esri HTTP ${respuesta.status}`);
   return createImageBitmap(await respuesta.blob());
 };
 
+/**
+ * Empaqueta los tiles en un atlas `cols×rows`. `x0`/`y0` son la columna y la fila del
+ * nivel donde arranca el atlas: 0 en los atlas globales (que cubren el mundo entero) y
+ * el origen del rectángulo de vista en el cap, que solo cubre una región.
+ */
 const componerAtlasProd = (
   tiles: Map<string, ImageBitmap>,
-  lado: number,
+  cols: number,
+  rows: number,
+  x0 = 0,
+  y0 = 0,
 ): HTMLCanvasElement => {
-  const px = lado * PX_TILE;
   const canvas = document.createElement("canvas");
-  canvas.width = px;
-  canvas.height = px;
+  canvas.width = cols * PX_TILE;
+  canvas.height = rows * PX_TILE;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("sin contexto 2D para el atlas");
   // La fila 0 del esquema XYZ es el norte y el canvas dibuja fila 0 arriba:
   // el atlas queda en la misma orientación que muestrea el shader.
   for (const [clave, imagen] of tiles) {
     const [, y, x] = clave.split("/").map(Number);
-    ctx.drawImage(imagen, x * PX_TILE, y * PX_TILE);
+    ctx.drawImage(imagen, (x - x0) * PX_TILE, (y - y0) * PX_TILE);
   }
   return canvas;
 };
@@ -110,7 +149,10 @@ export interface TileManagerDeps {
   cargarImagen: (url: string) => Promise<ImageBitmap>;
   componerAtlas: (
     tiles: Map<string, ImageBitmap>,
-    lado: number,
+    cols: number,
+    rows: number,
+    x0?: number,
+    y0?: number,
   ) => HTMLCanvasElement;
   url: (z: number, y: number, x: number) => string;
 }
@@ -123,6 +165,10 @@ export class TileManager {
   private readonly enCurso = new Set<number>();
   /** Momento (ms) en que cada nivel se perdió, para no reintentarlo cada frame. */
   private readonly perdidos = new Map<number, number>();
+  /** Atlas de vista vigente (z6): su rectángulo y su textura. Uno solo, el último. */
+  private cap: { rect: RectCap; textura: Texture } | null = null;
+  private capEnCurso: string | null = null;
+  private capPerdido: { clave: string; momento: number } | null = null;
   private suelto = false;
 
   constructor(material: ShaderMaterial, deps?: Partial<TileManagerDeps>) {
@@ -143,15 +189,15 @@ export class TileManager {
   }
 
   /**
-   * Garantiza el atlas del nivel: lo descarga todo, lo empaca y lo sube.
-   * Devuelve `null` si el nivel no quedó listo (fuera de la escalera, aún en curso o
-   * falló algún tile).
+   * Garantiza el atlas del mundo entero de un nivel global: lo descarga todo, lo empaca y
+   * lo sube. Devuelve `null` si el nivel no quedó listo (fuera de la escalera, aún en
+   * curso o falló algún tile).
    */
   private async asegurarNivel(zoom: number): Promise<Texture | null> {
     const listo = this.atlases.get(zoom);
     if (listo) return listo;
     if (this.enCurso.has(zoom) || this.suelto) return null;
-    if (zoom > ZOOM_MAXIMO || zoom < 0) return null;
+    if (zoom < 0 || !estaEnEscalera(zoom) || esCap(zoom)) return null;
     const perdido = this.perdidos.get(zoom);
     if (perdido !== undefined && Date.now() - perdido < ESPERA_REINTENTO_MS)
       return null;
@@ -159,46 +205,14 @@ export class TileManager {
     try {
       const lado = ladoDeZoom(zoom);
       const tiles = new Map<string, ImageBitmap>();
-      const faltantes: string[] = [];
+      const claves: string[] = [];
       for (let y = 0; y < lado; y++) {
-        for (let x = 0; x < lado; x++) {
-          const clave = claveTile(zoom, x, y);
-          const enCache = this.tiles.get(clave);
-          if (enCache) tiles.set(clave, enCache);
-          else faltantes.push(clave);
-        }
+        for (let x = 0; x < lado; x++) claves.push(claveTile(zoom, x, y));
       }
-      for (let i = 0; i < faltantes.length; i += TILES_POR_LOTE) {
-        const lote = await Promise.all(
-          faltantes
-            .slice(i, i + TILES_POR_LOTE)
-            .map(
-              async (clave) =>
-                [clave, await this.descargar(clave, zoom)] as const,
-            ),
-        );
-        if (this.suelto) return null;
-        for (const [clave, imagen] of lote) {
-          if (this.suelto) imagen.close();
-          else {
-            this.tiles.set(clave, imagen); // caché: no se vuelve a pedir
-            tiles.set(clave, imagen); // y el mapa que se compone ahora
-          }
-        }
-      }
-      const atlas = new CanvasTexture(this.deps.componerAtlas(tiles, lado));
-      atlas.flipY = false; // fila 0 del esquema XYZ = norte = fila 0 del canvas
-      atlas.minFilter = LinearFilter;
-      atlas.magFilter = LinearFilter;
-      atlas.generateMipmaps = false;
-      atlas.needsUpdate = true;
+      await this.llenarTiles(zoom, claves, tiles);
+      const atlas = this.crearTextura(tiles, lado, lado);
       this.atlases.set(zoom, atlas);
-      if (zoom >= NIVEL_SIN_CACHE) {
-        for (const [clave, imagen] of tiles) {
-          this.tiles.delete(clave);
-          imagen.close();
-        }
-      }
+      if (zoom >= NIVEL_SIN_CACHE) this.liberarTiles(tiles);
       return atlas;
     } catch (error) {
       // Todo o nada: un tile caído tumba el nivel entero (sin agujeros en el
@@ -209,6 +223,125 @@ export class TileManager {
       return null;
     } finally {
       this.enCurso.delete(zoom);
+    }
+  }
+
+  /**
+   * Garantiza el atlas de vista del nivel cap (z6): descarga los tiles del rectángulo que
+   * la cámara tiene debajo, los empaca en un atlas `cols×rows` y lo sube. Solo se
+   * recompone cuando la cámara sale del rectángulo anterior, y el atlas viejo sigue en
+   * pantalla hasta que el nuevo está completo (mientras se recompone, o si un tile cae,
+   * el shader pinta fuera del rectángulo con el atlas global).
+   *
+   * ponytail: sin antirrebote de recompición —al barrer el zoom la cámara cambia de
+   * rectángulo unas pocas veces y cada una encola su descarga completa (96–160 tiles,
+   * en serie y reutilizando lo que ya está en `this.tiles`). Es techo conocido: si
+   * aparecieralag al barrer el zoom, añadir un temporizador de reposo (~200 ms) que
+   * solo recomponga cuando el rectángulo lleva ese tiempo estable.
+   */
+  private async asegurarCap(rect: RectCap): Promise<Texture | null> {
+    const clave = claveCap(rect);
+    if (this.cap && claveCap(this.cap.rect) === clave) return this.cap.textura;
+    if (this.capEnCurso === clave || this.suelto) return null;
+    if (
+      this.capPerdido?.clave === clave &&
+      Date.now() - this.capPerdido.momento < ESPERA_REINTENTO_MS
+    )
+      return null;
+    this.capEnCurso = clave;
+    try {
+      const lado = ladoDeZoom(rect.z);
+      const tiles = new Map<string, ImageBitmap>();
+      const claves: string[] = [];
+      for (let fila = 0; fila < rect.rows; fila++) {
+        for (let col = 0; col < rect.cols; col++) {
+          // La columna da la vuelta al mundo (el rectángulo puede cruzar el
+          // antimeridiano); la fila ya viene recortada a la altura del nivel.
+          const x = (rect.x0 + col) % lado;
+          claves.push(claveTile(rect.z, x, rect.y0 + fila));
+        }
+      }
+      await this.llenarTiles(rect.z, claves, tiles);
+      const textura = this.crearTextura(
+        tiles,
+        rect.cols,
+        rect.rows,
+        rect.x0,
+        rect.y0,
+      );
+      const anterior = this.cap;
+      this.cap = { rect, textura };
+      if (anterior) anterior.textura.dispose();
+      this.capPerdido = null;
+      this.liberarTiles(tiles);
+      return textura;
+    } catch (error) {
+      this.capPerdido = { clave, momento: Date.now() };
+      console.warn(`GAIA: atlas de vista ${clave} no disponible`, error);
+      return null;
+    } finally {
+      if (this.capEnCurso === clave) this.capEnCurso = null;
+    }
+  }
+
+  /**
+   * Rellena `tiles` con lo que haya en caché y descarga lo que falte, por lotes de
+   * `TILES_POR_LOTE`. Reutilizable por el nivel global y el de vista.
+   */
+  private async llenarTiles(
+    z: number,
+    claves: string[],
+    tiles: Map<string, ImageBitmap>,
+  ): Promise<void> {
+    const faltantes: string[] = [];
+    for (const clave of claves) {
+      const enCache = this.tiles.get(clave);
+      if (enCache) tiles.set(clave, enCache);
+      else faltantes.push(clave);
+    }
+    for (let i = 0; i < faltantes.length; i += TILES_POR_LOTE) {
+      const lote = await Promise.all(
+        faltantes
+          .slice(i, i + TILES_POR_LOTE)
+          .map(
+            async (clave) => [clave, await this.descargar(clave, z)] as const,
+          ),
+      );
+      if (this.suelto) return;
+      for (const [clave, imagen] of lote) {
+        if (this.suelto) imagen.close();
+        else {
+          this.tiles.set(clave, imagen); // caché: no se vuelve a pedir
+          tiles.set(clave, imagen); // y el mapa que se compone ahora
+        }
+      }
+    }
+  }
+
+  /** Sube el atlas compuesto con el filtro que evita costuras entre tiles. */
+  private crearTextura(
+    tiles: Map<string, ImageBitmap>,
+    cols: number,
+    rows: number,
+    x0 = 0,
+    y0 = 0,
+  ): Texture {
+    const atlas = new CanvasTexture(
+      this.deps.componerAtlas(tiles, cols, rows, x0, y0),
+    );
+    atlas.flipY = false; // fila 0 del esquema XYZ = norte = fila 0 del canvas
+    atlas.minFilter = LinearFilter;
+    atlas.magFilter = LinearFilter;
+    atlas.generateMipmaps = false;
+    atlas.needsUpdate = true;
+    return atlas;
+  }
+
+  /** Los `ImageBitmap` ya están dentro del atlas: se sueltan para no gastar memoria. */
+  private liberarTiles(tiles: Map<string, ImageBitmap>): void {
+    for (const [clave, imagen] of tiles) {
+      this.tiles.delete(clave);
+      imagen.close();
     }
   }
 
@@ -227,10 +360,10 @@ export class TileManager {
   }
 
   /**
-   * El atlas más detallado que exista, bajando desde `nivel`. Cubre el hueco de la
-   * carga perezosa: al entrar en la banda de z3, hasta que sus 64 tiles llegan, el
-   * globo sigue pintado con z2 en vez de quedarse a color base. `null` solo si no hay
-   * ningún atlas (recién arrancado, o todos los tiles caídos).
+   * El atlas más detallado que exista hasta `nivel`, bajando por la escalera. Cubre el
+   * hueco de la carga perezosa: al entrar en la banda de z3, hasta que sus 64 tiles
+   * lleguen, el globo sigue pintado con z2 en vez de quedarse a color base. `null` solo
+   * si no hay ningún atlas (recién arrancado, o todos los tiles caídos).
    */
   private atlasDe(nivel: number): Texture | null {
     for (let z = nivel; z >= 0; z--) {
@@ -240,19 +373,49 @@ export class TileManager {
     return null;
   }
 
+  /** Rectángulo de vista del nivel cap para la cámara en `distancia` radios. */
+  private rectDeVista(
+    z: number,
+    distancia: number,
+    camara: VistaCamara,
+  ): RectCap {
+    const p = camara.position;
+    return rectDeCap(
+      z,
+      centroVista(p.x, p.y, p.z),
+      distancia,
+      (camara.fov ?? 45) / 2,
+      camara.aspect ?? 1,
+    );
+  }
+
   /**
    * Deja los uniforms del cruce de niveles según la distancia de cámara.
    * Se llama por frame desde el `onBeforeRender` del geoide.
+   *
+   * La cámara es opcional: sin ella el atlas de vista no se puede colocar (hace falta
+   * saber qué punto de la superficie tiene la cámara debajo) y se sigue pintando con
+   * los atlas globales, que es lo que cubren las pruebas de la unidad.
    */
-  sincronizar(distancia: number): void {
+  sincronizar(distancia: number, camara?: VistaCamara): void {
     const { zoomA, zoomB, peso } = nivelesConFade(distancia);
     // Los niveles de contacto no se precargan: se piden aquí, la primera vez que la
     // cámara entra en su banda. `enCurso` evita relanzar la descarga cada frame.
-    if (!this.atlases.has(zoomA)) void this.asegurarNivel(zoomA);
-    if (zoomB !== zoomA && !this.atlases.has(zoomB))
+    if (!esCap(zoomA) && !this.atlases.has(zoomA))
+      void this.asegurarNivel(zoomA);
+    if (zoomB !== zoomA && !esCap(zoomB) && !this.atlases.has(zoomB))
       void this.asegurarNivel(zoomB);
-    const a = this.atlasDe(zoomA);
-    const b = this.atlases.get(zoomB) ?? null;
+    // El atlas de vista se pide al entrar en la banda de z6 y se recompone solo si la
+    // cámara se ha salido del rectángulo que cubre.
+    if (esCap(zoomA) && camara) {
+      void this.asegurarCap(this.rectDeVista(zoomA, distancia, camara));
+    }
+    const cap = this.cap?.textura ?? null;
+    const a = (esCap(zoomA) ? cap : null) ?? this.atlasDe(zoomA);
+    // El slot B es un atlas global: es lo que se ve fuera del rectángulo del cap y lo
+    // que se mezcla en la banda de cruce. Si no hay ninguno, se repite A antes que
+    // dejar un hueco negro.
+    const b = this.atlasDe(zoomB) ?? a;
     const u = this.material.uniforms;
     u.u_atlasA.value = a;
     u.u_atlasB.value = b;
@@ -261,12 +424,19 @@ export class TileManager {
     // no cambia nada).
     u.u_cruce.value = a && b && a !== b ? peso : 0;
     u.u_tieneAtlas.value = a ? 1 : 0;
+    const rect =
+      esCap(zoomA) && a === cap && this.cap
+        ? uvDeCap(this.cap.rect)
+        : MUNDO_ENTERO;
+    u.u_rectA.value.set(rect.u0, rect.v0, rect.ancho, rect.alto);
   }
 
   dispose(): void {
     this.suelto = true;
     for (const atlas of this.atlases.values()) atlas.dispose();
     this.atlases.clear();
+    this.cap?.textura.dispose();
+    this.cap = null;
     for (const imagen of this.tiles.values()) imagen.close();
     this.tiles.clear();
     this.perdidos.clear();

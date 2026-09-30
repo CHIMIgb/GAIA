@@ -91,4 +91,16 @@ describe("AtmosphereMesh — atmósfera iluminación uniforme (1.2.2 ajustado)",
 
     expect(tirado).toBe(true);
   });
+
+  it("el atlas de vista se mapea con su rectángulo mercator (u_rectA)", () => {
+    const { material } = new AtmosphereMesh();
+    const fs = material.fragmentShader;
+    expect(fs).toContain("uniform vec4 u_rectA;");
+    // UV local del rectángulo de vista: (merc − origen) / tamaño.
+    expect(fs).toContain("(merc - u_rectA.xy) / u_rectA.zw");
+    // Fuera del rectángulo manda el atlas global (B), dentro se mezcla A↔B.
+    expect(fs).toContain("superficie = b;");
+    // Sin atlas de vista, u_rectA es el mundo entero: el mapeo no cambia nada.
+    expect(material.uniforms.u_rectA.value.toArray()).toEqual([0, 0, 1, 1]);
+  });
 });

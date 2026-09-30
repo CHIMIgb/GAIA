@@ -114,7 +114,9 @@ export class GlobeModule {
   /**
    * Reparto por distancia en el único hook por frame de la malla: el peso entre los dos
    * heightmaps (1.3.1) y el cruce de niveles del atlas (1.4.1) salen de la misma
-   * distancia de cámara, así que comparten `onBeforeRender`. Si aún no hay textura
+   * distancia de cámara, así que comparten `onBeforeRender`. La cámara se pasa entera
+   * porque el atlas de vista de z6 necesita saber qué punto de la superficie tiene
+   * debajo para saber qué tiles bajar. Si aún no hay textura
    * (`iniciarTextura()` sin llamar o sin niveles listos), `sincronizar` es un no-op.
    */
   private programarLODPorDistancia(): void {
@@ -123,7 +125,7 @@ export class GlobeModule {
       const distancia = camara.position.length();
       this.atmosfera.material.uniforms.pesoNivelAlto.value =
         pesoNivel(distancia);
-      this.tiles?.sincronizar(distancia);
+      this.tiles?.sincronizar(distancia, camara);
     };
   }
 
