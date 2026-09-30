@@ -71,7 +71,7 @@ describe("tilesSatelite — niveles por distancia (ROADMAP 1.4.1)", () => {
     expect(zoomParaDistancia(1.94)).toBe(2); // dentro de la banda de z3, ya en z2 puro
   });
 
-  it("en el zoom de contacto (cámara a 1.4) entra el nivel de atlas de vista (z6)", () => {
+  it("en el contacto (cámara a 1.4 radios) entra el nivel de atlas de vista (z6)", () => {
     expect(zoomParaDistancia(1.2)).toBe(6);
     expect(zoomParaDistancia(0.5)).toBe(6);
     // El techo lo pone el nivel de la escalera, no un 4 fijo: z6 es el más detallado.

@@ -22,7 +22,7 @@
  *   (z3 al pasar de 1.9 radios, z4 al pasar de 1.65).
  * - **El nivel z6 es un atlas de vista**, no del mundo entero: un atlas global en z6 serían
  *   4096 tiles y una textura 16384² (1 GB), y con solo z4 el atlas se magnifica ~6× en el
- *   zoom máximo (cámara a 1.4 radios), que es el defecto que reportó el usuario de "todo
+ *   contacto (cámara a 1.4 radios), que es el defecto que reportó el usuario de "todo
  *   sigue borroso". De z6 solo se baja el rectángulo de tiles que la pantalla está viendo
  *   (`rectDeCap`: 96 tiles en un atlas 3072×2048 en el zoom de contacto) y su rectángulo
  *   mercator viaja al uniform `u_rectA`, con el que el shader sabe qué parte del atlas es

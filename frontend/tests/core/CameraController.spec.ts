@@ -15,7 +15,10 @@ import { PerspectiveCamera } from "three";
 import { TrackballControls } from "three/examples/jsm/controls/TrackballControls.js";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { CameraController } from "../../src/core/CameraController";
+import {
+  CameraController,
+  DISTANCIA_POR_DEFECTO,
+} from "../../src/core/CameraController";
 
 /** VISUAL_DESIGN §10: "auto-rotación solo en idle > 30 s". */
 const IDLE_MS = 30_000;
@@ -66,12 +69,30 @@ describe("CameraController — cámara orbital (ROADMAP 1.1.2)", () => {
     expect(controles).not.toHaveProperty("minPolarAngle");
   });
 
-  it("el zoom máximo se queda fuera de la superficie (1.4, pedido del usuario)", () => {
+  it("el zoom máximo se queda fuera de la superficie (1.25, pedido del usuario)", () => {
     const { controles } = nuevo();
 
     // Pedido del usuario antes de validar 1.4.1: a 1.05 la cámara se asomaba a la cara
-    // lejana del globo (el antípoda) en vez de a la superficie. 1.4 la deja holgada.
-    expect(controles.minDistance).toBe(1.4);
+    // lejana del globo (el antípoda) en vez de a la superficie, porque el plano cercano
+    // (0.1) recortaba el punto justo bajo la cámara. A 1.25 quedan 0.25 de margen.
+    expect(controles.minDistance).toBe(1.25);
+  });
+
+  it("el arrastre se afina al hacer zoom y se acelera de lejos", () => {
+    const camara = new PerspectiveCamera(45, 1, 0.1, 100);
+    const ctrl = new CameraController(camara, document.createElement("canvas"));
+    const a = (d: number) => {
+      camara.position.set(0, 0, d);
+      ctrl.update();
+      return ctrl.controles.rotateSpeed;
+    };
+
+    // El factor va con la altura sobre la superficie (d − 1) contra el zoom por defecto
+    // (2 radios): en la vista de arranque se gira como siempre, a 1.25 el giro es un 25 %
+    // y a 6 radios el tope lo deja en el doble. Ni se para del todo ni se desborda.
+    expect(a(DISTANCIA_POR_DEFECTO)).toBeCloseTo(1.8, 6);
+    expect(a(1.25)).toBeCloseTo(1.8 * 0.25, 6);
+    expect(a(6)).toBeCloseTo(1.8 * 2, 6);
   });
 
   it("el clic derecho no arrastra el planeta (sin pan)", () => {

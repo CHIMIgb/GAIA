@@ -24,7 +24,7 @@ import {
 import { GlobeModule } from "../modules/globe/GlobeModule";
 import { registerDrawCallsSource } from "../utils/frameStats";
 
-import { CameraController } from "./CameraController";
+import { CameraController, DISTANCIA_POR_DEFECTO } from "./CameraController";
 import { Resizer } from "./Resizer";
 
 /** `--gaia-bg` de GAIA_VISUAL_DESIGN §5.1. */
@@ -48,9 +48,10 @@ export class Engine {
     this.escena.background = new Color(FONDO_ESPACIO);
 
     this.camara = new PerspectiveCamera(45, 1, 0.1, 100);
-    // A 4 radios se ve el planeta entero con hueco de sobra: el campo de visión es de 45°
-    // y desde ahí el globo ocupa unos dos tercios del alto.
-    this.camara.position.set(0, 0, 4);
+    // Zoom por defecto pedido por el usuario: 2 radios (`DISTANCIA_POR_DEFECTO`), con el
+    // campo de visión de 45° el globo entra a media pantalla. Es el nivel z2 de la escalera
+    // de textura, uno de los tres que `precargar()` deja listos en segundo plano.
+    this.camara.position.set(0, 0, DISTANCIA_POR_DEFECTO);
 
     this.escena.add(new AmbientLight(0xffffff, 0.8));
     // Desde 1.2.2 la `DirectionalLight` sobra: el `ShaderMaterial` de la atmósfera no lee

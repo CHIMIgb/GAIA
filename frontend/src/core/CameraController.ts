@@ -17,11 +17,10 @@
  *
  * Lo que sí fija `VISUAL_DESIGN` §10, y por eso no son valores por defecto: la inercia
  * suave del drag, la auto-rotación solo tras 30 s de inactividad y a velocidad mínima, y
- * todo eso apagado con `prefers-reduced-motion`. El mínimo de distancia lo pidió el
- * usuario (antes de validar 1.4.1): a 1.4 la cámara nunca se traga la superficie ni se
- * asoma a la cara lejana; el arrastre con el clic derecho (pan) se desactiva por la misma
- * petición. El resto de límites no los fija ningún doc y salen del radio del globo, que es
- * 1 (ROADMAP 1.2.1).
+ * todo eso apagado con `prefers-reduced-motion`. El mínimo de distancia y el zoom por
+ * defecto los pidió el usuario, igual que desactivar el arrastre con el clic derecho (pan):
+ * la cámara nunca se traga la superficie ni se asoma a la cara lejana. El resto de límites
+ * no los fija ningún doc y salen del radio del globo, que es 1 (ROADMAP 1.2.1).
  */
 import { Vector3 } from "three";
 import { TrackballControls } from "three/examples/jsm/controls/TrackballControls.js";
@@ -29,13 +28,27 @@ import { TrackballControls } from "three/examples/jsm/controls/TrackballControls
 import type { Camera } from "three";
 
 /**
- * Radio del globo (1) más un margen pedido por el usuario: a 1.05 la cámara rozaba la
- * superficie y, con el plano cercano a 0.1, se asomaba a la cara lejana (el antípoda,
- * en noche) en vez de a la superficie; a 1.4 el zoom máximo se queda en el terreno.
+ * Radio del globo (ROADMAP 1.2.1): es el suelo de la cámara y el cero de la sensibilidad.
  */
-const DISTANCIA_MINIMA = 1.4;
+const RADIO_GLOBO = 1;
+
+/**
+ * Límite de acercamiento, pedido del usuario: con la superficie a `d − 1` y el plano
+ * cercano a 0.1, bajar de 1.1 recortaba el punto del globo justo bajo la cámara y se
+ * asomaba la cara lejana (el antípoda) en vez de a la superficie —de ahí que 1.05 quedara
+ * descartado—. A 1.25 quedan 0.25 de margen y además es donde el atlas de vista alcanza
+ * z8: más cerca se cubre menos pantalla y el rectángulo del cap entra en el techo de
+ * 6144 px (con tiles de 256 px).
+ */
+const DISTANCIA_MINIMA = 1.25;
 /** Lejos del todo, con sitio para el halo atmosférico de 1.2.2. */
 const DISTANCIA_MAXIMA = 6;
+/**
+ * Zoom por defecto (el `position.set` de `Engine`): dos radios. El campo de visión es de
+ * 45°, así que el globo entra a media pantalla, y es el nivel z2 de la escalera de textura
+ * —uno de los tres que `precargar()` deja listos en segundo plano—.
+ */
+export const DISTANCIA_POR_DEFECTO = 2;
 /**
  * Velocidad del arrastre, sobre el 1.0 por defecto de `TrackballControls`: el usuario
  * pidió "más sensibilidad" al girar. Es la única rueda de ajuste de este archivo —si
@@ -121,6 +134,7 @@ export class CameraController {
 
   /** Se llama en cada frame: sin esto ni la inercia ni el giro de fondo avanzan. */
   update(): void {
+    this.controles.rotateSpeed = this.velocidadDeArrastre();
     this.controles.update();
 
     if (this.giraEnFondo) {
@@ -145,6 +159,22 @@ export class CameraController {
       this.giraEnFondo = true;
     }, IDLE_AUTO_ROTATE_MS);
   };
+
+  /**
+   * La sensibilidad del arrastre baja conforme se hace zoom (pedido del usuario): el factor
+   * va con la altura sobre la superficie —`d − 1` radios— medido contra el zoom por defecto
+   * (2 radios). Así la vista de arranque gira igual de rápido que siempre, en el contacto el
+   * giro sale fino para colocar el punto que sea, y de lejos se puede girar el planeta
+   * entero de un tirón. Los topes son los que mantienen eso honesto: a 6 radios el factor
+   * sería 5 (velocidad absurda) y con un suelo más cercano que el actual el arrastre se
+   * pararía del todo en vez de afinarse.
+   */
+  private velocidadDeArrastre(): number {
+    const { object, target } = this.controles;
+    const altura = object.position.distanceTo(target) - RADIO_GLOBO;
+    const factor = altura / (DISTANCIA_POR_DEFECTO - RADIO_GLOBO);
+    return VELOCIDAD_ROTACION * Math.min(Math.max(factor, 0.2), 2);
+  }
 
   /** Sin esto, la vista desmontada por React seguiría respondiendo al ratón. */
   dispose(): void {

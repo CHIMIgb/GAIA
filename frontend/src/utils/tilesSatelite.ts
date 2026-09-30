@@ -36,7 +36,7 @@ interface EntradaNivel {
  * `DISTANCIA_DETALLE` 2.2), para que relieve y textura cambien a la vez y no haya dos
  * palancas independientes. z3 y z4 son de contacto con atlas del mundo entero (64 y 256
  * tiles). z6 es el primero de **atlas de vista** (`cap`): con un atlas por nivel, z4 ya
- * es el techo —256 tiles en un atlas 4096²— y en el zoom máximo (cámara a 1.4 radios) la
+ * es el techo —256 tiles en un atlas 4096²— y en el contacto (cámara a 1.4 radios) la
  * pantalla magnifica ese atlas ~3× y el planeta se ve borroso. Un atlas del mundo entero
  * en z6 serían 4096 tiles y una textura 16384² (1 GB): inviable. De z6 en adelante solo
  * se descargan los tiles del rectángulo que la cámara está viendo (`rectDeCap`), que a
@@ -218,7 +218,7 @@ const MARGEN_CAP = 2;
  * concreto lo elige `zoomDeCap` según lo que quepa, y puede bajar a z5 (tiles de 512 px
  * necesitan un nivel menos para la misma densidad) pero nunca sube de z8.
  *
- * ponytail: el techo es el atlas, no el zoom. z7 en el zoom máximo (cámara a 1.4 radios,
+ * ponytail: el techo es el atlas, no el zoom. z7 en el contacto (cámara a 1.4 radios,
  * fov 45, 16:9) necesita un rectángulo de 19×12 tiles de 256 px, o sea 4864×3072 px
  * (~57 MB de VRAM) para los 91 px/grado que pide un DPR 2. z8 pediría 6144×4864 (~114 MB)
  * y se acerca al `maxTextureSize` de las GPUs, así que no entra. Subir `PXS_MAX_CAP` es el
