@@ -44,11 +44,12 @@ const DISTANCIA_MINIMA = 1.25;
 /** Lejos del todo, con sitio para el halo atmosférico de 1.2.2. */
 const DISTANCIA_MAXIMA = 6;
 /**
- * Zoom por defecto (el `position.set` de `Engine`): 1.8 radios, pedido del usuario. El campo
- * de visión es de 45°, así que el globo entra a media pantalla; en la escalera de textura
- * cae en la banda de z3.
+ * Zoom por defecto (el `position.set` de `Engine`): 1.4 radios, pedido del usuario. El campo
+ * de visión es de 45°, así que el globo entra a media pantalla, y cae en la banda del atlas
+ * de vista: a esta distancia el nivel que sale del presupuesto es z7, que es lo que hace
+ * que el planeta se vea nítido de salida y no solo al acercar la cámara.
  */
-export const DISTANCIA_POR_DEFECTO = 1.8;
+export const DISTANCIA_POR_DEFECTO = 1.4;
 /**
  * Velocidad del arrastre, sobre el 1.0 por defecto de `TrackballControls`: el usuario
  * pidió "más sensibilidad" al girar. Es la única rueda de ajuste de este archivo —si
@@ -163,7 +164,8 @@ export class CameraController {
   /**
    * La sensibilidad del arrastre baja conforme se hace zoom (pedido del usuario): el factor
    * va con la altura sobre la superficie —`d − 1` radios— medido contra el zoom por defecto
-   * (2 radios). Así la vista de arranque gira igual de rápido que siempre, en el contacto el
+   * (el zoom por defecto). Así la vista de arranque gira igual de rápido que siempre, al
+   * acercar la cámara el
    * giro sale fino para colocar el punto que sea, y de lejos se puede girar el planeta
    * entero de un tirón. Los topes son los que mantienen eso honesto: a 6 radios el factor
    * sería 5 (velocidad absurda) y con un suelo más cercano que el actual el arrastre se

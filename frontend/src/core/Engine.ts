@@ -48,8 +48,9 @@ export class Engine {
     this.escena.background = new Color(FONDO_ESPACIO);
 
     this.camara = new PerspectiveCamera(45, 1, 0.1, 100);
-    // Zoom por defecto pedido por el usuario: 1.8 radios (`DISTANCIA_POR_DEFECTO`), con el
-    // campo de visión de 45° el globo entra a media pantalla.
+    // Zoom por defecto pedido por el usuario: 1.4 radios (`DISTANCIA_POR_DEFECTO`), con el
+    // campo de visión de 45° el globo entra a media pantalla. Cae en la banda del atlas de
+    // vista, que a esta distancia da z7: nítido de salida, sin tener que acercar la cámara.
     this.camara.position.set(0, 0, DISTANCIA_POR_DEFECTO);
 
     this.escena.add(new AmbientLight(0xffffff, 0.8));
