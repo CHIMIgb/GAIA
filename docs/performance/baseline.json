@@ -2,8 +2,8 @@
   "schema": 1,
   "_nota": "Baseline de rendimiento (ROADMAP 0.7.12). `metricas` es contra lo que compara `npm run perf:baseline`; `historial` es de dónde sale cada cifra, una entrada por sesión de medición. Las claves llevan la unidad para que el comparador no necesite una tabla de unidades. Un dato sin medir va en `historial` y no en `metricas`: gatear una cifra que nunca se midió es una puerta que se salta sola.",
   "metricas": {
-    "bundle_js_inicial_kib": 198.56,
-    "bundle_chunk_arranque_kib": 67.17,
+    "bundle_js_inicial_kib": 198.99,
+    "bundle_chunk_arranque_kib": 67.88,
     "bundle_chunk_three_kib": 131.39,
     "bundle_css_kib": 0.35,
     "fcp_ms": 352
@@ -73,6 +73,19 @@
         "bundle_css_kib": 0.35
       },
       "nota": "`OrbitControls` entra al chunk de three: +5,3 KiB (126,11 → 131,39), que es el +2,9 % que veía el gate. Crecimiento previsto por el paso, no una regresión, así que el baseline se vuelve a medir. Los controles son de Three.js y no caben en el chunk de arranque por tamaño, no por gusto: el gate los mide con el límite de three."
+    },
+    {
+      "fecha": "2026-09-29",
+      "origen": "medido con `npm run perf:check` al montar la atmósfera día/noche (1.2.2)",
+      "commit": null,
+      "node": "v22.19.0",
+      "vite": "8.3.1",
+      "cifras": {
+        "bundle_js_inicial_kib": 198.99,
+        "bundle_chunk_arranque_kib": 67.88,
+        "bundle_css_kib": 0.35
+      },
+      "nota": "Entra el `ShaderMaterial` de la atmósfera (1.2.2): +1,3 % en el chunk de arranque, que es el +1,1 % que veía el gate (198,56 → 198,99 total). Crecimiento previsto por el paso, no una regresión, así que el baseline se vuelve a medir. Antes de aceptarlo se quitaron los comentarios de dentro de los dos shaders: el minificador no toca el interior de un template literal, así que cada línea de comentario GLSL iba al bundle. Medido: 68,46 → 67,88 KiB, −0,58 KiB. Los 0,7 KiB que quedan son el shader y el módulo, que es código que hace falta. El chunk de three no cambia (131,39) porque el shader es propio, no una clase de Three."
     }
   ]
 }

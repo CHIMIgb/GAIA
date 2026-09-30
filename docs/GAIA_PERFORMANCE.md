@@ -1,6 +1,6 @@
 # GAIA — Performance
 
-> **Versión del Documento:** 1.6
+> **Versión del Documento:** 2.7
 > **Fecha:** 2026-09-29
 > **Propósito:** presupuestos, umbrales y baselines de rendimiento de GAIA. Referencia, no fuente: los valores canónicos viven en su doc de origen y aquí solo se citan.
 
@@ -83,13 +83,21 @@ mide)`, no como un 0 que parecería una mejora. Es la puerta que sí existe
 
 | Medida                   | Baseline   | Presupuesto                     | Margen                    |
 | ------------------------ | ---------- | ------------------------------- | ------------------------- |
-| JS inicial (gzip)        | 198.56 KiB | ≤ 450 KB (`DEPLOYMENT` §5.1)    | 251 KiB libre, 44 % usado |
-| Chunk de arranque (gzip) | 67.17 KiB  | ≤ 180 KB (`DEPLOYMENT` §5.1)    | 113 KiB libre, 37 % usado |
+| JS inicial (gzip)        | 198.99 KiB | ≤ 450 KB (`DEPLOYMENT` §5.1)    | 251 KiB libre, 44 % usado |
+| Chunk de arranque (gzip) | 67.88 KiB  | ≤ 180 KB (`DEPLOYMENT` §5.1)    | 112 KiB libre, 38 % usado |
 | Chunk Three.js           | 131.39 KiB | ≤ 250 KB (`DEPLOYMENT` §5.1)    | 119 KiB libre, 53 % usado |
 | CSS (gzip)               | 0.35 KiB   | sin límite fijado en ningún doc | —                         |
 
-- **Medido el** 2026-09-29 sobre `b94baca`, con Node v22.19.0 y Vite 8.3.1:
-  `npm run build && npm run perf:check`.
+- **Medido el** 2026-09-29 con Node v22.19.0 y Vite 8.3.1:
+  `npm run build && npm run perf:check`. Las cifras actuales son las de 1.2.2 (la
+  atmósfera); las de 1.1.2 quedaban en `198.56` / `67.17` y están en el historial de
+  `docs/performance/baseline.json`.
+- **El +1,1 % del arranque es el shader de 1.2.2, no una regresión.** Antes de aceptarlo
+  se quitaron los comentarios que estaban **dentro** de los dos shaders: el minificador no
+  toca el interior de un template literal, así que cada línea de comentario GLSL se
+  contaba como peso. Medido: `68.46 → 67.88 KiB`, −0,58 KiB. Los ~0,7 KiB que quedan son
+  el shader y el módulo, que es código que hace falta. El chunk de Three.js no se mueve
+  (131.39 KiB) porque el shader es propio, no una clase de Three.
 - **Dos chunks desde 1.1.1.** Antes de entrar Three.js el build era un solo chunk
   (`index-*.js`, 21 módulos) y React iba dentro del arranque; con el motor montado,
   `codeSplitting` en `frontend/vite.config.ts` saca Three.js a `three-*.js` y deja el

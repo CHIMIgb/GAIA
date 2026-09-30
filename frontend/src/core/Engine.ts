@@ -16,7 +16,6 @@
 import {
   AmbientLight,
   Color,
-  DirectionalLight,
   PerspectiveCamera,
   Scene,
   WebGLRenderer,
@@ -54,12 +53,16 @@ export class Engine {
     this.camara.position.set(0, 0, 4);
 
     this.escena.add(new AmbientLight(0xffffff, 0.8));
-    // La direccional no está en el criterio de 1.1.1, pero sin ella la esfera sale plana:
-    // la luz ambiente reparte la misma intensidad a toda la superficie y no se ve que hay
-    // volumen. La dirección y el terminador de verdad llegan en 1.2.2.
-    const clave = new DirectionalLight(0xffffff, 0.6);
-    clave.position.set(2, 3, 4);
-    this.escena.add(clave);
+    // Desde 1.2.2 la `DirectionalLight` sobra: el terminator y el lado noche los calcula
+    // el `ShaderMaterial` de la atmósfera con su uniform `solDireccion`, en la misma
+    // dirección `(2, 3, 4)`. Con las dos cosas el terminador se dibujaba dos veces —una
+    // por la luz y otra por el shader— y no se podía quitar la direccional sin ver antes
+    // a qué parte del globo oscurecía.
+    //
+    // La ambiental se queda: el `ShaderMaterial` no lee luces, así que sin ella lo que
+    // use el material estandar de Three se quedaría negro. El globo ya no depende de
+    // ninguna luz.
+    this.escena.add(new AmbientLight(0xffffff, 0.8));
 
     this.globo = new GlobeModule(this.escena);
   }

@@ -223,8 +223,8 @@ columna dice de qué doc sale cada una.
 
 | Medida                   | Baseline   | Objetivo          | Fuente del baseline | Fuente del objetivo           |
 | ------------------------ | ---------- | ----------------- | ------------------- | ----------------------------- |
-| JS inicial (gzip)        | 198.56 KiB | ≤ 450 KB          | `PERFORMANCE` §4.1  | `TESTING` §3.4                |
-| Chunk de arranque (gzip) | 67.17 KiB  | ≤ 180 KB          | `PERFORMANCE` §4.1  | `TESTING` §3.4                |
+| JS inicial (gzip)        | 198.99 KiB | ≤ 450 KB          | `PERFORMANCE` §4.1  | `TESTING` §3.4                |
+| Chunk de arranque (gzip) | 67.88 KiB  | ≤ 180 KB          | `PERFORMANCE` §4.1  | `TESTING` §3.4                |
 | Chunk de Three.js (gzip) | 131.39 KiB | sin límite fijado | `PERFORMANCE` §4.1  | —                             |
 | CSS (gzip)               | 0.35 KiB   | sin límite fijado | `PERFORMANCE` §4.1  | —                             |
 | FCP (mediana de 3)       | 352 ms     | < 2 s             | `PERFORMANCE` §4.2  | `SPEC` RNF-06, `TESTING` §3.1 |
@@ -235,10 +235,11 @@ columna dice de qué doc sale cada una.
 - **Baseline no es presupuesto.** El presupuesto dice si se pasa; el baseline dice
   si se ha empeorado. Cuando se mida otra vez se anota la diferencia contra esta
   cifra, no contra el objetivo.
-- **FPS, p95 y draw calls sin baseline todavía:** la escena existe desde 1.2.1 y da
-  **1 draw call**, pero FPS y p95 no se pueden medir aquí: esta máquina no tiene GPU y
-  Chromium rasteriza por software. Sus objetivos ya están fijados en `PERFORMANCE` §2
-  y la cifra buena la tiene que dar una máquina con GPU (`TESTING` §3).
+- **FPS y p95 sin baseline todavía.** **Draw calls ya los hay: 1**, la atmósfera de 1.2.2
+  entra como shader de la misma malla y no suma ninguno. FPS y p95 no se pueden medir
+  aquí: esta máquina no tiene GPU y Chromium rasteriza por software. Sus objetivos ya
+  están fijados en `PERFORMANCE` §2 y la cifra buena la tiene que dar una máquina con GPU
+  (`TESTING` §3).
 
 ## Fuentes de Datos
 

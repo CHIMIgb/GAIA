@@ -81,6 +81,25 @@ describe("GlobeModule — geoide base (ROADMAP 1.2.1)", () => {
     expect(malla).toBeInstanceOf(Mesh);
   });
 
+  it("el material es el shader de atmósfera desde 1.2.2", () => {
+    const { globo, malla } = montado();
+
+    // 1.2.2 sustituye al `MeshStandardMaterial` de 1.2.1. Si esto vuelve a
+    // `MeshStandardMaterial`, el terminador y el lado noche los dibuja la luz de Three y
+    // el shader deja de hacer nada.
+    expect(malla.material).toBe(globo.atmosfera.material);
+    expect(malla.material.type).toBe("ShaderMaterial");
+  });
+
+  it("sigue siendo una sola malla tras meter la atmósfera", () => {
+    const { escena } = montado();
+
+    // La atmósfera de 1.2.2 se eligió como shader único precisamente para no sumar
+    // draw calls: una cáscara exterior aparte serían 2. El techo de 8 aguanta las dos,
+    // así que esto es una decisión, no un límite.
+    expect(escena.children).toHaveLength(1);
+  });
+
   it("al destruirse se va de la escena y suelta la GPU", () => {
     const { escena, globo, malla } = montado();
     const geometria = malla.geometry;
