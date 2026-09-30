@@ -41,6 +41,9 @@ function Lienzo() {
     if (!canvas) return;
     const motor = new Engine(canvas);
     motor.start();
+    // Relieve por LOD (ROADMAP 1.3.1). Los heightmaps van empaquetados en el build,
+    // así que esto no toca red: solo decodifica los PNG locales.
+    void motor.globo.iniciarElevacion();
     return () => motor.dispose();
   }, []);
 

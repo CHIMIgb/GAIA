@@ -10,9 +10,18 @@
  * La primera mitad (que no se vean bandas) es visual y la comprueba `tests/fps/fps.spec.ts`
  * en navegador.
  */
-import { Mesh, Scene, SphereGeometry, Vector3 } from "three";
+import {
+  DataTexture,
+  Mesh,
+  PerspectiveCamera,
+  Scene,
+  ShaderMaterial,
+  SphereGeometry,
+  Vector3,
+} from "three";
 import { describe, expect, it, vi } from "vitest";
 
+import { ESCALA_ELEVACION } from "../../../src/modules/globe/ElevationLOD";
 import { GlobeModule } from "../../../src/modules/globe/GlobeModule";
 
 const montado = () => {
@@ -112,6 +121,89 @@ describe("GlobeModule — geoide base (ROADMAP 1.2.1)", () => {
     globo.dispose();
 
     expect(escena.children).not.toContain(malla);
+    for (const espia of espias) expect(espia).toHaveBeenCalled();
+  });
+});
+
+/**
+ * Elevación por LOD (ROADMAP 1.3.1).
+ *
+ * `cargarElevacion()` no toca red ni decodifica PNG: recibe las texturas ya hechas y
+ * solo enchufa uniforms + reparte el peso por frame. Los tests montan texturas de 1x1
+ * y comprueban el cableado; que el relieve *se vea* lo comprueba el navegador.
+ */
+describe("GlobeModule — elevación por LOD (ROADMAP 1.3.1)", () => {
+  const textura = () => {
+    const t = new DataTexture(new Uint8Array([0, 128, 0, 255]), 1, 1);
+    t.needsUpdate = true;
+    return t;
+  };
+
+  it("cargarElevacion enciende el displacement con la escala canónica", () => {
+    const { globo } = montado();
+    const baja = textura();
+    const alta = textura();
+
+    globo.cargarElevacion(baja, alta);
+
+    const u = (globo.atmosfera.material as ShaderMaterial).uniforms;
+    expect(u.nivelBajo.value).toBe(baja);
+    expect(u.nivelAlto.value).toBe(alta);
+    expect(u.escalaElevacion.value).toBe(ESCALA_ELEVACION);
+    // Por defecto está apagado (escala 0): sin cargarElevacion no hay relieve.
+  });
+
+  it("reparte el peso por frame según la distancia de la cámara", () => {
+    const { globo } = montado();
+    globo.cargarElevacion(textura(), textura());
+
+    const u = (globo.atmosfera.material as ShaderMaterial).uniforms;
+    const camara = new PerspectiveCamera(45, 1, 0.1, 100);
+
+    camara.position.set(0, 0, 5);
+    globo.malla.onBeforeRender?.(null as never, new Scene(), camara);
+    expect(u.pesoNivelAlto.value).toBe(0);
+
+    camara.position.set(0, 0, 1.2);
+    globo.malla.onBeforeRender?.(null as never, new Scene(), camara);
+    expect(u.pesoNivelAlto.value).toBe(1);
+
+    camara.position.set(0, 0, 2.9);
+    globo.malla.onBeforeRender?.(null as never, new Scene(), camara);
+    expect(u.pesoNivelAlto.value).toBeGreaterThan(0);
+    expect(u.pesoNivelAlto.value).toBeLessThan(1);
+  });
+
+  it("sin cargarElevacion no hay desplazamiento", () => {
+    const { globo } = montado();
+    const u = (globo.atmosfera.material as ShaderMaterial).uniforms;
+    expect(u.escalaElevacion.value).toBe(0);
+    expect(u.pesoNivelAlto.value).toBe(0);
+
+    // El `onBeforeRender` base de Three es un no-op: invocarlo no toca el peso.
+    const camara = new PerspectiveCamera(45, 1, 0.1, 100);
+    camara.position.set(0, 0, 1.2);
+    globo.malla.onBeforeRender?.(null as never, new Scene(), camara);
+    expect(u.pesoNivelAlto.value).toBe(0);
+  });
+
+  it("al destruirse suelta las texturas y deja de tocar los uniforms", () => {
+    const { globo } = montado();
+    const baja = textura();
+    const alta = textura();
+    globo.cargarElevacion(baja, alta);
+
+    const espias = [vi.spyOn(baja, "dispose"), vi.spyOn(alta, "dispose")];
+    const u = (globo.atmosfera.material as ShaderMaterial).uniforms;
+    const camara = new PerspectiveCamera(45, 1, 0.1, 100);
+
+    camara.position.set(0, 0, 1.2);
+    globo.malla.onBeforeRender?.(null as never, new Scene(), camara);
+    expect(u.pesoNivelAlto.value).toBe(1);
+
+    globo.dispose();
+    globo.malla.onBeforeRender?.(null as never, new Scene(), camara);
+    expect(u.pesoNivelAlto.value).toBe(1);
     for (const espia of espias) expect(espia).toHaveBeenCalled();
   });
 });

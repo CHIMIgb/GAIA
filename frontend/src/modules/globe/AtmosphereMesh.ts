@@ -18,9 +18,13 @@
  *   girando + cámara orbital"): `solDireccion` no se toca por frame, y por eso al girar
  *   la cámara se ve pasar el terminador por el globo.
  *
- * El desplazamiento por altura de 1.3.1 y la textura de 1.4.1 entran por el uniform
- * `textura`, que hoy no se usa: está declarado para que el shader no cambie de forma
- * cuando la textura llegue.
+ * El desplazamiento por altura de 1.3.1 entra por los uniforms `nivelBajo`,
+ * `nivelAlto`, `pesoNivelAlto` y `escalaElevacion`: el vertex shader lee los dos
+ * heightmaps, decodifica la elevación en metros (fórmula Terrarium de
+ * `GAIA_GLOBE_TEXTURES` §2.1) y desplaza el vértice a lo largo de su normal. Lo apaga
+ * `escalaElevacion = 0`, que es el default: sin `cargarElevacion()` el globo es la
+ * esfera lisa de 1.2.1. La textura satelital de 1.4.1 entra por el uniform
+ * `textura`, que hoy no se usa.
  */
 import { Color, Mesh, ShaderMaterial, SphereGeometry, Vector3 } from "three";
 
@@ -41,9 +45,11 @@ const COLOR_ACENTO = new Color(0x3fd8c9);
  * peso en el chunk de arranque. La prueba fue el gate de baseline, que saltó +1,9 % con
  * ellos dentro (+0,5 % sin ellos). La explicación va aquí, que esto sí se elimina.
  *
- * `vertexShader`: pasa la normal analítica y la posición a espacio de mundo. En mundo,
- * porque la dirección del sol es un uniform de mundo y normal y sol tienen que compararse
- * en el mismo espacio o el terminador sale torcido al mover la malla.
+ * `vertexShader`: decodifica la elevación de los dos levels desde el atributo `uv`
+ * (la geometría es una esfera equirectangular) y desplaza el vértice a lo largo de su
+ * normal: en una esfera desplazada radialmente la normal no cambia, así que la
+ * analítica sigue valiendo. El `smoothstep` de los niveles lo elige `ElevationLOD` por
+ * distancia de cámara, y el cruce continuo es lo que evita las caídas bruscas de LOD.
  *
  * `fragmentShader`, en orden:
  *   1. `luz` = smoothstep(-0.12, 0.28, dot(n, solDireccion)). El producto punto va de 1
@@ -59,12 +65,20 @@ const COLOR_ACENTO = new Color(0x3fd8c9);
  *      `textura` queda declarado para que 1.4.1 no cambie la forma del shader.
  */
 const vertexShader = /* glsl */ `
+uniform sampler2D nivelBajo;
+uniform sampler2D nivelAlto;
+uniform float pesoNivelAlto;
+uniform float escalaElevacion;
 varying vec3 vNormalMundo;
 varying vec3 vPosicionMundo;
 void main() {
+  vec2 cuadr = vec2(uv.x, 1.0 - uv.y);
+  float bajo = (texture2D(nivelBajo, cuadr).r * 65536.0 + texture2D(nivelBajo, cuadr).g * 256.0 + texture2D(nivelBajo, cuadr).b) - 32768.0;
+  float alto = (texture2D(nivelAlto, cuadr).r * 65536.0 + texture2D(nivelAlto, cuadr).g * 256.0 + texture2D(nivelAlto, cuadr).b) - 32768.0;
+  vec3 pos = position * (1.0 + mix(bajo, alto, pesoNivelAlto) * escalaElevacion);
   vNormalMundo = normalize(mat3(modelMatrix) * normal);
-  vPosicionMundo = (modelMatrix * vec4(position, 1.0)).xyz;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  vPosicionMundo = (modelMatrix * vec4(pos, 1.0)).xyz;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
 }
 `;
 
@@ -123,6 +137,12 @@ export class AtmosphereMesh {
         exponenteBorde: { value: opciones.exponente ?? 3.0 },
         ladoNoche: { value: opciones.noche ?? 0.12 },
         textura: { value: null },
+        // Elevación de 1.3.1: apagada por defecto (escala 0), la enciende
+        // `GlobeModule.cargarElevacion()`.
+        nivelBajo: { value: null },
+        nivelAlto: { value: null },
+        pesoNivelAlto: { value: 0 },
+        escalaElevacion: { value: 0 },
       },
       vertexShader,
       fragmentShader,
