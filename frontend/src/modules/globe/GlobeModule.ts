@@ -7,8 +7,10 @@
  * Desde 1.2.2 el material de la esfera es el `ShaderMaterial` de `AtmosphereMesh` —una
  * decisión de ese paso: un único material que hace lado noche, terminador y brillo de
  * borde en un draw call, en vez de una cáscara exterior aparte—, así que sustituye al
- * `MeshStandardMaterial` que 1.2.1 ponía aquí. `TerrainMesh` conserva la geometría y los
- * colores base, que es lo que el shader usa como `uniform`.
+ * `MeshStandardMaterial` que 1.2.1 ponía aquí. (Por pedido del usuario antes de validar
+ * 1.4.1, el lado noche y el terminador ya no se dibujan: la luz es uniforme y solo queda
+ * el brillo del limbo.) `TerrainMesh` conserva la geometría y los colores base, que es
+ * lo que el shader usa como `uniform`.
  *
  * Sigue siendo una sola malla: el shader pinta sobre la misma esfera, así que los draw
  * calls no cambian respecto a 1.2.1.

@@ -1,22 +1,25 @@
 /**
- * Shader de atmósfera día/noche (ROADMAP 1.2.2).
+ * Shader de atmósfera (ROADMAP 1.2.2, ajustado por el usuario antes de validar 1.4.1).
  *
  * Sustituye al `MeshStandardMaterial` de 1.2.1. Decisión de 1.2.2: un único material
  * que hace las tres cosas del criterio (lado noche oscuro, terminador y brillo de borde)
  * en un draw call, en vez de una cáscara exterior aparte. El coste es que el sol se
- * calcula aquí con un uniform en vez de venir de una `DirectionalLight`.
+ * calcula aquí con un uniform en vez de venir de una `DirectionalLight`. **El usuario
+ * pidió quitar el día/noche** (que el planeta se vea siempre claro): el shader ya no
+ * tiene `solDireccion` ni lado noche; se conserva el brillo del limbo.
  *
  * Qué manda y de dónde sale cada cosa:
  *
- * - El resplandor va en el **terminador** y es "muy sutil, difuso hacia el espacio,
+ * - La iluminación es **uniforme** (pedido del usuario antes de validar 1.4.1): no hay
+ *   lado noche ni terminador — el planeta se ve siempre claro, cualquier parte. El
+ *   `solDireccion` de 1.2.2 desaparece del shader.
+ * - El resplandor del **limbo** se mantiene: es "muy sutil, difuso hacia el espacio,
  *   opacidad baja, no un halo de neón" (`GAIA_VISUAL_DESIGN.md` §4), con el acento
- *   `--gaia-accent` `#3FD8C9` (§5.1). Por eso `intensidadBorde` arranca en 0.35 y no
- *   en 1.0: es un susurro, no un resplandor de(neón).
- * - El lado noche se ve **oscuro** (§4 "Noche urbana: no se pinta por defecto"), así que
- *   no hay luces de ciudad ni brillo extra en la cara nocturna: solo se apaga.
+ *   `--gaia-accent` `#3FD8C9` (§5.1). Por eso `intensidadBorde` arranca en 0.35: un
+ *   susurro en el borde del disco, no un resplandor.
  * - La luz va **fija en el espacio** y la cámara orbita (la dirección de F1 es "globo
- *   girando + cámara orbital"): `solDireccion` no se toca por frame, y por eso al girar
- *   la cámara se ve pasar el terminador por el globo.
+ *   girando + cámara orbital"): como ya no hay día/noche, el brillo del limbo es
+ *   simétrico alrededor del disco y no depende de ninguna dirección.
  *
  * El desplazamiento por altura de 1.3.1 entra por los uniforms `nivelBajo`,
  * `nivelAlto`, `pesoNivelAlto` y `escalaElevacion`: el vertex shader lee los dos
@@ -34,7 +37,7 @@
  * `tilesSatelite.ts` (patrón `decodeTerrarium`/GLSL: el atlas se compone en esa
  * proyección, así que muestrear en la propia coordenada mercator evita costuras).
  */
-import { Color, Mesh, ShaderMaterial, SphereGeometry, Vector3 } from "three";
+import { Color, Mesh, ShaderMaterial, SphereGeometry } from "three";
 
 /** Radio del geoide. Compartido con `TerrainMesh`: es el contrato de 1.2.1. */
 const RADIO = 1;
@@ -60,18 +63,11 @@ const COLOR_ACENTO = new Color(0x3fd8c9);
  * distancia de cámara, y el cruce continuo es lo que evita las caídas bruscas de LOD.
  *
  * `fragmentShader`, en orden:
- *   1. `luz` = smoothstep(-0.12, 0.28, dot(n, solDireccion)). El producto punto va de 1
- *      (cara al sol) a -1 (opuesta); el smoothstep elige el ancho del terminador. Con un
- *      rango estrecho (0..1) el crepúsculo se ensancha y la noche queda nítida, que es lo
- *      contrario de un terminador real.
- *   2. `color` = mix(base * ladoNoche, base, luz). El lado noche **se apaga**, no se le
- *      añade luz: `GAIA_VISUAL_DESIGN` §4 dice que la noche urbana no se pinta por
- *      defecto, así que aquí no hay nada que se parezca a luces de ciudad.
- *   3. `borde` = pow(1 - dot(vista, n), exponenteBorde). Da 1 en el limbo —donde la
- *      normal es perpendicular a la vista— y cae a 0 de cara. Multiplicado por `luz`, el
- *      resplandor del acento vive en la franja del terminador y no en toda la esfera.
- *      La textura satelital entra por `u_atlasA`/`u_atlasB`, crossfade con `u_cruce`;
- *      con `u_tieneAtlas = 0` el globo es el color base de 1.2.1.
+ *   1. `superficie` es la textura de 1.4.1 (o el color base): **sin día/noche**, el
+ *      pedido del usuario es que el planeta se vea siempre claro.
+ *   2. `borde` = pow(1 - dot(vista, n), exponenteBorde). Da 1 en el limbo —donde la
+ *      normal es perpendicular a la vista— y cae a 0 de cara. El resplandor del acento
+ *      vive en el borde del disco, uniforme alrededor (no hay terminador que acentuar).
  */
 const vertexShader = /* glsl */ `
 uniform sampler2D nivelBajo;
@@ -98,10 +94,8 @@ void main() {
 const fragmentShader = /* glsl */ `
 uniform vec3 colorTierra;
 uniform vec3 colorAcento;
-uniform vec3 solDireccion;
 uniform float intensidadBorde;
 uniform float exponenteBorde;
-uniform float ladoNoche;
 uniform sampler2D u_atlasA;
 uniform sampler2D u_atlasB;
 uniform float u_cruce;
@@ -119,11 +113,10 @@ void main() {
     superficie = mix(a, b, u_cruce);
   }
   vec3 n = normalize(vNormalMundo);
-  float luz = smoothstep(-0.12, 0.28, dot(n, solDireccion));
-  vec3 color = mix(superficie * ladoNoche, superficie, luz);
+  vec3 color = superficie;
   vec3 vista = normalize(cameraPosition - vPosicionMundo);
   float borde = pow(1.0 - max(dot(vista, n), 0.0), exponenteBorde);
-  color += colorAcento * borde * luz * intensidadBorde;
+  color += colorAcento * borde * intensidadBorde;
   gl_FragColor = vec4(color, 1.0);
 }
 `;
@@ -141,8 +134,6 @@ export interface AtmosphereOptions {
   intensidad?: number;
   /** Exponente del falloff del borde: alto lo concentra, bajo lo reparte. */
   exponente?: number;
-  /** Cuánto se apaga la cara nocturna. 0.12 = noche cerrada pero no negra. */
-  noche?: number;
 }
 
 export class AtmosphereMesh {
@@ -156,11 +147,8 @@ export class AtmosphereMesh {
         colorAcento: {
           value: new Color(opciones.color ?? COLOR_ACENTO.getHex()),
         },
-        // Fija en el espacio, no en la cámara: es la decisión de 1.2.2.
-        solDireccion: { value: new Vector3(2, 3, 4).normalize() },
         intensidadBorde: { value: opciones.intensidad ?? 0.35 },
         exponenteBorde: { value: opciones.exponente ?? 3.0 },
-        ladoNoche: { value: opciones.noche ?? 0.12 },
         // Textura satelital de 1.4.1: apagada por defecto; la encienden
         // `u_tieneAtlas` (0 = color base) y los atlas que vincula `TileManager`.
         u_atlasA: { value: null },
@@ -193,7 +181,6 @@ export class AtmosphereMesh {
     if (p.color !== undefined) u.colorAcento.value.setHex(p.color);
     if (p.intensidad !== undefined) u.intensidadBorde.value = p.intensidad;
     if (p.exponente !== undefined) u.exponenteBorde.value = p.exponente;
-    if (p.noche !== undefined) u.ladoNoche.value = p.noche;
   }
 
   dispose(): void {

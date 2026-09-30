@@ -63,6 +63,20 @@ describe("CameraController — cámara orbital (ROADMAP 1.1.2)", () => {
     expect(controles.maxPolarAngle).toBeLessThan(Math.PI);
   });
 
+  it("el zoom máximo se queda fuera de la superficie (1.4, pedido del usuario)", () => {
+    const { controles } = nuevo();
+
+    // Pedido del usuario antes de validar 1.4.1: a 1.05 la cámara se asomaba a la cara
+    // lejana del globo (el antípoda) en vez de a la superficie. 1.4 la deja holgada.
+    expect(controles.minDistance).toBe(1.4);
+  });
+
+  it("el clic derecho no arrastra el planeta (sin pan)", () => {
+    // Pedido del usuario: OrbitControls reserva el botón derecho para el pan; a null
+    // no hay acción asignada y el clic derecho no mueve la cámara.
+    expect(nuevo().controles.mouseButtons.RIGHT).toBeNull();
+  });
+
   it("deja la cámara quieta hasta que el usuario la mueve", () => {
     // VISUAL_DESIGN §10 no pide rotación propia al cargar: con el globo girando solo,
     // un punto de incendio se escapa de debajo del cursor mientras se intenta leer.

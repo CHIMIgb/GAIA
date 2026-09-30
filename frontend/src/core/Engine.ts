@@ -53,11 +53,9 @@ export class Engine {
     this.camara.position.set(0, 0, 4);
 
     this.escena.add(new AmbientLight(0xffffff, 0.8));
-    // Desde 1.2.2 la `DirectionalLight` sobra: el terminator y el lado noche los calcula
-    // el `ShaderMaterial` de la atmósfera con su uniform `solDireccion`, en la misma
-    // dirección `(2, 3, 4)`. Con las dos cosas el terminador se dibujaba dos veces —una
-    // por la luz y otra por el shader— y no se podía quitar la direccional sin ver antes
-    // a qué parte del globo oscurecía.
+    // Desde 1.2.2 la `DirectionalLight` sobra: el `ShaderMaterial` de la atmósfera no lee
+    // luces — la iluminación (hoy uniforme, sin día/noche, por pedido del usuario) y el
+    // brillo del limbo los calcula él.
     //
     // La ambiental se queda: el `ShaderMaterial` no lee luces, así que sin ella lo que
     // use el material estandar de Three se quedaría negro. El globo ya no depende de

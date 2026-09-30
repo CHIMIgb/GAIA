@@ -97,8 +97,8 @@ describe("GlobeModule — geoide base (ROADMAP 1.2.1)", () => {
     const { globo, malla } = montado();
 
     // 1.2.2 sustituye al `MeshStandardMaterial` de 1.2.1. Si esto vuelve a
-    // `MeshStandardMaterial`, el terminador y el lado noche los dibuja la luz de Three y
-    // el shader deja de hacer nada.
+    // `MeshStandardMaterial`, el resplandor del limbo lo pintaría la luz de Three y
+    // el shader deja de hacer nada (la iluminación uniforme y el limbo viven en él).
     expect(malla.material).toBe(globo.atmosfera.material);
     expect(malla.material.type).toBe("ShaderMaterial");
   });

@@ -9,16 +9,22 @@
  *
  * Lo que sí fija `VISUAL_DESIGN` §10, y por eso no es un `OrbitControls` con valores por
  * defecto: la inercia suave del drag, la auto-rotación solo tras 30 s de inactividad y a
- * velocidad mínima, y todo eso apagado con `prefers-reduced-motion`. Los límites de
- * distancia y el margen polar no los fija ningún doc y salen del radio del globo, que es
- * 1 (ROADMAP 1.2.1).
+ * velocidad mínima, y todo eso apagado con `prefers-reduced-motion`. El mínimo de
+ * distancia lo pidió el usuario (antes de validar 1.4.1): a 1.4 la cámara nunca se traga
+ * la superficie ni se asoma a la cara lejana; el arrastre con el clic derecho (pan) se
+ * desactiva por la misma petición. El resto de límites y el margen polar no los fija
+ * ningún doc y salen del radio del globo, que es 1 (ROADMAP 1.2.1).
  */
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 import type { Camera } from "three";
 
-/** Radio del globo (1) más un margen: a la distancia exacta la cámara toca la esfera. */
-const DISTANCIA_MINIMA = 1.05;
+/**
+ * Radio del globo (1) más un margen pedido por el usuario: a 1.05 la cámara rozaba la
+ * superficie y, con el plano cercano a 0.1, se asomaba a la cara lejana (el antípoda,
+ * en noche) en vez de a la superficie; a 1.4 el zoom máximo se queda en el terreno.
+ */
+const DISTANCIA_MINIMA = 1.4;
 /** Lejos del todo, con sitio para el halo atmosférico de 1.2.2. */
 const DISTANCIA_MAXIMA = 6;
 /**
@@ -49,6 +55,9 @@ export class CameraController {
     controles.maxPolarAngle = Math.PI - MARGEN_POLAR;
     controles.dampingFactor = INERCIA;
     controles.autoRotateSpeed = VELOCIDAD_AUTO_ROTATE;
+    // Pedido del usuario antes de validar 1.4.1: sin arrastre con el clic derecho
+    // (el pan de OrbitControls) — el planeta solo se rota, no se arrastra.
+    controles.mouseButtons.RIGHT = null;
 
     // Con movimiento reducido no se registra ni el temporizador: sin eventos a los que
     // escuchar, no hay nada que pueda volver a encender la auto-rotación.
