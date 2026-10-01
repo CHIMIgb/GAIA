@@ -1,5 +1,7 @@
 # GAIA — Visualizador Geoespacial 3D en Tiempo Real
 
+> **GAIA** — _Geospatial Atmospheric & Environmental Intelligence Architecture_.
+
 > Plataforma de monitoreo ambiental que integra incendios, sismos, viento, inundaciones y radiación sobre un globo terráqueo interactivo renderizado con WebGL/Three.js a 60 FPS.
 
 ---
@@ -58,7 +60,7 @@ Detalle de fases, criterios de aceptación y trazabilidad RF/RNF en el
 
 ## Mapa de fases
 
-**14 fases, 88 grupos y 332 micro-pasos** (~94 jornadas de 6 h). Cada fase cierra con un
+**14 fases, 88 grupos y 333 micro-pasos** (~96 jornadas de 6 h). Cada fase cierra con un
 hito verificable y su propio PR a `main`. Los nombres son los de los encabezados del
 [Roadmap](docs/GAIA_ROADMAP.md), sin el sufijo repetido «— Corte Vertical Completo» de F2
 a F6; allí está el detalle de cada paso, su criterio de aceptación y su estimado.
