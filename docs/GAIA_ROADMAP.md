@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.120
+> **Versión del Documento:** 1.121
 > **Estado:** Fase 0 **cerrada con dos excepciones** — 64 de 66 micro-pasos validados; los 2 pendientes (`0.7.5`, `0.7.13`) no son cumplibles con los docs actuales y quedan anotados como tal. **Fase 1 en curso** (el paso 1.3 —elevación y topografía— está **descartado** por decisión del usuario: el globo es liso); F2 a F13 sin empezar.
 > **Última actualización:** 2026-10-01
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -555,7 +555,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.5.1 — Doble clic para zoom a coordenada**
 
-- [ ] Raycast de doble clic → mueve la cámara a la lat/lon con animación suave.
+- [x] Raycast de doble clic → mueve la cámara a la lat/lon con animación suave. _*(validado: el gesto es de la cámara y no del motor, así que vive entero en `core/CameraController.ts` —`apuntarConDobleClic(malla)` registra el `dblclick` nativo sobre la malla del geoide, raycastea, decide si hay algo que apuntar y `acercarA(punto)` hace el vuelo— y `Engine` solo engancha el evento y le pasa el tiempo del frame. Tres cosas que ningún doc fijaba y que se consultaron al usuario: **cuánto se acerca por clic** (se divide la altura sobre la superficie entre `PASO_ACERCADO` = 1,25, no la distancia, para que el paso sea el mismo a cualquier altura; son 9 clics del encuadre de partida al nivel ciudad y el suelo es `DISTANCIA_MINIMA`, que no lo toca este paso sino 1.5.2), **qué hace el clic simple** (nada: la selección por raycasting es de 7.3.1 con su panel de telemetría, RF-11, y adelantarla aquí mezclaría dos fases) y **dónde no se apunta** (fuera de ±`LAT_LIMITE` = 85,051°, el mismo límite que ya define la proyección Mercator en `utils/tilesSatelite.ts`: por encima el punto geométrico es real pero el mapa es una tira estirada, y un clic en el Ártico no lleva a ningún sitio legible). El criterio del paso —"la acerca centrándola; sin salto brusco"— se comprueba en tres puntos del vuelo (primer frame, mitad y final), de modo que un salto seco pone el test en rojo; con `prefers-reduced-motion` no hay vuelo y la cámara llega de golpe (VISUAL_DESIGN §10). 155 tests en frontend (9 nuevos: todos del gesto completo, porque el raycast solo necesita geometría y jsdom lo corre de verdad), typecheck, lint, lint:imports, build, check:links y `perf:check` en verde (71,7/180 KB el chunk de arranque: no entra código nuevo, solo se mueve la cámara). Sin push; revisión visual en navegador hecha por el usuario.)*_
 - **Criterio:** doble clic en una zona la acerca centrándola; sin "salto" brusco.
 - **Estimado:** ~2.25 h.
 
