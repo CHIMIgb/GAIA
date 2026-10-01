@@ -11,11 +11,6 @@
  * (mismo patrón que `decodeTerrarium`/GLSL): aquí se valida sin navegador, el
  * shader manda en render.
  */
-import {
-  DISTANCIA_BASE,
-  DISTANCIA_DETALLE,
-} from "../modules/globe/ElevationLOD";
-
 /** Límite del esquema XYZ: mercator no cubre los polos por encima de ±85,05°. */
 export const LAT_LIMITE = 85.05112878;
 
@@ -32,32 +27,48 @@ interface EntradaNivel {
 /**
  * Escalera de niveles de textura (ROADMAP 1.4.1).
  *
- * z0–z2 heredan los umbrales del LOD de elevación de 1.3.1 (`DISTANCIA_BASE` 3.6 y
- * `DISTANCIA_DETALLE` 2.2), para que relieve y textura cambien a la vez y no haya dos
- * palancas independientes. z3 y z4 son de contacto con atlas del mundo entero (64 y 256
- * tiles). z6 es el primero de **atlas de vista** (`cap`): con un atlas por nivel, z4 ya
- * es el techo —256 tiles en un atlas 4096²— y en el contacto (cámara a 1.4 radios) la
- * pantalla magnifica ese atlas ~3× y el planeta se ve borroso. Un atlas del mundo entero
- * en z6 serían 4096 tiles y una textura 16384² (1 GB): inviable. De z6 en adelante solo
- * se descargan los tiles del rectángulo que la cámara está viendo (`rectDeCap`), que a
- * la vez son los que dan la nitidez del contacto.
+ * El orden es de más lejano a más cercano y el `umbral` de cada entrada es la distancia a
+ * partir de la cual el nivel **siguiente** (más detallado) toma el relevo: z0 cubre todo,
+ * z1 hasta `1,25 × 5,6`, z2 hasta `1,25 × 4,5`, y así hacia dentro. O sea: el nivel `i`
+ * sirve en `[umbral(i+1), umbral(i) × 1,25)`, con la banda de cruce del 25 % de `bandaDe`
+ * (más abajo) mordiendo el final de su tramo.
+ *
+ * Los umbrales salen de la nitidez, no de la costumbre. El disco del globo necesita en el
+ * centro de la imagen unos `altoPx / (2 · arco(1°))` píxeles por grado —9 en un lienzo de
+ * 800 px de alto— y un atlas de nivel `z` da `256 · 2^z / 360` (z4 = 11,4; z3 = 5,7;
+ * z2 = 2,8; z1 = 1,4). De ahí que:
+ *
+ * - **z4 es el nivel del encuadre de arranque.** El encuadre del planeta entero
+ *   (`distanciaDeEncuadre` en `CameraController`) cae en 2,83–2,92, y a 2,9 el disco pide
+ *   8,9 px/grado: z1 o z2 (que es lo que mandaba antes) dejaban el planeta borroso de salida,
+ *   que es lo que reportó el usuario. Con z4 sobra densidad incluso en el tramo de su
+ *   banda. Por debajo de 2,5 el rectángulo de vista se come los polos y el cap lo sustituye.
+ * - **z6 es el primer atlas de vista** (`cap`): un atlas del mundo entero en z6 serían
+ *   4096 tiles y una textura 16384² (1 GB), inviable; de z6 en adelante solo se descargan
+ *   los tiles del rectángulo que la cámara está viendo (`rectDeCap`), y su nivel sale del
+ *   propio presupuesto (`zoomDeCap`) en vez de de un atlas fijo.
+ *
+ * ponytail: los umbrales no siguen las bandas del LOD de elevación (`DISTANCIA_BASE` 3,6 y
+ * `DISTANCIA_DETALLE` 2,2 de `ElevationLOD`), que es como estaban en 1.4.1. Elevación y
+ * textura ya no cruzan a la vez: relief y nitidez tienen ceilings distintos (un atlas global
+ * de z4 son 256 tiles y 67 MB, y en vertical un atlas z5 son 268 MB), así que atarlos
+ * dejaba la textura corta de densidad justo en el encuadre. `ROADMAP.md` §1.4.1 sigue
+ * citando las bandas viejas: es una de las líneas de doc pendientes de permiso.
  */
 const ESCALERA: readonly EntradaNivel[] = [
   { nivel: 0, umbral: Number.POSITIVE_INFINITY, cap: false }, // z0: siempre
-  { nivel: 1, umbral: DISTANCIA_BASE, cap: false }, // z1 (3.6) — heredado de 1.3.1
-  { nivel: 2, umbral: DISTANCIA_DETALLE, cap: false }, // z2 (2.2) — heredado de 1.3.1
-  { nivel: 6, umbral: 2, cap: true }, // atlas de vista desde 2 radios (el zoom por defecto
-  // es 1.8): con atlas del mundo entero el planeta se ve borroso salvo muy lejos, porque
-  // un z6 entero serían 4096 tiles en una textura 16384² (1 GB). El atlas de vista baja
-  // solo los tiles del rectángulo que se está viendo, así que el nivel sale del propio
-  // presupuesto en vez del de un atlas fijo.
+  { nivel: 1, umbral: 5.6, cap: false }, // z1 (512²) — cubo lejano
+  { nivel: 2, umbral: 4.5, cap: false }, // z2 (1024²)
+  { nivel: 3, umbral: 3.4, cap: false }, // z3 (2048²)
+  { nivel: 4, umbral: 2.8, cap: false }, // z4 (4096²) — nivel del encuadre de arranque
+  { nivel: 6, umbral: 2, cap: true }, // atlas de vista desde 2,5 (relé del cap)
 ];
 
 /**
  * Ancho de la banda de cruce: 25 % por encima del umbral, el de 1.4.1. Se recorta al
  * umbral de la entrada anterior para que la banda de un nivel nunca invada el terreno puro
- * del siguiente (sin el recorte, la banda de z3 —1.9×1.25=2.375— se comería el tramo
- * [2.2, 2.375) de z2).
+ * del siguiente (sin el recorte, la banda de z3 —3,4×1,25=4,25— se comería el tramo
+ * [4,5; 5,6) de z2).
  */
 const BANDA = 1.25;
 
@@ -68,9 +79,9 @@ function bandaDe(indice: number): number {
 
 /** Nivel más detallado que ya está activo a esa distancia (el nivel puro, sin mezcla). */
 export function zoomParaDistancia(distancia: number): number {
-  let i = 0;
-  while (i + 1 < ESCALERA.length && distancia < ESCALERA[i + 1].umbral) i++;
-  return ESCALERA[i].nivel;
+  // Misma selección que `nivelesConFade`: si vivieran separadas acabarían discrepando
+  // justo en las bandas de cruce, que es donde importa.
+  return nivelesConFade(distancia).zoomA;
 }
 
 /** Si el nivel está en la escalera (y por tanto se puede pedir). */

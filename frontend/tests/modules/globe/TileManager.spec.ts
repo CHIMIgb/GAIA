@@ -177,30 +177,37 @@ describe("TileManager — atlas de vista en vez de atlas del mundo entero", () =
 });
 
 describe("TileManager — cruce de niveles por distancia (ROADMAP 1.4.1)", () => {
-  it("lejos (≥ 4.5) usa el nivel 0 en ambas puntas, sin cruce", async () => {
+  it("lejos cruza de z1 a z0 y desde 7 solo queda el nivel 0", async () => {
     const { gestionado } = nuevoManager();
     await gestionado.precargar();
+    // Escalera: z1 cubre [5.6, 7.0). A 6 ya se ve z0 debajo, mezclado con peso 0,29.
     gestionado.sincronizar(6);
     const u = gestionado["material"].uniforms;
     expect(u.u_atlasA.value).toBeInstanceOf(CanvasTexture);
+    expect(u.u_atlasB.value).not.toBe(u.u_atlasA.value);
+    expect(u.u_cruce.value).toBeCloseTo(0.2857, 3);
+    expect(u.u_tieneAtlas.value).toBe(1);
+    // Desde 7 el nivel de partida ya es z0 puro: las dos puntas son el mismo atlas.
+    gestionado.sincronizar(7);
     expect(u.u_atlasB.value).toBe(u.u_atlasA.value);
     expect(u.u_cruce.value).toBe(0);
-    expect(u.u_tieneAtlas.value).toBe(1);
   });
 
-  it("en la banda [3.6, 4.5) cruza del nivel 1 al 0 con el peso de la tabla", async () => {
+  it("en la banda [4.5, 5.6) cruza del nivel 2 al 1 con el peso de la tabla", async () => {
     const { gestionado } = nuevoManager();
     await gestionado.precargar();
-    gestionado.sincronizar(3.8);
+    gestionado.sincronizar(5.0);
     const u = gestionado["material"].uniforms;
     expect(u.u_atlasA.value).not.toBe(u.u_atlasB.value);
-    expect(u.u_cruce.value).toBeCloseTo(0.2222, 3);
+    expect(u.u_cruce.value).toBeCloseTo(0.4545, 3);
     expect(u.u_tieneAtlas.value).toBe(1);
   });
 
-  it("cerca, dentro de la banda de z3, usa el nivel 2 mientras el otro llega", async () => {
+  it("en la banda del cap, si el nivel pedido no llegó se pinta el más fino cargado", async () => {
     const { gestionado } = nuevoManager();
     await gestionado.precargar();
+    // A 2,0 toca cap (z6) con reserva z4, pero ninguno de los dos se ha descargado todavía:
+    // `atlasDe` cae al nivel global cargado más fino (z2) y se queda sin mezcla ni hueco.
     gestionado.sincronizar(2.0);
     const u = gestionado["material"].uniforms;
     expect(u.u_atlasB.value).toBe(u.u_atlasA.value);

@@ -64,66 +64,61 @@ describe("tilesSatelite — URL y geometría (ROADMAP 1.4.1)", () => {
 });
 
 describe("tilesSatelite — niveles por distancia (ROADMAP 1.4.1)", () => {
-  it("elige el nivel por distancia: z0-z2 con los umbrales de 1.3.1 y atlas de vista debajo de 2", () => {
-    expect(zoomParaDistancia(6)).toBe(0);
-    expect(zoomParaDistancia(2.9)).toBe(1);
-    expect(zoomParaDistancia(2.1)).toBe(2); // banda de z2, ya en z2 puro
-    expect(zoomParaDistancia(2.05)).toBe(2); // ya en la banda del atlas de vista
-    // El zoom por defecto (1.8) entra en el atlas de vista: con atlas del mundo entero
-    // el planeta se veía borroso de lejos, que es justo lo que reportó el usuario.
+  it("elige el nivel por distancia: z4 cubre el encuadre de arranque y el cap el zoom", () => {
+    expect(zoomParaDistancia(7)).toBe(0);
+    expect(zoomParaDistancia(5)).toBe(2);
+    expect(zoomParaDistancia(4)).toBe(3);
+    expect(zoomParaDistancia(3)).toBe(4);
+    // El encuadre del planeta entero (`distanciaDeEncuadre`) cae en 2,83–2,92 y tiene que
+    // caer en z4 (11,4 px/grado) para no arrancar borroso: a 2,9 el disco pide 8,9.
+    expect(zoomParaDistancia(2.83)).toBe(4);
+    expect(zoomParaDistancia(2.87)).toBe(4);
+    expect(zoomParaDistancia(2.92)).toBe(4);
+    expect(zoomParaDistancia(2.6)).toBe(4);
+    // Por debajo de 2,5 el rectángulo de vista se come los polos y manda el atlas de vista.
+    expect(zoomParaDistancia(2.4)).toBe(6);
     expect(zoomParaDistancia(1.8)).toBe(6);
-    expect(zoomParaDistancia(1.25)).toBe(6);
+    expect(zoomParaDistancia(1.25)).toBe(6); // el zoom máximo de la cámara
   });
 
-  it("el atlas de vista entra por debajo de 2 radios, con el zoom por defecto dentro", () => {
-    expect(zoomParaDistancia(1.9)).toBe(6);
-    expect(zoomParaDistancia(1.4)).toBe(6);
-    expect(zoomParaDistancia(1.25)).toBe(6); // el zoom máximo de la cámara
-    // El nivel de la escalera solo marca la zona: el atlas concreto lo elige `zoomDeCap`
-    // (z5 en la vista por defecto, z8 en el zoom máximo), no un número fijo.
+  it("z4 está en la escalera como atlas global y z6 como atlas de vista", () => {
+    expect(estaEnEscalera(4)).toBe(true);
+    expect(esCap(4)).toBe(false);
     expect(estaEnEscalera(6)).toBe(true);
     expect(esCap(6)).toBe(true);
-    // Ya no hay atlas del mundo entero de contacto: por debajo de 2 radios el cap los
-    // sustituye, así que z3/z4 no están en la escalera y no se piden nunca.
-    expect(estaEnEscalera(3)).toBe(false);
-    expect(estaEnEscalera(4)).toBe(false);
+    // El nivel del cap lo elige `zoomDeCap` (z5 al entrar, z8 en el zoom máximo), no un
+    // número fijo de la escalera.
+    expect(zoomParaDistancia(1.9)).toBe(6);
+    expect(zoomParaDistancia(1.4)).toBe(6);
   });
 
-  it("lejos (≥ 4.5) no cruza: solo el nivel 0", () => {
-    expect(nivelesConFade(6)).toEqual({ zoomA: 0, zoomB: 0, peso: 0 });
+  it("la banda [2,8; 3,4) funde z4 con z3 y a 3,4 ya es z3 puro", () => {
+    const medio = nivelesConFade(3.1);
+    expect(medio.zoomA).toBe(4);
+    expect(medio.zoomB).toBe(3);
+    expect(medio.peso).toBeCloseTo(0.5, 2);
+    expect(nivelesConFade(3.35).peso).toBeGreaterThan(0.85);
+    // A 3,4 z3 ya es puro (peso 0), aunque el atlas de reserva sea z2.
+    expect(nivelesConFade(3.4)).toEqual({ zoomA: 3, zoomB: 2, peso: 0 });
   });
 
-  it("la banda [3.6, 4.5) cruza z1 → z0 con peso creciente", () => {
-    const inicio = nivelesConFade(3.6);
-    const medio = nivelesConFade(4.05);
-    const fin = nivelesConFade(4.4);
-    expect(inicio).toEqual({ zoomA: 1, zoomB: 0, peso: 0 });
-    expect(medio.zoomA).toBe(1);
-    expect(medio.zoomB).toBe(0);
-    expect(medio.peso).toBeGreaterThan(0.4);
-    expect(medio.peso).toBeLessThan(0.6);
-    expect(fin.peso).toBeGreaterThan(0.85);
-  });
-
-  it("la banda [2.2, 2.75) cruza z2 → z1 con peso creciente", () => {
-    const inicio = nivelesConFade(2.2);
-    const medio = nivelesConFade(2.475);
-    expect(inicio).toEqual({ zoomA: 2, zoomB: 1, peso: 0 });
-    expect(medio.peso).toBeGreaterThan(0.4);
-    expect(medio.peso).toBeLessThan(0.6);
-  });
-
-  it("la banda [2, 2.2) funde el atlas de vista (z6) con el atlas global z2", () => {
-    // El atlas de vista entra a 2 radios (allí ya es puro) y su banda nominal sería
-    // 2.5, recortada al umbral de z2 (2.2): al alejarse el peso del atlas de vista crece
-    // de 0 a 1 y a los 2.2 el globo vuelve al atlas del mundo entero, sin mezclarse a
-    // medias. En su zona pura el cruce es consigo mismo: el cap se pinta entero.
-    expect(nivelesConFade(2)).toEqual({ zoomA: 6, zoomB: 2, peso: 0 });
-    expect(nivelesConFade(2.1).peso).toBeCloseTo(0.5, 2);
-    expect(nivelesConFade(2.18).peso).toBeGreaterThanOrEqual(0.9);
-    expect(nivelesConFade(2.2)).toEqual({ zoomA: 2, zoomB: 1, peso: 0 });
-    // El zoom por defecto (1.8) está en la zona pura del cap.
+  it("la banda [2, 2,5) funde el atlas de vista (z6) con el atlas global z4", () => {
+    // El cap entra a 2 radios y su banda nominal sería 2,5, recortada al umbral de z4
+    // (2,8): al alejarse el peso del atlas de vista crece de 0 a 1 y a los 2,5 el globo
+    // vuelve al atlas del mundo entero, sin mezclarse a medias.
+    expect(nivelesConFade(2)).toEqual({ zoomA: 6, zoomB: 4, peso: 0 });
+    expect(nivelesConFade(2.25).peso).toBeCloseTo(0.5, 2);
+    expect(nivelesConFade(2.45).peso).toBeGreaterThanOrEqual(0.9);
+    expect(nivelesConFade(2.5)).toEqual({ zoomA: 4, zoomB: 4, peso: 0 });
+    // En su zona pura el cruce es consigo mismo: el cap se pinta entero.
     expect(nivelesConFade(1.8)).toEqual({ zoomA: 6, zoomB: 6, peso: 0 });
+  });
+
+  it("el encuadre de arranque sale casi puro en z4, sin apagarse con el cruce", () => {
+    // El caso que reportó el usuario: si el encuadre cayera en la banda, el peso de z3
+    // rebajaría la densidad de salida. A 2,83–2,92 el peso va de 0,05 a 0,2.
+    expect(nivelesConFade(2.83).peso).toBeCloseTo(0.05, 2);
+    expect(nivelesConFade(2.92).peso).toBeCloseTo(0.2, 2);
   });
 });
 
