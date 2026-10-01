@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.119
+> **Versión del Documento:** 1.120
 > **Estado:** Fase 0 **cerrada con dos excepciones** — 64 de 66 micro-pasos validados; los 2 pendientes (`0.7.5`, `0.7.13`) no son cumplibles con los docs actuales y quedan anotados como tal. **Fase 1 en curso** (el paso 1.3 —elevación y topografía— está **descartado** por decisión del usuario: el globo es liso); F2 a F13 sin empezar.
 > **Última actualización:** 2026-10-01
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -547,7 +547,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.4.2 — UVs y empaquetado**
 
-- [ ] Ajustar UVs de los tiles para que no haya costuras ni solapamientos.
+- [x] Ajustar UVs de los tiles para que no haya costuras ni solapamientos. _*(validado: el defecto era el **borde fecha** del atlas de vista, el que 1.4.1 dejó apuntado como la única costura posible. El atlas de vista (cap) puede cruzar el antimeridiano —`rectDeCap` deja que sus columnas den la vuelta al mundo, así que el rectángulo mercator de `u_rectA` llega con `u0 + ancho > 1`— y ahí 1.4.1 tenía dos fallos encadenados: (a) `componerAtlasProd` dibujaba cada tile en `(x - x0) * pxTile`, de modo que las columnas envueltas (x=0, 1, 2… del nivel) salían con destino **negativo**, fuera del lienzo, dejando huecos en el atlas; (b) el fragment shader mapeaba el atlas A con `(merc - u_rectA.xy) / u_rectA.zw` sin vuelta, así que la mitad envuelta del rectángulo caía al atlas global B: un **escalón de nitidez partiendo la vista por la mitad justo en el borde fecha**. Los dos son la misma fórmula en TS y en GLSL, con el espejo CPU que fijó 1.4.1: `columnaDeAtlas(x, x0, lado)` en `utils/tilesSatelite.ts` (la vuelta es por el mundo, 2^z, **no** por las columnas del atlas: con `x0=58` y 12 columnas en z6 el tile `x=0` es el sexto del atlas, no el segundo) y `uvLocal(merc, rect)`, que devuelve la uv local o `null` para lo que cae fuera del rectángulo; el shader repite ambas en dos líneas. **En `v` no hay vuelta a propósito:** la latitud no es periódica y `rectDeCap` ya recorta el alto al nivel, así que ecuador y polos entran por la misma regla que cualquier otra latitud —lo fija un test. 146 tests en frontend (11 nuevos: 8 `tilesSatelite`, 1 `TileManager` con el cap que cruza el borde fecha, 1 `AtmosphereMesh`, 1 actualizado), typecheck, lint, lint:imports, build, check:links y `perf:check` en verde (201,0/450 KB gzip; el shader crece ~30 B). Revisión visual en polos y ecuador sin artefactos de empalme hecha por el usuario en navegador. **Observación fuera de alcance:** si muy cerca del polo no cabe ningún nivel del atlas de vista, `TileManager` deja el cap anterior en pantalla con su rectángulo viejo (se ve una franja nítida de otra zona si se venía del ecuador); es estado del cap, no UV, y queda como candidato a paso propio.)*_
 - **Criterio:** revisión visual en polos y ecuador sin artefactos de empalme.
 - **Estimado:** ~2.25 h.
 
