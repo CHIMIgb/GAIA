@@ -1,6 +1,6 @@
 /**
  * Motor de renderizado Three.js (ROADMAP 1.1.1 — escena, cámara, luz y bucle;
- * 1.1.2 — cámara orbital y resize; 1.2.1 — geoide).
+ * 1.1.2 — cámara orbital y resize; 1.2.1 — geoide; 1.5.1 — doble clic a coordenada).
  *
  * El constructor monta el grafo de escena, que es solo Three.js y se puede probar sin
  * navegador. `start()` pide el contexto WebGL y arranca el bucle: es el punto donde la
@@ -8,7 +8,9 @@
  * `tests/core/Engine.spec.ts` compruebe el grafo en jsdom, donde no hay WebGL.
  *
  * La cámara orbital (`CameraController`) y el resize (`Resizer`) se crean en `start()` y
- * no en el constructor por lo mismo: los dos necesitan un nodo del DOM con medidas.
+ * no en el constructor por lo mismo: los dos necesitan un nodo del DOM con medidas. El
+ * motor solo engancha gestos a la cámara —desde 1.5.1, el doble clic— y le pasa la malla
+ * del globo: la lógica del gesto es de la cámara, no de aquí.
  *
  * Ubicación según `docs/GAIA_PROJECT_STRUCTURE.md` §1 (`core/`). El cubo de andamiaje de
  * 1.1.1 se retiró en 1.2.1, cuando el geoide lo sustituyó.
@@ -87,14 +89,19 @@ export class Engine {
     registerDrawCallsSource(renderer);
 
     this.camaraCtrl = new CameraController(this.camara, this.canvas);
+    // 1.5.1: el doble clic acerca y centra la cámara en el punto del globo que hay bajo el
+    // cursor. El raycast va contra la malla del geoide, así que el gesto funciona con el
+    // globo sin textura; el controlador es quien guarda la regla y el vuelo.
+    this.camaraCtrl.apuntarConDobleClic(this.globo.malla);
     // El resizer encaja el lienzo al construirse, así que sustituye al ajuste inicial que
     // hacía el motor en 1.1.1.
     this.resizer = new Resizer(this.canvas, this.camara, renderer);
 
-    const paso = (): void => {
-      // Sin este `update()` ni la inercia del drag ni el giro de fondo avanzan: es lo que
-      // hace `TrackballControls` en cada frame (PROJECT_STRUCTURE §5.1).
-      this.camaraCtrl?.update();
+    const paso = (ahora: number): void => {
+      // Sin este `update()` ni la inercia ni el giro de fondo avanzan: es lo que hace
+      // `TrackballControls` en cada frame (PROJECT_STRUCTURE §5.1). El tiempo del frame es
+      // el que mide el vuelo de acercamiento de 1.5.1.
+      this.camaraCtrl?.update(ahora);
       renderer.render(this.escena, this.camara);
       this.frame = requestAnimationFrame(paso);
     };

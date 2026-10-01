@@ -11,13 +11,21 @@
  * si el día que viene VISUAL_DESIGN §10 pasa a 60 s, este test tiene que ponerse rojo y
  * obligar a que el doc cambie con él, no a que el código se lleve la cifra por delante.
  */
-import { PerspectiveCamera } from "three";
+import {
+  Mesh,
+  PerspectiveCamera,
+  Raycaster,
+  SphereGeometry,
+  Vector2,
+  Vector3,
+} from "three";
 import { TrackballControls } from "three/examples/jsm/controls/TrackballControls.js";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import {
   CameraController,
   distanciaDeEncuadre,
+  DURACION_ACERCADO_MS,
 } from "../../src/core/CameraController";
 
 /** VISUAL_DESIGN §10: "auto-rotación solo en idle > 30 s". */
@@ -292,5 +300,271 @@ describe("CameraController — cámara orbital (ROADMAP 1.1.2)", () => {
     // Sin esto, la vista desmontada por React seguiría respondiendo al ratón y
     // moviendo una cámara que ya no dibuja nada.
     expect(espia).toHaveBeenCalled();
+  });
+});
+
+/**
+ * Doble clic a coordenada (ROADMAP 1.5.1).
+ *
+ * El gesto completo se prueba en jsdom: `Raycaster`, geometría y `TrackballControls` solo
+ * necesitan DOM y matemáticas, no WebGL, así que aquí entra de verdad el `dblclick` del
+ * lienzo y sale el recorrido de la cámara. Lo único que no se puede comprobar aquí es la
+ * sensación del movimiento, que es el criterio visual del paso.
+ *
+ * El punto esperado de cada clic se calcula en el test con la API pública de Three
+ * (`Raycaster`), no con los internos de la implementación: si compartiera la fórmula, un
+ * error en ella se comprobaría contra sí mismo.
+ */
+const ANCHO = 800;
+const ALTO = 600;
+
+/**
+ * jsdom deja `getBoundingClientRect()` a cero, y sin ancho ni alto no hay píxeles que
+ * convertir a coordenadas normalizadas de dispositivo: el raycast no sabría ni dónde mira.
+ * Se le da el tamaño de una pantalla de escritorio.
+ */
+const conPantalla = (canvas: HTMLCanvasElement) => {
+  canvas.getBoundingClientRect = () =>
+    ({
+      left: 0,
+      top: 0,
+      right: ANCHO,
+      bottom: ALTO,
+      width: ANCHO,
+      height: ALTO,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    }) as DOMRect;
+  return canvas;
+};
+
+const CENTRO = { x: ANCHO / 2, y: ALTO / 2 };
+
+const dobleClic = (
+  canvas: HTMLCanvasElement,
+  punto: { x: number; y: number },
+) =>
+  canvas.dispatchEvent(
+    new MouseEvent("dblclick", {
+      clientX: punto.x,
+      clientY: punto.y,
+      bubbles: true,
+    }),
+  );
+
+/** Geometría del geoide: para el raycast da igual la segmentación, no hay píxeles. */
+const geoide = () => new Mesh(new SphereGeometry(1, 32, 16));
+
+/** Normalizado de pantalla (NDC) → píxeles del lienzo, el inverso del raycast. */
+const pixel = (ndcX: number, ndcY: number) => ({
+  x: ((ndcX + 1) / 2) * ANCHO,
+  y: ((1 - ndcY) / 2) * ALTO,
+});
+
+/** El punto del globo que hay bajo un NDC, con la API de Three y no con la del código. */
+const bajoElCursor = (
+  camara: PerspectiveCamera,
+  malla: Mesh,
+  ndcX: number,
+  ndcY: number,
+): Vector3 => {
+  const raycaster = new Raycaster();
+  raycaster.setFromCamera(new Vector2(ndcX, ndcY), camara);
+  return raycaster.intersectObject(malla)[0].point.clone();
+};
+
+const latitudEnGrados = (punto: Vector3) =>
+  (Math.asin(punto.y / punto.length()) * 180) / Math.PI;
+
+/** Controller con el doble clic ya enganchado, listo para recibir un `dblclick`. */
+const conDobleClic = () => {
+  const canvas = conPantalla(document.createElement("canvas"));
+  const camara = new PerspectiveCamera(45, 1, 0.1, 100);
+  const ctrl = new CameraController(camara, canvas);
+  const malla = geoide();
+  ctrl.apuntarConDobleClic(malla);
+  camara.updateMatrixWorld();
+  return { canvas, camara, ctrl, malla };
+};
+
+/** Corre el vuelo entero y devuelve a qué distancia del centro quedó la cámara. */
+const hastaElFinal = (ctrl: CameraController, camara: PerspectiveCamera) => {
+  const t0 = performance.now();
+  ctrl.update(t0);
+  ctrl.update(t0 + DURACION_ACERCADO_MS);
+  return camara.position.length();
+};
+
+describe("CameraController — doble clic a coordenada (ROADMAP 1.5.1)", () => {
+  it("acerca un paso y deja el punto elegido en el centro de la pantalla", () => {
+    const { canvas, camara, ctrl, malla } = conDobleClic();
+    camara.position.set(0, 0, 3);
+    camara.updateMatrixWorld();
+    const esperado = bajoElCursor(camara, malla, 0.5, 0.25);
+
+    dobleClic(canvas, pixel(0.5, 0.25));
+
+    // La altura sobre la superficie (3 − 1 = 2) se divide entre el paso: la cámara pasa a
+    // estar a 1,6 radios, o sea a 2,6 del centro. Se divide la altura y no la distancia
+    // para que el paso sea el mismo a cualquier altura.
+    expect(hastaElFinal(ctrl, camara)).toBeCloseTo(2.6, 6);
+    // Y el punto acaba justo delante de la cámara, que es lo que "centrarla" significa: sin
+    // esto se acercaría, pero el objetivo quedaría en otro sitio de la pantalla.
+    expect(
+      camara.position.clone().normalize().distanceTo(esperado.normalize()),
+    ).toBeLessThan(1e-9);
+  });
+
+  it("el paso es el mismo a cualquier altura y nunca pasa del zoom máximo", () => {
+    const { canvas, camara, ctrl } = conDobleClic();
+    const alturas = [];
+    for (const distancia of [2, 1.8]) {
+      camara.position.set(0, 0, distancia);
+      camara.updateMatrixWorld();
+      dobleClic(canvas, CENTRO);
+      alturas.push(hastaElFinal(ctrl, camara));
+    }
+
+    // Altura 1 → 1/1,25 = 0,8 → distancia 1,8. Y de ahí, altura 0,8 → 0,64 → 1,64: el paso
+    // no depende de a dónde estuviera la cámara.
+    expect(alturas[0]).toBeCloseTo(1.8, 6);
+    expect(alturas[1]).toBeCloseTo(1.64, 6);
+
+    // Ya en el suelo, un clic más solo centra el punto, nunca atraviesa DISTANCIA_MINIMA.
+    camara.position.set(0, 0, 1.25);
+    camara.updateMatrixWorld();
+    dobleClic(canvas, pixel(0.5, 0));
+    expect(hastaElFinal(ctrl, camara)).toBeCloseTo(1.25, 6);
+  });
+
+  it("baja al zoom máximo en unos pocos clics, como un zoom por pasos", () => {
+    const { canvas, camara, ctrl } = conDobleClic();
+
+    // La cámara está en el encuadre de partida, que es el primer zoom de partida de verdad.
+    let distancia = camara.position.length();
+    let clics = 0;
+    while (distancia > 1.25 && clics < 12) {
+      dobleClic(canvas, CENTRO);
+      distancia = hastaElFinal(ctrl, camara);
+      clics++;
+    }
+
+    // Desde el encuadre de partida (altura 1,83) al nivel ciudad: el gesto es repetible, no
+    // un salto que ya no se puede repetir. Son 9 clics con `PASO_ACERCADO` de 1,25.
+    expect(distancia).toBeCloseTo(1.25, 6);
+    expect(clics).toBeLessThanOrEqual(10);
+  });
+
+  it("el movimiento es gradual: a mitad de vuelo va por el camino, sin salto", () => {
+    const { canvas, camara, ctrl } = conDobleClic();
+    camara.position.set(0, 0, 3);
+    camara.updateMatrixWorld();
+    // VISUAL_DESIGN §10 y el criterio del paso: nada de "saltos" al acercar. Con los tres
+    // puntos de una curva se ve: al empezar no se ha movido, a mitad está entre los dos
+    // extremos, y al final ha llegado. Un salto seco estaría ya en el final al primer
+    // frame, que es justo lo que el criterio prohíbe.
+    ctrl.giraEnFondo = true;
+    dobleClic(canvas, CENTRO);
+
+    const t0 = performance.now();
+    ctrl.update(t0);
+    const inicio = camara.position.length();
+    ctrl.update(t0 + DURACION_ACERCADO_MS / 2);
+    const medio = camara.position.length();
+    ctrl.update(t0 + DURACION_ACERCADO_MS);
+    const fin = camara.position.length();
+
+    // El primer frame es el que dice si hay salto: si la cámara ya estuviera en su sitio
+    // final, el "salto brusco" del criterio estaría ahí. Se comprueba con margen y no con
+    // igualdad exacta porque entre el clic y el frame pasa algo de tiempo de verdad.
+    expect(inicio).toBeGreaterThan(2.9);
+    expect(medio).toBeLessThan(inicio);
+    expect(medio).toBeGreaterThan(fin);
+    expect(fin).toBeCloseTo(2.6, 6);
+    // El doble clic es interacción del usuario, así que para el giro de fondo de los 30 s
+    // cuenta igual que un arrastre, desde el primer frame.
+    expect(ctrl.giraEnFondo).toBe(false);
+  });
+
+  it("un arrastre o la rueda cortan el vuelo donde esté", () => {
+    const { canvas, camara, ctrl } = conDobleClic();
+    camara.position.set(0, 0, 3);
+    camara.updateMatrixWorld();
+    dobleClic(canvas, CENTRO);
+    ctrl.controles.dispatchEvent({ type: "start" });
+    const t0 = performance.now();
+    ctrl.update(t0 + DURACION_ACERCADO_MS);
+    expect(camara.position.length()).toBeCloseTo(3, 6);
+
+    // La rueda también manda: si no, el vuelo seguiría moviendo la cámara mientras el
+    // usuario hace zoom con ella.
+    dobleClic(canvas, CENTRO);
+    canvas.dispatchEvent(new Event("wheel"));
+    ctrl.update(t0 + DURACION_ACERCADO_MS);
+    expect(camara.position.length()).toBeCloseTo(3, 6);
+  });
+
+  it("un clic fuera del disco no hace nada", () => {
+    const { canvas, camara, ctrl } = conDobleClic();
+    camara.position.set(0, 0, 3);
+    camara.updateMatrixWorld();
+
+    // Fuera del limbo no hay globo que apuntar, ni en el fondo del espacio. El disco
+    // abarca 19,5° de arco desde la cámara, o sea un 0,85 de la pantalla en NDC: las dos
+    // esquinas quedan fuera.
+    for (const punto of [
+      { x: 2, y: 2 },
+      { x: ANCHO - 2, y: 2 },
+    ]) {
+      dobleClic(canvas, punto);
+      expect(hastaElFinal(ctrl, camara)).toBeCloseTo(3, 6);
+    }
+  });
+
+  it("no apunta a los polos de Mercator, donde la proyección no está definida", () => {
+    const { canvas, camara, ctrl, malla } = conDobleClic();
+    // Cámara casi encima del polo norte (1,3° fuera de su eje) mirando al centro: el
+    // centro de la pantalla es el polo, a unos 87° de latitud.
+    camara.position.set(0.1, 3, 0.05);
+    camara.lookAt(0, 0, 0);
+    camara.updateMatrixWorld();
+    const enElPolo = bajoElCursor(camara, malla, 0, 0);
+    const templado = bajoElCursor(camara, malla, 0, -0.2);
+    const antes = camara.position.length();
+
+    // LAT_LIMITE = 85,051°: por encima el mapa Mercator se estira sin fin, así que el
+    // punto geométrico es real pero el mapa no. Lo que decide el corte es el límite, no
+    // los polos exactos, y cae donde debe: el templado está del otro lado y sí vale.
+    expect(latitudEnGrados(enElPolo)).toBeGreaterThan(85.05112878);
+    expect(latitudEnGrados(templado)).toBeLessThan(85.05112878);
+
+    dobleClic(canvas, pixel(0, 0));
+    expect(hastaElFinal(ctrl, camara)).toBeCloseTo(antes, 6);
+    dobleClic(canvas, pixel(0, -0.2));
+    expect(hastaElFinal(ctrl, camara)).toBeLessThan(antes);
+  });
+
+  it("con movimiento reducido va de golpe, sin vuelo", () => {
+    vi.spyOn(window, "matchMedia").mockReturnValue({
+      matches: true,
+    } as MediaQueryList);
+    const { canvas, camara } = conDobleClic();
+    camara.position.set(0, 0, 3);
+    camara.updateMatrixWorld();
+    dobleClic(canvas, CENTRO);
+
+    // VISUAL_DESIGN §10: con movimiento reducido se inhiben las transiciones, así que la
+    // cámara llega ya a su sitio sin animación intermedia.
+    expect(camara.position.length()).toBeCloseTo(2.6, 6);
+  });
+
+  it("al destruirse suelta el doble clic del lienzo", () => {
+    const { canvas, ctrl } = conDobleClic();
+    const espia = vi.spyOn(canvas, "removeEventListener");
+
+    ctrl.dispose();
+
+    expect(espia).toHaveBeenCalledWith("dblclick", expect.any(Function));
   });
 });

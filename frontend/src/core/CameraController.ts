@@ -21,11 +21,18 @@
  * defecto los pidió el usuario, igual que desactivar el arrastre con el clic derecho (pan):
  * la cámara nunca se traga la superficie ni se asoma a la cara lejana. El resto de límites
  * no los fija ningún doc y salen del radio del globo, que es 1 (ROADMAP 1.2.1).
+ *
+ * Desde 1.5.1 también es dueña del gesto de acercar a un punto (`apuntarConDobleClic` y
+ * `acercarA`): el raycast, la regla de dónde no se apunta y el vuelo con easing son estado
+ * de la cámara, y así el `Engine` solo tiene que registrar un `dblclick`. No se toca
+ * `DISTANCIA_MINIMA` aquí: el tope del zoom es de 1.5.2.
  */
-import { Vector3 } from "three";
+import { Raycaster, Vector2, Vector3 } from "three";
 import { TrackballControls } from "three/examples/jsm/controls/TrackballControls.js";
 
-import type { Camera } from "three";
+import { LAT_LIMITE } from "../utils/tilesSatelite";
+
+import type { Camera, Mesh } from "three";
 
 /**
  * Radio del globo (ROADMAP 1.2.1): es el suelo de la cámara y el cero de la sensibilidad.
@@ -100,6 +107,31 @@ const EJE_Y = new Vector3(0, 1, 0);
 const CONSULTA_MOVIMIENTO = "(prefers-reduced-motion: reduce)";
 
 /**
+ * Cuánto se acerca la cámara por clic doble (ROADMAP 1.5.1), en División de la altura
+ * sobre la superficie: la altura se divide entre este número. Es la única rueda del gesto,
+ * pedida por el usuario como "un factor por clic"; desde el encuadre de partida (altura
+ * 1,83) el tope de 1,25 radios sale en 7 clics. No guarda relación con
+ * `DISTANCIA_MINIMA`, aunque coincidan en el número.
+ */
+export const PASO_ACERCADO = 1.25;
+
+/**
+ * Duración del vuelo de acercamiento, en milisegundos. El criterio de 1.5.1 pide que no
+ * haya "salto" brusco: el tiempo es lo único que lo separa de un teletransporte, y con
+ * movimiento reducido el vuelo no existe (VISUAL_DESIGN §10).
+ */
+export const DURACION_ACERCADO_MS = 550;
+
+/**
+ * `LAT_LIMITE` viene en grados (`utils/tilesSatelite.ts`); el corte se compara en radianes,
+ * que es lo que devuelve el arco seno.
+ */
+const LAT_LIMITE_RAD = (LAT_LIMITE * Math.PI) / 180;
+
+/** Reutilizado para no crear un `Vector2` por cada clic. */
+const PUNTERO = new Vector2();
+
+/**
  * `TrackballControls` con los dos ejes a la misma sensibilidad (pedido del usuario).
  *
  * El arcball normaliza cada eje por la mitad de su dimensión (`screen.width/2` para el
@@ -141,7 +173,25 @@ export class CameraController {
   /** El usuario ya movió la cámara (arrastró o hizo zoom): el encuadre deja de imponerse. */
   private tocado = false;
 
+  /** `prefers-reduced-motion` resuelto al construir: sin vuelo de acercamiento. */
+  private readonly reducido: boolean;
+
+  /** La malla contra la que se apunta con el doble clic (1.5.1). */
+  private malla: Mesh | null = null;
+
+  /** Vuelo en curso del doble clic: de dónde sale, dónde acaba y desde cuándo. */
+  private vuelo: { desde: Vector3; hasta: Vector3; inicio: number } | null =
+    null;
+
+  private readonly raycaster = new Raycaster();
+
   private readonly lienzo: HTMLCanvasElement;
+
+  /**
+   * La cámara que se mueve, guardada aparte: `controles.object` es la misma, pero Three lo
+   * tipa como `Object3D` y `Raycaster.setFromCamera` exige una `Camera`.
+   */
+  private readonly camara: Camera;
 
   constructor(camara: Camera, canvas: HTMLCanvasElement) {
     const controles = new ControlesSimetricos(camara, canvas);
@@ -158,12 +208,14 @@ export class CameraController {
     this.distanciaBase = distanciaDeEncuadre(altoDelLienzo(canvas));
     camara.position.set(0, 0, this.distanciaBase);
     this.lienzo = canvas;
+    this.camara = camara;
 
     // Con movimiento reducido no se registra ni el temporizador: sin eventos a los que
     // escuchar, no hay nada que pueda volver a encender el giro de fondo. La inercia en
     // TrackballControls se corta con `staticMoving = true` (no hay `enableDamping`).
     const reducido = window.matchMedia(CONSULTA_MOVIMIENTO).matches;
     controles.staticMoving = reducido;
+    this.reducido = reducido;
     this.controles = controles;
 
     // Ni `TrackballControls` ni `OrbitControls` escuchan `resize` (su `handleResize()`
@@ -184,9 +236,14 @@ export class CameraController {
     }
   }
 
-  /** Se llama en cada frame: sin esto ni la inercia ni el giro de fondo avanzan. */
-  update(): void {
+  /**
+   * Se llama en cada frame: sin esto ni la inercia ni el giro de fondo avanzan. El
+   * `performance.now()` es solo el respaldo; en el bucle de render se pasa el tiempo del
+   * frame, que es la misma base de tiempo.
+   */
+  update(ahora: number = performance.now()): void {
     this.controles.rotateSpeed = this.velocidadDeArrastre();
+    this.avanzarVuelo(ahora);
     this.controles.update();
 
     if (this.giraEnFondo) {
@@ -194,6 +251,115 @@ export class CameraController {
       object.position.sub(target).applyAxisAngle(EJE_Y, PASO_FONDO).add(target);
       object.lookAt(target);
     }
+  }
+
+  /**
+   * Doble clic para acercar y centrar la cámara en un punto del globo (ROADMAP 1.5.1).
+   *
+   * Recibe la malla en vez de buscarla: el `Engine` ya tiene el grafo montado, y así esta
+   * clase no depende de `GlobeModule` ni de nada que no sea cámara. Se registra el evento
+   * nativo `dblclick` en vez de sintetizar un doble toque con `pointerdown`: el navegador
+   * ya sabe si fueron dos clics y a qué distancia, y en un escritorio es exactamente lo
+   * que se quiere.
+   */
+  apuntarConDobleClic(malla: Mesh): void {
+    this.malla = malla;
+    this.lienzo.addEventListener("dblclick", this.alDobleClic);
+  }
+
+  /**
+   * Acerca la cámara un paso y la centra en el punto dado, que debe estar en la superficie
+   * (radio 1, o sea a un vector unitario).
+   *
+   * Centrar es lo que hace el giro: la dirección de la cámara pasa a ser la del punto. El
+   * acercamiento divide la altura sobre la superficie entre `PASO_ACERCADO`, con suelo en
+   * `DISTANCIA_MINIMA` —ningún clic la atraviesa— y sin tope arriba, que no hace falta
+   * porque el punto está en la superficie y el paso solo acerca.
+   */
+  acercarA(destino: Vector3, ahora: number = performance.now()): void {
+    const altura = this.controles.object.position.length() - RADIO_GLOBO;
+    const hasta = destino
+      .clone()
+      .setLength(
+        RADIO_GLOBO +
+          Math.max(altura / PASO_ACERCADO, DISTANCIA_MINIMA - RADIO_GLOBO),
+      );
+
+    // El doble clic es interacción del usuario, como un arrastre: corta el giro de fondo y
+    // vacía el contador de inactividad.
+    this.alAgarrar();
+
+    if (this.reducido) {
+      // Sin movimiento reducido no hay transición (VISUAL_DESIGN §10): se llega de golpe y
+      // no se rearma el temporizador, que en ese modo nunca debe encender el giro.
+      this.controles.object.position.copy(hasta);
+      return;
+    }
+    this.vuelo = {
+      desde: this.controles.object.position.clone(),
+      hasta,
+      inicio: ahora,
+    };
+  }
+
+  /**
+   * Interpola el vuelo a lo largo del tiempo del frame. El easing es `easeOutCubic` — sale
+   * rápido y frena al llegar— porque es lo que hace que un acercamiento se lea como una
+   * cámara y no como un `lerp`; el criterio de 1.5.1 solo pide que no haya salto.
+   */
+  private avanzarVuelo(ahora: number): void {
+    const vuelo = this.vuelo;
+    if (!vuelo) return;
+
+    const t = Math.min(
+      Math.max((ahora - vuelo.inicio) / DURACION_ACERCADO_MS, 0),
+      1,
+    );
+    this.controles.object.position.lerpVectors(
+      vuelo.desde,
+      vuelo.hasta,
+      1 - (1 - t) ** 3,
+    );
+
+    if (t >= 1) {
+      this.vuelo = null;
+      // El vuelo es interacción del usuario: los 30 s de inactividad se cuentan desde que
+      // termina, no desde el clic.
+      this.alSoltar();
+    }
+  }
+
+  private readonly alDobleClic = (evento: MouseEvent): void => {
+    const punto = this.puntoBajoElCursor(evento);
+    if (punto) this.acercarA(punto);
+  };
+
+  /**
+   * Qué punto del globo hay bajo el cursor, o `null` si no hay ninguno al que apuntar.
+   *
+   * Solo geometría: el raycast va contra la esfera del geoide, así que funciona con el
+   * globo sin textura, sin atlas y con cualquier latitud que la proyección cubra. Los dos
+   * `null` son deliberados — el clic en el espacio no tiene objetivo, y por encima de
+   * `LAT_LIMITE` el mapa Mercator ya no está definido—: sin ellos, un clic en el Ártico
+   * apuntaría a un sitio donde el mapa es una tira estirada.
+   */
+  private puntoBajoElCursor(evento: MouseEvent): Vector3 | null {
+    const rect = this.lienzo.getBoundingClientRect();
+    // Sin medidas no hay píxeles que normalizar, y el raycast apuntaría al centro de la
+    // pantalla en vez de a donde está el cursor.
+    if (!this.malla || !rect.width || !rect.height) return null;
+
+    PUNTERO.set(
+      ((evento.clientX - rect.left) / rect.width) * 2 - 1,
+      -((evento.clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    this.raycaster.setFromCamera(PUNTERO, this.camara);
+    const golpe = this.raycaster.intersectObject(this.malla, false)[0];
+    if (!golpe) return null;
+
+    const punto = golpe.point;
+    const latitud = Math.asin(punto.y / punto.length());
+    return Math.abs(latitud) <= LAT_LIMITE_RAD ? punto : null;
   }
 
   private readonly alRedimensionar = (): void => {
@@ -209,11 +375,16 @@ export class CameraController {
 
   private readonly alTocar = (): void => {
     this.tocado = true;
+    // La rueda manda sobre el vuelo de acercamiento: si no, los dos se pelearían por la
+    // misma posición de cámara durante los 550 ms del vuelo.
+    this.vuelo = null;
   };
 
   private readonly alAgarrar = (): void => {
     this.tocado = true;
     this.giraEnFondo = false;
+    // Un arrastre en mitad del vuelo también lo cancela: el usuario manda.
+    this.vuelo = null;
     clearTimeout(this.temporizador);
   };
 
@@ -246,6 +417,9 @@ export class CameraController {
     clearTimeout(this.temporizador);
     window.removeEventListener("resize", this.alRedimensionar);
     this.lienzo.removeEventListener("wheel", this.alTocar);
+    // Aunque `apuntarConDobleClic` no llegara a llamarse, quitar un listener que no está
+    // puesto no hace nada.
+    this.lienzo.removeEventListener("dblclick", this.alDobleClic);
     this.controles.removeEventListener("start", this.alAgarrar);
     this.controles.removeEventListener("end", this.alSoltar);
     this.controles.dispose();
