@@ -48,8 +48,32 @@ const RADIO_GLOBO = 1;
  * (`distanciaDeEncuadre`), para que el planeta entre entero dejando hueco.
  */
 const DISTANCIA_MINIMA = 1.25;
-/** Lejos del todo, con sitio para el halo atmosférico de 1.2.2. */
+/**
+ * Lejos del todo, con sitio para el halo atmosférico de 1.2.2.
+ */
 const DISTANCIA_MAXIMA = 6;
+
+/**
+ * La misma distancia mínima, expresada como altura sobre la superficie: es la cantidad con
+ * la que se razona el tope de zoom (1.5.2), que va de radiante a radiante y no de distancia
+ * a distancia.
+ */
+const ALTURA_MINIMA = DISTANCIA_MINIMA - RADIO_GLOBO;
+
+/**
+ * Tramo de altura, en radios, en el que la rueda se frena al llegar al suelo (ROADMAP
+ * 1.5.2). Es el tope blando: dentro de la banda el `zoomSpeed` baja a cero justo en el suelo
+ * y va lineal hasta el valor de la librería en el borde, así que se llega frenando y nunca
+ * de golpe.
+ *
+ * El freno sale de `zoomSpeed` y no del clamp porque es lo único que Three aplica antes de
+ * cortar: el clamp es duro y corre después, cuando ya no queda dato de lo que pedía la rueda.
+ * La contrapartida es que frena en las dos direcciones dentro de la banda, así que la banda
+ * es corta a propósito (0,15 radios: el 6 % del recorrido) y salir del primer plano sigue
+ * siendo inmediato. El pellizco con dos dedos va por otro camino —el factor lo calcula
+ * `_zoomCamera` con la distancia entre dedos— y conserva el tope duro de siempre.
+ */
+export const BANDA_ZOOM_SUAVE = 0.15;
 
 /**
  * Campo de visión vertical de la cámara, en grados. Vive aquí porque el encuadre de
@@ -176,6 +200,13 @@ export class CameraController {
   /** `prefers-reduced-motion` resuelto al construir: sin vuelo de acercamiento. */
   private readonly reducido: boolean;
 
+  /**
+   * `zoomSpeed` de la librería tal como viene (1.2 en three r186). Se guarda en vez de
+   * escribir el número para que el freno de 1.5.2 se aplique sobre lo que Three tenga, y
+   * para que el test vea el valor de partida sin depender del default de la librería.
+   */
+  private readonly zoomBase: number;
+
   /** La malla contra la que se apunta con el doble clic (1.5.1). */
   private malla: Mesh | null = null;
 
@@ -216,6 +247,7 @@ export class CameraController {
     const reducido = window.matchMedia(CONSULTA_MOVIMIENTO).matches;
     controles.staticMoving = reducido;
     this.reducido = reducido;
+    this.zoomBase = controles.zoomSpeed;
     this.controles = controles;
 
     // Ni `TrackballControls` ni `OrbitControls` escuchan `resize` (su `handleResize()`
@@ -243,6 +275,7 @@ export class CameraController {
    */
   update(ahora: number = performance.now()): void {
     this.controles.rotateSpeed = this.velocidadDeArrastre();
+    this.controles.zoomSpeed = this.velocidadDeZoom();
     this.avanzarVuelo(ahora);
     this.controles.update();
 
@@ -280,10 +313,7 @@ export class CameraController {
     const altura = this.controles.object.position.length() - RADIO_GLOBO;
     const hasta = destino
       .clone()
-      .setLength(
-        RADIO_GLOBO +
-          Math.max(altura / PASO_ACERCADO, DISTANCIA_MINIMA - RADIO_GLOBO),
-      );
+      .setLength(RADIO_GLOBO + Math.max(altura / PASO_ACERCADO, ALTURA_MINIMA));
 
     // El doble clic es interacción del usuario, como un arrastre: corta el giro de fondo y
     // vacía el contador de inactividad.
@@ -410,6 +440,21 @@ export class CameraController {
     const altura = object.position.distanceTo(target) - RADIO_GLOBO;
     const factor = altura / (this.distanciaBase - RADIO_GLOBO);
     return VELOCIDAD_ROTACION * Math.min(Math.max(factor, 0.2), 2);
+  }
+
+  /**
+   * Cuánto responde la rueda al movimiento en esta altura (ROADMAP 1.5.2), sobre el
+   * `zoomSpeed` de la librería: entero fuera de la banda, y bajando a cero justo en el suelo.
+   * El tope duro de `minDistance` sigue puesto —esto no lo reemplaza, lo suaviza— y es lo
+   * que garantiza que ninguna vía (rueda, doble clic, pellizco) pase de 1,25 radios.
+   */
+  private velocidadDeZoom(): number {
+    const { object, target } = this.controles;
+    const sobreElSuelo =
+      object.position.distanceTo(target) - RADIO_GLOBO - ALTURA_MINIMA;
+    return (
+      this.zoomBase * Math.min(Math.max(sobreElSuelo / BANDA_ZOOM_SUAVE, 0), 1)
+    );
   }
 
   /** Sin esto, la vista desmontada por React seguiría respondiendo al ratón. */

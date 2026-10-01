@@ -23,6 +23,7 @@ import { TrackballControls } from "three/examples/jsm/controls/TrackballControls
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import {
+  BANDA_ZOOM_SUAVE,
   CameraController,
   distanciaDeEncuadre,
   DURACION_ACERCADO_MS,
@@ -566,5 +567,97 @@ describe("CameraController — doble clic a coordenada (ROADMAP 1.5.1)", () => {
     ctrl.dispose();
 
     expect(espia).toHaveBeenCalledWith("dblclick", expect.any(Function));
+  });
+});
+
+/**
+ * Tope de zoom (ROADMAP 1.5.2).
+ *
+ * El suelo de 1,25 radios ya lo imponía `TrackballControls` desde 1.1.2; lo que este paso
+ * añade es que **llegar** a él sea suave y que ningún camino lo atraviese. Las dos cosas se
+ * comprueban sobre la rueda de verdad, que en jsdom dispara el mismo manejador que en el
+ * navegador: `TrackballControls` acumula el `deltaY` y aplica un factor multiplicativo por
+ * frame, así que una muesca se mide en treinta frames para que el amortiguado se desarrolle.
+ */
+const conZoom = (distancia: number) => {
+  const canvas = document.createElement("canvas");
+  const camara = new PerspectiveCamera(45, 1, 0.1, 100);
+  const ctrl = new CameraController(camara, canvas);
+  camara.position.set(0, 0, distancia);
+  camara.updateMatrixWorld();
+  return { canvas, camara, ctrl };
+};
+
+/** Una muesca de rueda hacia el planeta (`deltaY` negativo) y 30 frames de amortiguado. */
+const muesca = (canvas: HTMLCanvasElement, ctrl: CameraController) => {
+  canvas.dispatchEvent(new WheelEvent("wheel", { deltaY: -100 }));
+  for (let f = 0; f < 30; f++) ctrl.update(1000 + f * 16);
+};
+
+/** Cuánto se acerca la cámara en una muesca, partiendo de la distancia dada. */
+const avancePorMuesca = (distancia: number) => {
+  const { canvas, camara, ctrl } = conZoom(distancia);
+  muesca(canvas, ctrl);
+  return distancia - camara.position.length();
+};
+
+describe("CameraController — tope de zoom (ROADMAP 1.5.2)", () => {
+  it("la rueda no puede pasar del suelo, ni con cuarenta muescas", () => {
+    const { canvas, camara, ctrl } = conZoom(2);
+    const suelo = ctrl.controles.minDistance;
+
+    for (let i = 0; i < 40; i++) muesca(canvas, ctrl);
+    const distancia = camara.position.length();
+
+    // El suelo es infranqueable: es el criterio del paso. Con el tope duro de 1.1.2 esto
+    // también se cumplía, pero la cámara llegaba de golpe; ahora llega frenando.
+    expect(distancia).toBeGreaterThanOrEqual(suelo - 1e-9);
+    // Y el tope blando no deja el zoom lejos de su rango: se entra en la banda del último
+    // tramo, que es justo donde el frenado se nota.
+    expect(distancia).toBeLessThan(suelo + BANDA_ZOOM_SUAVE);
+  });
+
+  it("en el suelo la última muesca no mueve nada, y no rebota", () => {
+    const { canvas, camara, ctrl } = conZoom(1.25);
+
+    muesca(canvas, ctrl);
+
+    // Ni lo pasa ni devuelve un rebote: VISUAL_DESIGN §10 y §13 prohíben el rebote, así que
+    // en el suelo el zoom se anula en vez de rebotar.
+    expect(camara.position.length()).toBeCloseTo(1.25, 9);
+  });
+
+  it("la rueda se frena al acercarse al suelo, no solo al tocarlo", () => {
+    // Una muesca aleja la cámara alrededor de un 14 % de lejos y bastante menos cerca del
+    // suelo: eso es el tope blando, medido con la misma muesca en las dos alturas.
+    const lejos = avancePorMuesca(2);
+    const cerca = avancePorMuesca(1.25 + BANDA_ZOOM_SUAVE / 2);
+
+    expect(lejos).toBeGreaterThan(0.05);
+    expect(cerca).toBeLessThan(lejos / 2);
+  });
+
+  it("el tope depende de noZoom y noPan: con los dos apagados three se salta el clamp", () => {
+    const ctrl = nuevo();
+
+    // `TrackballControls._checkDistances()` —el que corta el zoom en [minDistance,
+    // maxDistance]— solo corre si noZoom **o** noPan sigue activo: se salta cuando los dos
+    // están apagados. Hoy ninguno lo está (el pan se apagó con `mouseButtons.RIGHT = null`,
+    // no con `noPan`), pero si alguien apagara el zoom por su cuenta el tope se iría en
+    // silencio y la cámara atravesaría el globo. Esto lo deja por escrito.
+    expect(ctrl.controles.noZoom).toBe(false);
+    expect(ctrl.controles.noPan).toBe(false);
+  });
+
+  it("fuera de la banda la rueda va igual de rápido que antes del tope blando", () => {
+    const { ctrl } = conZoom(3);
+    const base = ctrl.controles.zoomSpeed;
+
+    ctrl.update(0);
+
+    // El freno es local al último tramo: lejos del suelo el `zoomSpeed` es el que trae la
+    // librería, sin tocar, para que este paso no cambie el zoom que el usuario ya conoce.
+    expect(ctrl.controles.zoomSpeed).toBe(base);
+    expect(ctrl.controles.zoomSpeed).toBeGreaterThan(0);
   });
 });
