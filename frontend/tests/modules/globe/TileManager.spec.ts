@@ -326,6 +326,40 @@ describe("TileManager — atlas de vista (cap)", () => {
     gestionado.dispose();
   });
 
+  it("el cap que cruza el antimeridiano pide las columnas de la vuelta y las empaqueta en orden", async () => {
+    // 1.4.2: la cámara en lon 179 saca el rectángulo por la derecha (x0=119 y 19 columnas
+    // en z7 entran 119..127 y 0..9). Hay que pedirlas, y componerlas en su sitio: si el
+    // atlas las dibujara en (x - x0) saldrían del lienzo y quedarían huecos.
+    const { gestionado, deps } = nuevoManager();
+    await gestionado.precargar();
+    const a = (-179 * Math.PI) / 180; // lon -179°, el otro lado del borde fecha
+    gestionado.sincronizar(
+      1.4,
+      camara(1.4 * Math.sin(a), 0, 1.4 * Math.cos(a)),
+    );
+
+    await vi.waitFor(() => expect(deZ7(deps)).toHaveLength(228));
+    expect(deZ7(deps)).toContain("https://tile.test/7/58/0"); // columna x=0: la vuelta
+    expect(deZ7(deps)).toContain("https://tile.test/7/58/127"); // y el borde este
+    // El atlas se compone con su origen, y las columnas de la vuelta son las últimas.
+    const [, cols, rows, x0, y0] = deps.componerAtlas.mock.calls.at(-1)!;
+    expect([cols, rows, x0, y0]).toEqual([19, 12, 119, 58]);
+    expect(x0 + cols).toBeGreaterThan(128);
+    // Y el uniform del rectángulo lo dice para que el shader pueda dar la vuelta.
+    const u = gestionado["material"].uniforms;
+    await vi.waitFor(() =>
+      expect(u.u_atlasA.value).toBeInstanceOf(CanvasTexture),
+    );
+    gestionado.sincronizar(
+      1.4,
+      camara(1.4 * Math.sin(a), 0, 1.4 * Math.cos(a)),
+    );
+    expect(u.u_rectA.value.x).toBeCloseTo(119 / 128, 6);
+    expect(u.u_rectA.value.z).toBeCloseTo(19 / 128, 6);
+    expect(u.u_rectA.value.x + u.u_rectA.value.z).toBeGreaterThan(1);
+    gestionado.dispose();
+  });
+
   it("no recompone el mismo rectángulo y solo lo rehace si la cámara sale de él", async () => {
     const { gestionado, deps } = nuevoManager();
     await gestionado.precargar();

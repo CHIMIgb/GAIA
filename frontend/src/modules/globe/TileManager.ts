@@ -45,6 +45,7 @@ import {
 
 import {
   centroVista,
+  columnaDeAtlas,
   esCap,
   estaEnEscalera,
   ladoDeZoom,
@@ -141,8 +142,16 @@ const componerAtlasProd = (
   // La fila 0 del esquema XYZ es el norte y el canvas dibuja fila 0 arriba:
   // el atlas queda en la misma orientación que muestrea el shader.
   for (const [clave, imagen] of tiles) {
-    const [, y, x] = clave.split("/").map(Number);
-    ctx.drawImage(imagen, (x - x0) * pxTile, (y - y0) * pxTile);
+    const [z, y, x] = clave.split("/").map(Number);
+    // `columnaDeAtlas` (1.4.2) y no `x - x0`: si el cap cruza el antimeridiano, sus
+    // últimas columnas son las columnas 0, 1, 2… del nivel y `x - x0` las dibujaría
+    // fuera del lienzo, dejando huecos. La vuelta es por el mundo entero, así que el
+    // periodo sale del `z` de la propia clave.
+    ctx.drawImage(
+      imagen,
+      columnaDeAtlas(x, x0, ladoDeZoom(z)) * pxTile,
+      (y - y0) * pxTile,
+    );
   }
   return canvas;
 };

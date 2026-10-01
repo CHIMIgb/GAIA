@@ -13,6 +13,7 @@ import {
   PXS_MAX_CAP,
   arcoEnPantalla,
   centroVista,
+  columnaDeAtlas,
   esCap,
   estaEnEscalera,
   ladoDeZoom,
@@ -21,6 +22,7 @@ import {
   tileDeLonLat,
   urlTileEsri,
   uvDeCap,
+  uvLocal,
   vMercator,
   zoomDeCap,
   zoomParaDistancia,
@@ -243,5 +245,132 @@ describe("tilesSatelite — atlas de vista (cap de z6)", () => {
     expect(vMercator(0)).toBeCloseTo(0.5, 5);
     expect(vMercator(-LAT_LIMITE)).toBeCloseTo(1, 5);
     expect(vMercator(90)).toBeCloseTo(0, 5);
+  });
+});
+
+describe("uvLocal — UV del atlas de vista sin costuras (ROADMAP 1.4.2)", () => {
+  const LADO = ladoDeZoom(6); // 64 columnas
+  const rect = (lat: number, lon: number) =>
+    rectDeCap(6, { lat, lon }, 1.4, FOV / 2, ASPECTO_16_9);
+  const uv = (lat: number, lon: number) => uvDeCap(rect(lat, lon));
+
+  it("dentro del rectángulo la uv local es la posición proporcional en el atlas", () => {
+    const r = uv(0, 0); // z6, lon 0: u0=26/64, v0=28/64, 12×8 tiles
+    // Las esquinas del rectángulo son las del atlas: nada de margen, nada de recorte.
+    expect(uvLocal({ u: r.u0, v: r.v0 }, r)).toEqual({ u: 0, v: 0 });
+    expect(uvLocal({ u: r.u0 + r.ancho, v: r.v0 + r.alto }, r)).toEqual({
+      u: 1,
+      v: 1,
+    });
+    // El centro del ecuador cae en el centro del atlas de vista.
+    const centro = uvLocal({ u: r.u0 + r.ancho / 2, v: 0.5 }, r)!;
+    expect(centro.u).toBeCloseTo(0.5, 6);
+    expect(centro.v).toBeCloseTo(0.5, 6);
+  });
+
+  it("fuera del rectángulo devuelve null para que el shader caiga al atlas global", () => {
+    const r = uv(0, 0);
+    // Los cuatro lados, con un tic de margen: lo que no cubre el atlas de vista no
+    // existe en él, así que el shader tiene que saber que no puede muestrearlo.
+    const uCentro = (r.u0 + r.ancho) / 2;
+    expect(uvLocal({ u: r.u0 - 1 / LADO, v: 0.5 }, r)).toBeNull();
+    expect(uvLocal({ u: r.u0 + r.ancho + 1 / LADO, v: 0.5 }, r)).toBeNull();
+    expect(uvLocal({ u: uCentro, v: r.v0 - 1 / LADO }, r)).toBeNull();
+    expect(uvLocal({ u: uCentro, v: r.v0 + r.alto + 1 / LADO }, r)).toBeNull();
+  });
+
+  it("un atlas del mundo entero se muestrea tal cual, sin desplazamiento", () => {
+    const mundo = { u0: 0, v0: 0, ancho: 1, alto: 1 };
+    expect(uvLocal({ u: 0.3, v: 0.7 }, mundo)).toEqual({ u: 0.3, v: 0.7 });
+  });
+
+  it("el rectángulo que cruza el antimeridiano también cubre su mitad envuelta", () => {
+    // Cerca de lon 180 el rectángulo se sale por la derecha (u0 + ancho > 1): las
+    // columnas de la vuelta están en el atlas, en su orden, pero en el lado oeste del
+    // mundo (u < u0). Si no se les devuelve la vuelta, el shader las pinta con el atlas
+    // global y aparece un escalón de nitidez en el borde fecha.
+    const rc = rect(0, -179);
+    const r = uvDeCap(rc);
+    expect(r.u0 + r.ancho).toBeGreaterThan(1);
+    const vMedio = r.v0 + r.alto / 2;
+    // u=0 es la columna x=0 del mundo, la primera de las envueltas: su columna en el
+    // atlas es la que le toca (`columnaDeAtlas`), no la primera del atlas.
+    const oeste = uvLocal({ u: 0, v: vMedio }, r)!;
+    expect(oeste.u).toBeCloseTo(columnaDeAtlas(0, rc.x0, LADO) / rc.cols, 6);
+    expect(oeste.u).toBeCloseTo(0.5, 6); // sexta columna de doce: el centro del atlas
+    // La vuelta es continua: la última columna envuelta (x=5) llega al final del atlas,
+    // sin hueco ni solapamiento con la primera del rectángulo (u=u0, uv 0).
+    expect(uvLocal({ u: 5 / LADO, v: vMedio }, r)!.u).toBeCloseTo(
+      11 / rc.cols,
+      6,
+    );
+    expect(uvLocal({ u: r.u0, v: vMedio }, r)!.u).toBeCloseTo(0, 6);
+    // Y el borde este del rectángulo sigue en su sitio.
+    expect(
+      uvLocal({ u: r.u0 + r.ancho - 1 / LADO, v: vMedio }, r)!.u,
+    ).toBeCloseTo(1 - 1 / rc.cols, 6);
+    // Pasado el borde de la vuelta (x=5), lo que queda hasta u0 es el limbo: ahí el
+    // atlas de vista no llega y se cae al global, en vez de muestrear la vuelta
+    // equivocada del propio atlas de vista.
+    expect(uvLocal({ u: 6 / LADO, v: vMedio }, r)!.u).toBeCloseTo(1, 6);
+    expect(uvLocal({ u: 7 / LADO, v: vMedio }, r)).toBeNull();
+    expect(uvLocal({ u: r.u0 - 1 / LADO, v: vMedio }, r)).toBeNull();
+  });
+
+  it("la vuelta es solo en u: en v no hay wrap, el alto del atlas no se desborda", () => {
+    // El ecuador y los polos van por la misma regla que cualquier otra latitud: la
+    // columna de tiles es la de vMercator, recortada al nivel, sin dar la vuelta.
+    for (const lat of [0, 60, 80, -80]) {
+      const r = uv(lat, 0);
+      const uCentro = r.u0 + r.ancho / 2;
+      // El punto que la cámara tiene debajo cae dentro del atlas de vista, y no pegado
+      // a su borde (el rectángulo se recorta a 24 filas cerca de los polos).
+      const centro = uvLocal({ u: uCentro, v: vMercator(lat) }, r);
+      expect(centro).not.toBeNull();
+      expect(centro!.v).toBeGreaterThan(0);
+      expect(centro!.v).toBeLessThan(1);
+      // Un tile por encima o por debajo ya está fuera: en v la latitud no da la vuelta.
+      expect(uvLocal({ u: uCentro, v: r.v0 - 1 / LADO }, r)).toBeNull();
+      expect(
+        uvLocal({ u: uCentro, v: r.v0 + r.alto + 1 / LADO }, r),
+      ).toBeNull();
+    }
+  });
+});
+
+describe("columnaDeAtlas — empaquetado de las columnas del cap (ROADMAP 1.4.2)", () => {
+  it("en un atlas global la columna del atlas es la del tile", () => {
+    expect(columnaDeAtlas(0, 0, 16)).toBe(0);
+    expect(columnaDeAtlas(7, 0, 16)).toBe(7);
+  });
+
+  it("con el rectángulo envuelto, las columnas de la vuelta caen dentro del atlas", () => {
+    // z6 son 64 columnas: con x0=59 y 8 columnas entran 59..63 y 0, 1 y 2. Las últimas
+    // tres van al final del atlas, en orden; dibujarlas en (x - x0) las sacaría del
+    // lienzo por la izquierda (negativo) y dejaría tres huecos.
+    expect(columnaDeAtlas(59, 59, 64)).toBe(0);
+    expect(columnaDeAtlas(63, 59, 64)).toBe(4);
+    expect(columnaDeAtlas(0, 59, 64)).toBe(5);
+    expect(columnaDeAtlas(2, 59, 64)).toBe(7);
+  });
+
+  it("la vuelta es por el mundo (2^z), no por el número de columnas del atlas", () => {
+    // El caso que sale en z6 mirando el borde fecha: 12 columnas desde x0=58 entran 58..63
+    // y 0..5. El tile x=0 es la sexta del atlas (la vuelta cae en 64, no en 12).
+    expect(columnaDeAtlas(0, 58, 64)).toBe(6);
+    expect(columnaDeAtlas(5, 58, 64)).toBe(11);
+    expect(columnaDeAtlas(58, 58, 64)).toBe(0);
+  });
+
+  it("ninguna columna se sale del atlas, ni la última ni la primera", () => {
+    // Las columnas que pide `TileManager` son `(x0 + col) % lado` para col < cols: la
+    // vuelta tiene que devolverlas al su sitio en el atlas, en orden y sin salirse.
+    for (let col = 0; col < 8; col++)
+      for (let x0 = 60; x0 < 64; x0++) {
+        const enAtlas = columnaDeAtlas((x0 + col) % 64, x0, 64);
+        expect(enAtlas).toBe(col);
+        expect(enAtlas).toBeGreaterThanOrEqual(0);
+        expect(enAtlas).toBeLessThan(8);
+      }
   });
 });

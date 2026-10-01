@@ -97,10 +97,21 @@ describe("AtmosphereMesh — atmósfera iluminación uniforme (1.2.2 ajustado)",
     const fs = material.fragmentShader;
     expect(fs).toContain("uniform vec4 u_rectA;");
     // UV local del rectángulo de vista: (merc − origen) / tamaño.
-    expect(fs).toContain("(merc - u_rectA.xy) / u_rectA.zw");
+    expect(fs).toContain("vec2(du, merc.y - u_rectA.y) / u_rectA.zw");
     // Fuera del rectángulo manda el atlas global (B), dentro se mezcla A↔B.
     expect(fs).toContain("superficie = b;");
     // Sin atlas de vista, u_rectA es el mundo entero: el mapeo no cambia nada.
     expect(material.uniforms.u_rectA.value.toArray()).toEqual([0, 0, 1, 1]);
+  });
+
+  it("el rectángulo que cruza el antimeridiano se muestrea con la vuelta (1.4.2)", () => {
+    const { material } = new AtmosphereMesh();
+    const fs = material.fragmentShader;
+    // `u0 + ancho > 1` es lo que dice que el rectángulo de vista se salió por la
+    // derecha: los puntos con merc.x < u0 son su mitad envuelta, no fuera de él, así
+    // que hay que sumarles una vuelta al mundo antes de dividir. Es el mismo criterio
+    // que `uvLocal` en `utils/tilesSatelite.ts`.
+    expect(fs).toContain("u_rectA.x + u_rectA.z > 1.0 && du < 0.0");
+    expect(fs).toContain("du += 1.0;");
   });
 });

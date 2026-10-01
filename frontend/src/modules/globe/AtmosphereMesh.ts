@@ -58,6 +58,15 @@ const COLOR_ACENTO = new Color(0x3fd8c9);
  *   2. `borde` = pow(1 - dot(vista, n), exponenteBorde). Da 1 en el limbo —donde la
  *      normal es perpendicular a la vista— y cae a 0 de cara. El resplandor del acento
  *      vive en el borde del disco, uniforme alrededor (no hay terminador que acentuar).
+ *
+ * El muestreo del atlas de vista (1.4.2) es el espejo exacto de `uvLocal` en
+ * `utils/tilesSatelite.ts`, incluida la vuelta: como el rectángulo de vista puede
+ * cruzar el antimeridiano, `u0 + ancho` pasa de 1 y su mitad envuelta (los puntos con
+ * `merc.x < u0`) sigue siendo del rectángulo. Sin esa vuelta el borde fecha quedaba con
+ * un escalón de nitidez en mitad de la vista, con el atlas global en el lado oeste y el
+ * atlas de vista en el este. En `v` no hay vuelta: la latitud no es periódica y
+ * `rectDeCap` ya recorta el alto al nivel, así que ecuador y polos no dan ninguna
+ * costura.
  */
 const vertexShader = /* glsl */ `
 varying vec3 vNormalMundo;
@@ -94,7 +103,9 @@ void main() {
     // mercator u_rectA (u0, v0, ancho, alto): dentro se muestra con su uv local y
     // fuera se cae al atlas global B, que sí cubre el mundo entero. Con un atlas
     // global, u_rectA es (0,0,1,1) y esto es el muestreo directo de antes.
-    vec2 local = (merc - u_rectA.xy) / u_rectA.zw;
+    float du = merc.x - u_rectA.x;
+    if (u_rectA.x + u_rectA.z > 1.0 && du < 0.0) du += 1.0;
+    vec2 local = vec2(du, merc.y - u_rectA.y) / u_rectA.zw;
     if (local.x >= 0.0 && local.x <= 1.0 && local.y >= 0.0 && local.y <= 1.0) {
       superficie = mix(texture2D(u_atlasA, local).rgb, b, u_cruce);
     } else {

@@ -339,13 +339,16 @@ export function rectDeCap(
   };
 }
 
+/** Rectángulo mercator (u0, v0, ancho, alto) que ocupa un atlas, en 0..1. */
+export interface UvRect {
+  readonly u0: number;
+  readonly v0: number;
+  readonly ancho: number;
+  readonly alto: number;
+}
+
 /** Rectángulo mercator (u0, v0, ancho, alto) que ocupa el atlas del cap. */
-export function uvDeCap(rect: RectCap): {
-  u0: number;
-  v0: number;
-  ancho: number;
-  alto: number;
-} {
+export function uvDeCap(rect: RectCap): UvRect {
   const lado = ladoDeZoom(rect.z);
   return {
     u0: rect.x0 / lado,
@@ -353,4 +356,48 @@ export function uvDeCap(rect: RectCap): {
     ancho: rect.cols / lado,
     alto: rect.rows / lado,
   };
+}
+
+/**
+ * Columna del atlas donde va el tile `x` de un atlas que arranca en la columna `x0`
+ * del nivel. Es el espejo CPU del `drawImage` de `TileManager` (misma fórmula en TS y
+ * en el compositor), y existe por 1.4.2: el rectángulo de vista puede cruzar el
+ * antimeridiano, así que sus últimas columnas son las columnas 0, 1, 2… del nivel y
+ * `x - x0` sale negativo —el tile se dibujaría fuera del lienzo y dejaría un hueco en
+ * el atlas—.
+ *
+ * El módulo es el lado del nivel, no el número de columnas del atlas: la vuelta es por
+ * el mundo (2^z), no por el atlas. Con `x0=58` y 12 columnas en z6, el tile `x=0` es
+ * la sexta del atlas, no la segunda.
+ */
+export function columnaDeAtlas(x: number, x0: number, lado: number): number {
+  return (((x - x0) % lado) + lado) % lado;
+}
+
+/**
+ * UV local del atlas para un punto mercator, o `null` si el punto cae fuera del
+ * rectángulo (el shader entonces pinta el atlas global, que sí cubre el mundo entero).
+ *
+ * Es el espejo exacto del muestreo del atlas de vista en el fragment shader
+ * (`AtmosphereMesh`), que es donde manda en render. Existe por 1.4.2: como el
+ * rectángulo de vista puede cruzar el antimeridiano, `u0 + ancho` pasa de 1 y su mitad
+ * envuelta —los puntos con `u < u0`— sigue siendo del rectángulo. Sin esa vuelta, esas
+ * columnas, que el atlas sí trae en su orden, se pintaban con el atlas global y el
+ * borde fecha quedaba con un escalón de nitidez en mitad de la vista.
+ *
+ * En `v` no hay vuelta: la latitud no es periódica y `rectDeCap` ya recorta el alto al
+ * nivel, así que el ecuador y los polos entran y salen por la misma regla que el resto.
+ */
+export function uvLocal(
+  merc: { readonly u: number; readonly v: number },
+  rect: UvRect,
+): { readonly u: number; readonly v: number } | null {
+  const du =
+    rect.u0 + rect.ancho > 1 && merc.u < rect.u0
+      ? merc.u + 1 - rect.u0
+      : merc.u - rect.u0;
+  const dv = merc.v - rect.v0;
+  return du >= 0 && du <= rect.ancho && dv >= 0 && dv <= rect.alto
+    ? { u: du / rect.ancho, v: dv / rect.alto }
+    : null;
 }
