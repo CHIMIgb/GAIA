@@ -1,7 +1,7 @@
 # GAIA — Estructura del Proyecto
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.10  
+> **Versión del Documento:** 1.11  
 > **Fecha:** 2026-10-01
 
 ---
@@ -74,7 +74,8 @@ frontend/
 │   │   │   ├── TerrainMesh.ts         ← SphereGeometry (esfera lisa) + MeshStandardMaterial
 │   │   │   ├── AtmosphereMesh.ts      ← Esfera exterior con shader de dispersión atmosférica
 │   │   │   ├── TileManager.ts         ← Descarga y caché de tiles satelitales (Esri)
-│   │   │   └── CoastlineOverlay.ts    ← Líneas de Natural Earth renderizadas con LineSegments
+│   │   │   ├── CoastlineOverlay.ts    ← Líneas de Natural Earth renderizadas con LineSegments
+│   │   │   └── MockPoints.ts          ← Dataset estático de 100 puntos (rejilla 10×10) para 1.6.1, solo en dev
 │   │   │
 │   │   ├── fire/
 │   │   │   ├── FireModule.ts          ← Orquestador: lifecycle de la capa de incendios
@@ -165,7 +166,7 @@ frontend/
 │   │   └── worker.messages.ts         ← Uniones discriminadas de mensajes Worker ↔ Main thread
 │   │
 │   ├── utils/                         ← Funciones utilitarias puras
-│   │   ├── coordinates.ts             ← geodesicToCartesian(lat, lon, radius) → Vector3
+│   │   ├── coordinates.ts             ← geodesicToCartesian(lat, lon, radio) → Vector3 y RADIO_TIERRA (implementado en 1.6.1)
 │   │   ├── colorScales.ts             ← Funciones de interpolación de color para FRP, magnitud, µSv/h
 │   │   ├── tilemath.ts                ← Cálculos de tiles: lat/lon ↔ tile coords (x, y, z)
 │   │   └── dispose.ts                 ← disposeObject3D(obj): libera geometry + material + texture recursivamente
@@ -305,14 +306,14 @@ GAIA/
 
 ### 5.1 `frontend/src/core/` — Motor de Renderizado
 
-| Archivo               | Responsabilidad                                                                                                                                                                                                                                                                                                                                                                                                 |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Engine.ts`           | Clase principal. Crea `WebGLRenderer`, `Scene`, `PerspectiveCamera`. Ejecuta el `requestAnimationFrame` loop. Llama a `update()` en cada módulo activo y `render()` en cada frame. Expone `renderer.info` para métricas de draw calls.                                                                                                                                                                          |
-| `SceneManager.ts`     | Registra y desregistra módulos en la escena. Gestiona el ciclo de vida: `init()` → `update(dt)` → `dispose()`. Garantiza que `dispose()` se invoque al remover cualquier objeto.                                                                                                                                                                                                                                |
-| `CameraController.ts` | Wrapper de `TrackballControls` (arcball: giro libre sin polos ni voltereta). Configura límites de zoom (min/max distance), inercia (`staticMoving`), el giro de fondo por inactividad de VISUAL_DESIGN §10 y desactiva el pan del clic derecho. Desde 1.5.1 también es dueña del gesto de acercar a un punto: `apuntarConDobleClic(malla)` registra el `dblclick` y `acercarA(punto)` hace el vuelo con easing. |
-| `Clock.ts`            | Encapsula `THREE.Clock`. Expone `deltaTime`, `elapsedTime` y un contador de FPS rolling (media de últimos 60 frames).                                                                                                                                                                                                                                                                                           |
-| `Resizer.ts`          | Escucha `window.resize`. Actualiza `camera.aspect`, `camera.updateProjectionMatrix()` y `renderer.setSize()`. Gestiona `devicePixelRatio` con cap a 2.0 para rendimiento.                                                                                                                                                                                                                                       |
-| `Stats.ts`            | Integración opcional de `stats.js`. Lee `renderer.info.render.calls` (draw calls) y `renderer.info.memory` (geometrías, texturas en VRAM) para el panel de debug.                                                                                                                                                                                                                                               |
+| Archivo               | Responsabilidad                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Engine.ts`           | Clase principal. Crea `WebGLRenderer`, `Scene`, `PerspectiveCamera`. Ejecuta el `requestAnimationFrame` loop. Llama a `update()` en cada módulo activo y `render()` en cada frame. Expone `renderer.info` para métricas de draw calls.                                                                                                                                                                                                                                                                                                                                                                              |
+| `SceneManager.ts`     | Registra y desregistra módulos en la escena. Gestiona el ciclo de vida: `init()` → `update(dt)` → `dispose()`. Garantiza que `dispose()` se invoque al remover cualquier objeto.                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `CameraController.ts` | Wrapper de `TrackballControls` (arcball: giro libre sin polos ni voltereta). Configura límites de zoom (min/max distance), inercia (`staticMoving`), el giro de fondo por inactividad de VISUAL_DESIGN §10 y desactiva el pan del clic derecho. Desde 1.5.1 también es dueña del gesto de acercar a un punto: `apuntarConDobleClic(malla)` registra el `dblclick` y `acercarA(punto)` hace el vuelo con easing. Desde 1.5.2 el tope de zoom es blando (`velocidadDeZoom` baja `zoomSpeed` en la `BANDA_ZOOM_SUAVE`); el radio del globo lo importa de `utils/coordinates.ts` desde 1.6.1 en vez de declararlo aquí. |
+| `Clock.ts`            | Encapsula `THREE.Clock`. Expone `deltaTime`, `elapsedTime` y un contador de FPS rolling (media de últimos 60 frames).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `Resizer.ts`          | Escucha `window.resize`. Actualiza `camera.aspect`, `camera.updateProjectionMatrix()` y `renderer.setSize()`. Gestiona `devicePixelRatio` con cap a 2.0 para rendimiento.                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `Stats.ts`            | Integración opcional de `stats.js`. Lee `renderer.info.render.calls` (draw calls) y `renderer.info.memory` (geometrías, texturas en VRAM) para el panel de debug.                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
 ---
 
@@ -366,7 +367,7 @@ interface IGaiaModule {
 | `radiation/` | RadiationModule, RadiationMesh, AlertThresholds       | InstancedMesh (puntos) o Heatmap          |     1      |
 | **Total**    |                                                       |                                           |  **7–8**   |
 
-> El total de draw calls se mantiene dentro del presupuesto de **≤ 8 por frame** (RNF-02).
+> El total de draw calls se mantiene dentro del presupuesto de **≤ 8 por frame** (RNF-02). `globe/MockPoints.ts` (el dataset de 100 puntos de 1.6.1) suma 1 draw call, pero solo se monta en desarrollo: no cuenta para el presupuesto de producción.
 
 ---
 

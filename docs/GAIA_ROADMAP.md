@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.122
+> **Versión del Documento:** 1.123
 > **Estado:** Fase 0 **cerrada con dos excepciones** — 64 de 66 micro-pasos validados; los 2 pendientes (`0.7.5`, `0.7.13`) no son cumplibles con los docs actuales y quedan anotados como tal. **Fase 1 en curso** (el paso 1.3 —elevación y topografía— está **descartado** por decisión del usuario: el globo es liso); F2 a F13 sin empezar.
 > **Última actualización:** 2026-10-01
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -569,7 +569,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.6.1 — Prueba de globo con datos estáticos**
 
-- [ ] Cargar un dataset estático pequeño (mock 100 puntos) sobre el globo y revisar orientación/proyección.
+- [x] Cargar un dataset estático pequeño (mock 100 puntos) sobre el globo y revisar orientación/proyección. _*(validado: la pieza que faltaba no era el dibujo sino el mapeo geodesico → cartesiano, que ahora vive en `utils/coordinates.ts` —como lo anuncia PROJECT_STRUCTURE §2— con la misma cuenta que hace `SphereGeometry` para sus vértices: `lon = 0` en la costura del atlas y el norte en `+Y` como espera el shader atmosférico. `CameraController` importa su radio desde ahí en vez de declarar otro `1`, porque dos números iguales en dos archivos son una desincronización esperando a ocurrir. Los 100 puntos son una rejilla 10×10 en los centros de celda sobre un `InstancedMesh` con material plano —un draw call, el presupuesto que WORKFLOWS §3 fija para la capa de incendios de F2, que es el camino que este paso deja probado—; los polos y la costura se dejan fuera a propósito porque allí el mapeo es degenerado (todos los meridianos se juntan, y ±180 son el mismo punto), y el test lo dice en vez de medir una flecha ambigua. Solo se monta en desarrollo, con el mismo `import.meta.env.DEV` y la misma importación dinámica que el overlay de 0.7.1, así que en producción es código muerto y no entra en el bundle. La comprobación automatizada es la del criterio: los tests deshacen la posición 3D de cada punto a lat/lon y comparan, y el test de `coordinates` recorre la `SphereGeometry` del globo, lee la uv de cada vértice y verifica que el mapeo devuelve ese mismo vértice —para 305 vértices, incluida la costura y los polos—, que es el enunciado del criterio sin depender de una tolerancia inventada. La alineación visible contra la textura la revisó el usuario en el navegador: Playwright sigue colgándose en este entorno. 171 tests en frontend (11 nuevos), typecheck, lint, lint:imports, build, check:links y `perf:check` en verde.)*_
 - **Criterio:** los puntos aparecen en lat/lon correctas con el globo; no hay desalineaciones.
 - **Estimado:** ~2.25 h.
 
