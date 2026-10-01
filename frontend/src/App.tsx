@@ -21,7 +21,14 @@ function App() {
     <>
       {DevOverlay ? <DevOverlay /> : null}
       <Lienzo />
-      <h1 id="rotulo">GAIA</h1>
+      {/* La expansión de las siglas (README y SPEC la fijan) va en `small`, sin el
+          tracking del rótulo: el rótulo es una línea sobria, no un subtítulo. */}
+      <h1 id="rotulo">
+        GAIA{" "}
+        <small>
+          (Geospatial Atmospheric &amp; Environmental Intelligence Architecture)
+        </small>
+      </h1>
     </>
   );
 }

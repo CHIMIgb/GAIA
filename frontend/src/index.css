@@ -52,3 +52,10 @@ body,
   color: var(--gaia-text-dim);
   pointer-events: none;
 }
+
+/* La expansión de las siglas hereda el color del rótulo pero no su tracking: con
+   0.18em serían casi 500 px de letra espaciada en una sola línea. */
+#rotulo small {
+  letter-spacing: normal;
+  font-size: 0.85em;
+}

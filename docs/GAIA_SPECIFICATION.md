@@ -1,8 +1,8 @@
 # GAIA — Especificación Técnica y Requisitos del Sistema
 
-> **Nombre del Proyecto:** GAIA  
-> **Versión del Documento:** 1.4  
-> **Fecha:** 2026-09-28
+> **Nombre del Proyecto:** GAIA (Geospatial Atmospheric & Environmental Intelligence Architecture)  
+> **Versión del Documento:** 1.5  
+> **Fecha:** 2026-09-30
 
 ---
 
