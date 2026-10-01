@@ -1,0 +1,3 @@
+# GAIA_RECOMENDACIONES.md arrastra formato anterior a prettier (reflow de encabezados y
+# cursivas en todo el fichero). Se excluye para que tocarlo no lo reformatee entero.
+docs/GAIA_RECOMENDACIONES.md
