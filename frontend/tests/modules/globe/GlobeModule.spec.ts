@@ -19,7 +19,7 @@ import {
   SphereGeometry,
   Vector3,
 } from "three";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   ESCALA_ELEVACION,
@@ -177,29 +177,29 @@ describe("GlobeModule — elevación por LOD (ROADMAP 1.3.1)", () => {
 
     camara.position.set(0, 0, 5);
     globo.malla.onBeforeRender?.(null as never, new Scene(), camara);
-    expect(u.pesoNivelAlto.value).toBe(0);
+    expect(u.mezclaMedio.value).toBe(0);
 
     camara.position.set(0, 0, 1.2);
     globo.malla.onBeforeRender?.(null as never, new Scene(), camara);
-    expect(u.pesoNivelAlto.value).toBe(1);
+    expect(u.mezclaMedio.value).toBe(1);
 
     camara.position.set(0, 0, 2.9);
     globo.malla.onBeforeRender?.(null as never, new Scene(), camara);
-    expect(u.pesoNivelAlto.value).toBeGreaterThan(0);
-    expect(u.pesoNivelAlto.value).toBeLessThan(1);
+    expect(u.mezclaMedio.value).toBeGreaterThan(0);
+    expect(u.mezclaMedio.value).toBeLessThan(1);
   });
 
   it("sin cargarElevacion no hay desplazamiento", () => {
     const { globo } = montado();
     const u = (globo.atmosfera.material as ShaderMaterial).uniforms;
     expect(u.escalaElevacion.value).toBe(0);
-    expect(u.pesoNivelAlto.value).toBe(0);
+    expect(u.mezclaMedio.value).toBe(0);
 
     // El `onBeforeRender` base de Three es un no-op: invocarlo no toca el peso.
     const camara = new PerspectiveCamera(45, 1, 0.1, 100);
     camara.position.set(0, 0, 1.2);
     globo.malla.onBeforeRender?.(null as never, new Scene(), camara);
-    expect(u.pesoNivelAlto.value).toBe(0);
+    expect(u.mezclaMedio.value).toBe(0);
   });
 
   it("al destruirse suelta las texturas y deja de tocar los uniforms", () => {
@@ -214,11 +214,11 @@ describe("GlobeModule — elevación por LOD (ROADMAP 1.3.1)", () => {
 
     camara.position.set(0, 0, 1.2);
     globo.malla.onBeforeRender?.(null as never, new Scene(), camara);
-    expect(u.pesoNivelAlto.value).toBe(1);
+    expect(u.mezclaMedio.value).toBe(1);
 
     globo.dispose();
     globo.malla.onBeforeRender?.(null as never, new Scene(), camara);
-    expect(u.pesoNivelAlto.value).toBe(1);
+    expect(u.mezclaMedio.value).toBe(1);
     for (const espia of espias) expect(espia).toHaveBeenCalled();
   });
 });
@@ -313,3 +313,99 @@ describe(
     });
   },
 );
+
+/**
+ * DEM z3 del runtime (ROADMAP 1.3.3).
+ *
+ * El tercer nivel no cambia el material ni añade malla: `TileManager` compone el atlas
+ * Terrarium z3 y `GlobeModule` lo enchufa como tercer sampler. Aquí se comprueba el
+ * cableado con un `TileManager` de mentira (el atlas de verdad son 64 tiles de red y lo
+ * cubre el navegador): que la textura llega a `nivelAlto`, que la rampa se parte en
+ * mitades y que si la descarga cae el relieve se queda con el asset z2 de 1.3.1.
+ */
+const { cargarRelieveFalso, precargarFalso } = vi.hoisted(() => ({
+  cargarRelieveFalso: vi.fn(),
+  precargarFalso: vi.fn(),
+}));
+vi.mock("../../../src/modules/globe/TileManager", () => ({
+  TileManager: class {
+    precargar = precargarFalso;
+    cargarRelieve = cargarRelieveFalso;
+    sincronizar = vi.fn();
+    dispose = vi.fn();
+  },
+}));
+
+describe("GlobeModule — DEM z3 del runtime (ROADMAP 1.3.3)", () => {
+  beforeEach(() => {
+    cargarRelieveFalso.mockReset();
+    precargarFalso.mockReset();
+  });
+
+  it("cargarElevacion acepta el tercer nivel y parte la rampa en mitades", () => {
+    const { escena, globo } = montado();
+    const baja = texturaFalsa();
+    const media = texturaFalsa();
+    const alta = texturaFalsa();
+    globo.cargarElevacion(baja, media, alta);
+
+    const u = (globo.atmosfera.material as ShaderMaterial).uniforms;
+    expect(u.nivelBajo.value).toBe(baja);
+    expect(u.nivelMedio.value).toBe(media);
+    expect(u.nivelAlto.value).toBe(alta);
+
+    const pintar = (d: number) =>
+      globo.malla.onBeforeRender?.(null as never, escena, camaraEn(d));
+    // A media rampa los dos pesos están vivos: `medio` ya saturó en 1 y `alto` va subiendo.
+    pintar(2.6);
+    expect(u.mezclaMedio.value).toBe(1);
+    expect(u.pesoNivelAlto.value).toBeGreaterThan(0);
+    expect(u.pesoNivelAlto.value).toBeLessThan(1);
+    // Cerca del detalle máximo manda el z3.
+    pintar(2.2);
+    expect(u.mezclaMedio.value).toBe(1);
+    expect(u.pesoNivelAlto.value).toBe(1);
+    // De lejos la rampa es la de 1.3.1: z1 solo.
+    pintar(4);
+    expect(u.mezclaMedio.value).toBe(0);
+    expect(u.pesoNivelAlto.value).toBe(0);
+  });
+
+  it("enlaza el DEM cuando la descarga termina, no antes", async () => {
+    const { globo } = montado();
+    const relieve = texturaFalsa();
+    let resolver: (t: DataTexture | null) => void = () => {};
+    cargarRelieveFalso.mockReturnValue(
+      new Promise<DataTexture | null>((res) => (resolver = res)),
+    );
+
+    globo.cargarElevacion(texturaFalsa(), texturaFalsa());
+    globo.iniciarTextura();
+
+    const u = (globo.atmosfera.material as ShaderMaterial).uniforms;
+    // Mientras el atlas no llega, el z2 sigue haciendo de tercero: nada roto.
+    expect(cargarRelieveFalso).toHaveBeenCalledTimes(1);
+    expect(u.nivelAlto.value).toBe(u.nivelMedio.value);
+
+    resolver(relieve);
+    await vi.waitFor(() => expect(u.nivelAlto.value).toBe(relieve));
+    expect(u.nivelMedio.value).not.toBe(relieve);
+  });
+
+  it("si la descarga cae, el relieve se queda con el asset z2", async () => {
+    const { globo } = montado();
+    cargarRelieveFalso.mockResolvedValue(null);
+
+    globo.cargarElevacion(texturaFalsa(), texturaFalsa());
+    globo.iniciarTextura();
+    // Un turno de reloj basta para que el await interno se resuelva.
+    await new Promise((r) => setTimeout(r, 0));
+
+    const u = (globo.atmosfera.material as ShaderMaterial).uniforms;
+    expect(u.nivelAlto.value).toBe(u.nivelMedio.value);
+    // Sin tercer nivel, la rampa de 1.3.1: `alto` no se enciende nunca.
+    globo.malla.onBeforeRender?.(null as never, new Scene(), camaraEn(2.2));
+    expect(u.pesoNivelAlto.value).toBe(0);
+    expect(u.mezclaMedio.value).toBe(1);
+  });
+});

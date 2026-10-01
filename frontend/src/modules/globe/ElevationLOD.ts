@@ -46,6 +46,31 @@ export function desplazamiento(metros: number): number {
   return Math.max(metros, NIVEL_MAR) * ESCALA_ELEVACION;
 }
 
+/**
+ * Reparto de la rampa entre los tres niveles de DEM (ROADMAP 1.3.3).
+ *
+ * El z3 del runtime no inventa una banda nueva: parte en dos la rampa que 1.3.1 ya
+ * validó. El par z1→z2 cruza en la primera mitad (`medio`) y el z2→z3 en la segunda
+ * (`alto`), de forma que a mitad de rampa el z2 está completo —sin z1 colándose como
+ * fantasma en la vista cercana— y al final manda el z3.
+ *
+ * Sin tercer nivel (la descarga del DEM cayó y el globo se queda con el asset z2) se
+ * devuelve la rampa original tal cual: `medio` = p y `alto` = 0, que con los dos
+ * samplers de 1.3.1 da exactamente el mismo relieve que antes de 1.3.3.
+ *
+ * El shader mezcla `mix(mix(z1, z2, medio), z3, alto)`: los tres pesos son
+ * `(1−medio)(1−alto)`, `medio(1−alto)` y `alto`, y suman 1.
+ */
+export function mezclaTresNiveles(
+  p: number,
+  hayTercero: boolean,
+): { medio: number; alto: number } {
+  if (!hayTercero) {
+    return { medio: p, alto: 0 };
+  }
+  return { medio: Math.min(2 * p, 1), alto: Math.max(2 * p - 1, 0) };
+}
+
 /** Un peldaño de la escalera de mallas, en segmentos de `SphereGeometry`. */
 export interface MallaNivel {
   readonly ancho: number;

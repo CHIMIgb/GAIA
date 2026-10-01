@@ -1,5 +1,5 @@
 /**
- * Descarga y caché de tiles satelitales Esri (ROADMAP 1.4.1).
+ * Descarga y caché de tiles satelitales Esri y DEM Terrarium (ROADMAP 1.4.1 y 1.3.3).
  *
  * `docs/GAIA_PROJECT_STRUCTURE.md` §1 lo nombra como "Descarga y caché de tiles
  * satelitales (Esri) y DEM (Terrarium)" y `GAIA_GLOBE_TEXTURES.md` §1.1 da la URL
@@ -34,6 +34,14 @@
  *
  * El `cargarImagen`/`componerAtlas`/`url` van inyectados para poder probar el
  * cableado sin red ni canvas 2D; los defaults son la implementación de producción.
+ *
+ * Desde 1.3.3 esta unidad baja también el **DEM z3 en runtime** (`cargarRelieve`): los 64
+ * tiles Terrarium del nivel 3, cosidos en su atlas mercator 2048×2048 y reproyectados a la
+ * rejilla equirect de 2048×1024 que ya usan los assets de `elevacion_baja/alta.png`. No
+ * pasa por la caché de tiles satelitales (es una descarga única al arrancar, y guardar 64
+ * `ImageBitmap` solo gastaría memoria) y no tiene nombre de nivel en la escalera de textura:
+ * es relieve, no color. Si algún tile cae, devuelve `null` y el relieve se queda con el
+ * asset z2, que es exactamente lo que hace `GlobeModule` con el resultado.
  */
 import {
   CanvasTexture,
@@ -43,6 +51,12 @@ import {
   type Vector3,
 } from "three";
 
+import {
+  DESFASE_ATLAS_COLUMNAS,
+  filaMercatorDeLat,
+  latDeFilaEquirect,
+  urlTileTerrarium,
+} from "../../utils/terrarium";
 import {
   centroVista,
   esCap,
@@ -67,6 +81,20 @@ const PX_TILE = 256;
 
 /** Rectángulo mercator del mundo entero: el caso de los atlas globales z0-z4. */
 const MUNDO_ENTERO = { u0: 0, v0: 0, ancho: 1, alto: 1 };
+
+/**
+ * Geometría del atlas de DEM z3 del runtime (ROADMAP 1.3.3): el mundo en z3 son 8×8
+ * tiles Terrarium de 256 px, que cosidos dan el mercator cuadrado 2048×2048 y
+ * reproyectados a la rejilla equirect 2048×1024 de los assets. A 19,6 km/px es el doble
+ * de fino que el asset z2 y la mitad de fino que el z4 descartado, y ocupa 8 MB en GPU.
+ */
+const ATLAS_DEM = {
+  zoom: 3,
+  lado: 8,
+  pxTile: 256,
+  ancho: 2048,
+  alto: 1024,
+} as const;
 
 /**
  * Tiles en vuelo a la vez. De uno en uno, los 256 de z4 serían 256 viajes de ida y
@@ -147,6 +175,73 @@ const componerAtlasProd = (
   return canvas;
 };
 
+/**
+ * Reproyecta el DEM (ROADMAP 1.3.3): los 64 tiles Terrarium, cosidos en su mercator
+ * 2048×2048, a la rejilla equirect de 2048×1024 que muestrean los assets de 1.3.1.
+ *
+ * Se hace fila a fila y no con una transformación afín porque no la hay: el mercator
+ * estira los polos, así que cada fila equirect sale de una fila mercator distinta
+ * (`filaMercatorDeLat`). El giro de un cuarto de vuelta es el que fija la propia rejilla
+ * del shader (`fract(uv.x + 0.25)` en `AtmosphereMesh`), y va partido en dos `drawImage`
+ * porque la rejilla da la vuelta al mundo de forma cíclica (el meridiano de arranque cae
+ * a mitad de fila, no en un borde).
+ *
+ * Los polos del mercator no tienen dato: quedan negros, igual que los 28 renglones por
+ * polo del asset z2. Decodificados dan −32768 m y `nivelMar` los aplana.
+ */
+const componerRelieveProd = (
+  tiles: Map<string, ImageBitmap>,
+): HTMLCanvasElement => {
+  const mercator = document.createElement("canvas");
+  mercator.width = ATLAS_DEM.lado * ATLAS_DEM.pxTile;
+  mercator.height = ATLAS_DEM.lado * ATLAS_DEM.pxTile;
+  const ctxMer = mercator.getContext("2d");
+  if (!ctxMer) throw new Error("sin contexto 2D para el DEM");
+  for (const [clave, imagen] of tiles) {
+    const [, y, x] = clave.split("/").map(Number);
+    ctxMer.drawImage(imagen, x * ATLAS_DEM.pxTile, y * ATLAS_DEM.pxTile);
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = ATLAS_DEM.ancho;
+  canvas.height = ATLAS_DEM.alto;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("sin contexto 2D para el relieve");
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const giro = Math.round(canvas.width * DESFASE_ATLAS_COLUMNAS);
+  for (let fila = 0; fila < canvas.height; fila++) {
+    const fuente = filaMercatorDeLat(
+      latDeFilaEquirect(fila, canvas.height),
+      mercator.height,
+    );
+    if (fuente === null) continue;
+    ctx.drawImage(
+      mercator,
+      giro,
+      fuente,
+      canvas.width - giro,
+      1,
+      0,
+      fila,
+      canvas.width - giro,
+      1,
+    );
+    ctx.drawImage(
+      mercator,
+      0,
+      fuente,
+      giro,
+      1,
+      canvas.width - giro,
+      fila,
+      giro,
+      1,
+    );
+  }
+  return canvas;
+};
+
 export interface TileManagerDeps {
   cargarImagen: (url: string) => Promise<ImageBitmap>;
   componerAtlas: (
@@ -160,6 +255,10 @@ export interface TileManagerDeps {
   /** Píxeles por tile de la fuente del atlas de vista (256 en Esri, 512 en MapTiler). */
   pxTile?: number;
   url: (z: number, y: number, x: number) => string;
+  /** Compositor del atlas de DEM z3: cose el mercator y lo reproyecta a equirect. */
+  componerRelieve: (tiles: Map<string, ImageBitmap>) => HTMLCanvasElement;
+  /** URL de un tile Terrarium del DEM. */
+  urlRelieve: (z: number, x: number, y: number) => string;
 }
 
 export class TileManager {
@@ -176,6 +275,9 @@ export class TileManager {
   private readonly pxTile: number;
   private capEnCurso: string | null = null;
   private capPerdido: { clave: string; momento: number } | null = null;
+  /** Atlas de DEM z3 del runtime, ya bajado y reproyectado (relieve de 1.3.3). */
+  private relieve: Texture | null = null;
+  private relieveEnCurso = false;
   private suelto = false;
 
   constructor(material: ShaderMaterial, deps?: Partial<TileManagerDeps>) {
@@ -183,7 +285,9 @@ export class TileManager {
     this.deps = {
       cargarImagen: cargarImagenProd,
       componerAtlas: componerAtlasProd,
+      componerRelieve: componerRelieveProd,
       url: urlTileEsri,
+      urlRelieve: urlTileTerrarium,
       ...deps,
     };
     this.pxTile = deps?.pxTile ?? PX_TILE;
@@ -193,6 +297,63 @@ export class TileManager {
   async precargar(): Promise<void> {
     for (const zoom of [0, 1, 2]) {
       await this.asegurarNivel(zoom);
+    }
+  }
+
+  /**
+   * Baja el DEM z3 del runtime y devuelve su textura de relieve (ROADMAP 1.3.3), o
+   * `null` si algún tile cae: entonces el globo se queda con el asset z2, que es el
+   * respaldo previsto. Idempotente: la segunda llamada devuelve la textura ya hecha.
+   *
+   * No comparte caché con los tiles satelitales (descarga única, y los `ImageBitmap` se
+   * sueltan en cuanto están cosidos en el lienzo) ni reintenta más tarde: sin DEM el
+   * relieve ya tiene su respaldo, así que un reintento periódico solo gastaría red.
+   */
+  async cargarRelieve(): Promise<Texture | null> {
+    if (this.relieve) return this.relieve;
+    if (this.relieveEnCurso) return null;
+    this.relieveEnCurso = true;
+    try {
+      const { zoom, lado } = ATLAS_DEM;
+      const claves: string[] = [];
+      for (let y = 0; y < lado; y++) {
+        for (let x = 0; x < lado; x++) claves.push(`${zoom}/${y}/${x}`);
+      }
+      const tiles = new Map<string, ImageBitmap>();
+      for (let i = 0; i < claves.length; i += TILES_POR_LOTE) {
+        const lote = await Promise.all(
+          claves.slice(i, i + TILES_POR_LOTE).map(async (clave) => {
+            const [z, y, x] = clave.split("/").map(Number);
+            return [
+              clave,
+              await this.conReintento(this.deps.urlRelieve(z, x, y)),
+            ] as const;
+          }),
+        );
+        if (this.suelto) {
+          for (const [, imagen] of lote) imagen.close();
+          return null;
+        }
+        for (const [clave, imagen] of lote) tiles.set(clave, imagen);
+      }
+      const textura = new CanvasTexture(this.deps.componerRelieve(tiles));
+      // Sin voltear: la rejilla equirect que muestrea el vertex shader es la misma que la
+      // de los assets de 1.3.1, cargados con el `flipY` por defecto. (Los atlas
+      // satelitales sí van con `flipY = false` porque el fragment los muestrea en
+      // mercator, no en el `uv` de la esfera.)
+      textura.minFilter = LinearFilter;
+      textura.magFilter = LinearFilter;
+      textura.generateMipmaps = false;
+      textura.needsUpdate = true;
+      // El lienzo ya tiene los píxeles: los tiles sueltos solo gastarían memoria.
+      for (const imagen of tiles.values()) imagen.close();
+      this.relieve = textura;
+      return textura;
+    } catch (error) {
+      console.warn("GAIA: DEM z3 del runtime no disponible", error);
+      return null;
+    } finally {
+      this.relieveEnCurso = false;
     }
   }
 
@@ -358,7 +519,11 @@ export class TileManager {
   /** Un tile, con un reintento: un 429/5xx del CDN no debe tumbar un nivel de 256. */
   private async descargar(clave: string, zoom: number): Promise<ImageBitmap> {
     const [, y, x] = clave.split("/").map(Number);
-    const url = this.deps.url(zoom, y, x);
+    return this.conReintento(this.deps.url(zoom, y, x));
+  }
+
+  /** Descarga con los `INTENTOS_POR_TILE` intentos que aguanta el "todo o nada". */
+  private async conReintento(url: string): Promise<ImageBitmap> {
     for (let intento = 1; ; intento++) {
       try {
         return await this.deps.cargarImagen(url);
@@ -451,6 +616,8 @@ export class TileManager {
     this.atlases.clear();
     this.cap?.textura.dispose();
     this.cap = null;
+    this.relieve?.dispose();
+    this.relieve = null;
     for (const imagen of this.tiles.values()) imagen.close();
     this.tiles.clear();
     this.perdidos.clear();

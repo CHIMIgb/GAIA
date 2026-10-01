@@ -22,6 +22,7 @@ import {
   NIVEL_MAR,
   desplazamiento,
   indiceMalla,
+  mezclaTresNiveles,
   pesoNivel,
 } from "../../../src/modules/globe/ElevationLOD";
 
@@ -119,5 +120,48 @@ describe("ElevationLOD — escalera de mallas del relieve (ROADMAP 1.3.3)", () =
     expect(indiceMalla(DISTANCIA_BASE - MARGEN_MALLA, 0)).toBe(1);
     expect(indiceMalla(DISTANCIA_DETALLE + MARGEN_MALLA, 2)).toBe(1);
     expect(indiceMalla(DISTANCIA_DETALLE - MARGEN_MALLA, 1)).toBe(2);
+  });
+});
+
+/**
+ * Reparto de la rampa entre los tres niveles de DEM (ROADMAP 1.3.3).
+ *
+ * Decisión del usuario del 30-09-2026: el z3 del runtime entra en la segunda mitad de
+ * la rampa validada de 1.3.1 (el z1→z2 la cruza en la primera). Lo que se prueba aquí
+ * es que (a) sin tercer nivel la mezcla es exactamente la de 1.3.1 —el z1 no se cuela
+ * como fantasma—, (b) con él cada par cruza en media rampa y (c) los tres pesos suman 1,
+ * que es la invariante que rompería una fórmula mal copiada al shader.
+ */
+describe("ElevationLOD — mezcla de los tres niveles de DEM (ROADMAP 1.3.3)", () => {
+  it("sin tercer nivel devuelve la rampa de 1.3.1 y el nivel alto apagado", () => {
+    for (const p of [0, 0.25, 0.5, 0.75, 1]) {
+      expect(mezclaTresNiveles(p, false)).toEqual({ medio: p, alto: 0 });
+    }
+  });
+
+  it("con tercer nivel cada par cruza en media rampa", () => {
+    expect(mezclaTresNiveles(0, true)).toEqual({ medio: 0, alto: 0 });
+    expect(mezclaTresNiveles(0.25, true)).toEqual({ medio: 0.5, alto: 0 });
+    expect(mezclaTresNiveles(0.5, true)).toEqual({ medio: 1, alto: 0 });
+    expect(mezclaTresNiveles(0.75, true)).toEqual({ medio: 1, alto: 0.5 });
+    expect(mezclaTresNiveles(1, true)).toEqual({ medio: 1, alto: 1 });
+  });
+
+  it("en la mitad cercana de la rampa el nivel grueso ya no pesa nada", () => {
+    // Peso del z1 = (1 - medio) · (1 - alto): 0 desde que el z2 está completo, que es
+    // lo que evita ver la textura de 78 km/px en los acercamientos.
+    for (const p of [0.5, 0.6, 0.75, 0.9, 1]) {
+      const { medio, alto } = mezclaTresNiveles(p, true);
+      expect((1 - medio) * (1 - alto)).toBe(0);
+    }
+  });
+
+  it("los tres pesos suman 1 en toda la rampa", () => {
+    for (let p = 0; p <= 1; p += 0.05) {
+      const { medio, alto } = mezclaTresNiveles(p, true);
+      const bajo = (1 - medio) * (1 - alto);
+      const z3 = alto;
+      expect(bajo + medio * (1 - alto) + z3).toBeCloseTo(1, 10);
+    }
   });
 });
