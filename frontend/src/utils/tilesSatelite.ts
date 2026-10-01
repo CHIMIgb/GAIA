@@ -8,7 +8,7 @@
  * rectángulo de tiles que cubre la pantalla (atlas de vista).
  *
  * La conversión mercator↔uv del shader debe repetir EXACTAMENTE esta matemática
- * (mismo patrón que `decodeTerrarium`/GLSL): aquí se valida sin navegador, el
+ * (misma fórmula en TS y en el fragment shader): aquí se valida sin navegador, el
  * shader manda en render.
  */
 /** Límite del esquema XYZ: mercator no cubre los polos por encima de ±85,05°. */
@@ -48,12 +48,10 @@ interface EntradaNivel {
  *   los tiles del rectángulo que la cámara está viendo (`rectDeCap`), y su nivel sale del
  *   propio presupuesto (`zoomDeCap`) en vez de de un atlas fijo.
  *
- * ponytail: los umbrales no siguen las bandas del LOD de elevación (`DISTANCIA_BASE` 3,6 y
- * `DISTANCIA_DETALLE` 2,2 de `ElevationLOD`), que es como estaban en 1.4.1. Elevación y
- * textura ya no cruzan a la vez: relief y nitidez tienen ceilings distintos (un atlas global
- * de z4 son 256 tiles y 67 MB, y en vertical un atlas z5 son 268 MB), así que atarlos
- * dejaba la textura corta de densidad justo en el encuadre. `ROADMAP.md` §1.4.1 sigue
- * citando las bandas viejas: es una de las líneas de doc pendientes de permiso.
+ * ponytail: los umbrales son propios de la textura, no los del LOD de elevación que
+ * hubo hasta 1.3.3 (revertido): la nitidez tiene su propio techo (un atlas global de z4
+ * son 256 tiles y 67 MB, y en vertical un atlas z5 son 268 MB), así que atarla a unas
+ * bandas ajenas dejaba la textura corta de densidad justo en el encuadre.
  */
 const ESCALERA: readonly EntradaNivel[] = [
   { nivel: 0, umbral: Number.POSITIVE_INFINITY, cap: false }, // z0: siempre

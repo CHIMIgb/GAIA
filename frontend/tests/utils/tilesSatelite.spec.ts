@@ -2,7 +2,7 @@
  * Matemática de tiles satelitales (ROADMAP 1.4.1).
  *
  * El fragment shader muestrea el atlas en coordenadas mercator; esta matemática
- * es el espejo CPU que se puede validar sin GPU (patrón `decodeTerrarium`/GLSL):
+ * es el espejo CPU que se puede validar sin GPU (misma fórmula que el fragment shader):
  * nivel por distancia, tile por lat/lon, URL del proveedor y cruce suave.
  */
 import { describe, expect, it } from "vitest";

@@ -44,9 +44,8 @@ def test_csp_canonica_con_nonce_distinto_en_cada_respuesta(
     assert "default-src 'self'" in primero
     assert "img-src 'self' data: https://server.arcgisonline.com" in primero
     # Hosts de las fuentes de imagen del globo (SECURITY §6.2, NOTA de §6.2): tiles
-    # satelitales de Esri y DEM Terrarium. Si se cae uno, producción bloquea la capa.
+    # satelitales de Esri. Si se cae uno, producción bloquea la capa.
     assert "https://services.arcgisonline.com" in primero
-    assert "https://s3.amazonaws.com" in primero
     assert "object-src 'none'" in primero
     assert "frame-ancestors 'none'" in primero
     assert "base-uri 'self'" in primero

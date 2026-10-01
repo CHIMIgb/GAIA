@@ -22,7 +22,7 @@ CSP = (
     f"default-src 'self'; script-src {SCRIPT_SRC}; "
     "style-src 'self' 'unsafe-inline'; "
     "img-src 'self' data: https://server.arcgisonline.com "
-    "https://services.arcgisonline.com https://s3.amazonaws.com; "
+    "https://services.arcgisonline.com; "
     "object-src 'none'; frame-ancestors 'none'; base-uri 'self'"
 )
 

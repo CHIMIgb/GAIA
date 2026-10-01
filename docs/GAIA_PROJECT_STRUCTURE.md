@@ -1,8 +1,8 @@
 # GAIA — Estructura del Proyecto
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.8  
-> **Fecha:** 2026-09-30
+> **Versión del Documento:** 1.9  
+> **Fecha:** 2026-10-01
 
 ---
 
@@ -71,9 +71,9 @@ frontend/
 │   ├── modules/                       ← Módulos de visualización (1 carpeta = 1 subsistema)
 │   │   ├── globe/
 │   │   │   ├── GlobeModule.ts         ← Orquestador: crea la esfera, aplica texturas y shaders
-│   │   │   ├── TerrainMesh.ts         ← SphereGeometry + ShaderMaterial con displacement
+│   │   │   ├── TerrainMesh.ts         ← SphereGeometry (esfera lisa) + MeshStandardMaterial
 │   │   │   ├── AtmosphereMesh.ts      ← Esfera exterior con shader de dispersión atmosférica
-│   │   │   ├── TileManager.ts         ← Descarga y caché de tiles satelitales (Esri) y DEM (Terrarium)
+│   │   │   ├── TileManager.ts         ← Descarga y caché de tiles satelitales (Esri)
 │   │   │   └── CoastlineOverlay.ts    ← Líneas de Natural Earth renderizadas con LineSegments
 │   │   │
 │   │   ├── fire/
@@ -166,7 +166,6 @@ frontend/
 │   │
 │   ├── utils/                         ← Funciones utilitarias puras
 │   │   ├── coordinates.ts             ← geodesicToCartesian(lat, lon, radius) → Vector3
-│   │   ├── terrarium.ts               ← decodeTerrarium(r, g, b) → elevation en metros
 │   │   ├── colorScales.ts             ← Funciones de interpolación de color para FRP, magnitud, µSv/h
 │   │   ├── tilemath.ts                ← Cálculos de tiles: lat/lon ↔ tile coords (x, y, z)
 │   │   └── dispose.ts                 ← disposeObject3D(obj): libera geometry + material + texture recursivamente
@@ -262,8 +261,7 @@ backend/
 │       ├── firms_latest.json          ← Snapshot reciente de incendios NASA FIRMS
 │       ├── quakes_latest.json         ← Snapshot reciente de sismos USGS
 │       ├── wind_grid_latest.bin       ← Rejilla de viento binaria pre-procesada
-│       ├── radiation_latest.json      ← Snapshot reciente de lecturas Safecast
-│       └── heightmap_global.png       ← Heightmap global de elevación (opcional)
+│       └── radiation_latest.json      ← Snapshot reciente de lecturas Safecast
 │
 ├── tests/                             ← Tests del backend
 │   ├── __init__.py
@@ -324,7 +322,7 @@ GAIA/
 | -------------------------- | :---------: | ------------------------------------------------------------------- | :----------: |
 | `globe/atmosphere.vert`    |   Vertex    | Posiciones del halo atmosférico exterior                            |    RF-01     |
 | `globe/atmosphere.frag`    |  Fragment   | Dispersión Fresnel / Rayleigh + ciclo día/noche                     |    RF-01     |
-| `globe/terrain.vert`       |   Vertex    | Decodificación Terrarium RGB → displacement de vértices             |    RF-02     |
+| `globe/terrain.vert`       |   Vertex    | Posiciones y uv de la esfera (sin displacement)                     |    RF-02     |
 | `globe/terrain.frag`       |  Fragment   | Textura satelital (Esri) + iluminación Phong/Lambert                |    RF-02     |
 | `fire/fire.vert`           |   Vertex    | Posicionamiento de instancias de incendio sobre la esfera           |    RF-03     |
 | `fire/fire.frag`           |  Fragment   | Gradiente de color según FRP (amarillo → rojo → blanco)             |    RF-04     |

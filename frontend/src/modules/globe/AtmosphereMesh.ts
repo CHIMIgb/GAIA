@@ -21,26 +21,14 @@
  *   girando + cámara orbital"): como ya no hay día/noche, el brillo del limbo es
  *   simétrico alrededor del disco y no depende de ninguna dirección.
  *
- * El desplazamiento por altura de 1.3.1 entra por los uniforms `nivelBajo`,
- * `nivelMedio`, `nivelAlto`, `mezclaMedio`, `pesoNivelAlto` y `escalaElevacion`: el vertex
- * shader lee los tres heightmaps (el tercero, el DEM z3 del runtime, lo añade 1.3.3),
- * decodifica la elevación en metros (fórmula Terrarium de `GAIA_GLOBE_TEXTURES` §2.1) y
- * desplaza el vértice a lo largo de su normal. Los pesos reparten la rampa validada de
- * 1.3.1 en dos mitades (`mezclaTresNiveles`): `mezclaMedio` cruza el z1→z2 y
- * `pesoNivelAlto` el z2→z3. Lo apaga `escalaElevacion = 0`, que es el default: sin
- * `cargarElevacion()` el globo es la esfera lisa de 1.2.1. La normalización de 1.3.2
- * entra por `nivelMar`: la elevación
- * se recorta a ese mínimo (0 = nivel del mar) antes de escalar, así los océanos son
- * planos en la superficie terrestre y la batimetría no hace hoyos; el valor lo fija
- * la constante `NIVEL_MAR` de `ElevationLOD`, y `desplazamiento()` es el espejo CPU.
  * La textura satelital de 1.4.1 entra por los uniforms `u_atlasA`/`u_atlasB`
  * (`sampler2D` de dos niveles), `u_cruce` (peso del fade entre ellos, tabla de
  * `nivelesConFade`) y `u_tieneAtlas` (0 = no hay textura, se pinta `colorTierra`).
  * `u_rectA` (u0, v0, ancho, alto) es el rectángulo mercator que cubre A: el mundo entero
  * para los atlas globales z0-z4, y solo la región visible para el atlas de vista de z6.
  * El fragment convierte la `uv` equirectangular a mercator con la MISMA fórmula que
- * `tilesSatelite.ts` (patrón `decodeTerrarium`/GLSL: el atlas se compone en esa
- * proyección, así que muestrear en la propia coordenada mercator evita costuras).
+ * `tilesSatelite.ts` (el atlas se compone en esa proyección, así que muestrear en la
+ * propia coordenada mercator evita costuras).
  */
 import { Color, Mesh, ShaderMaterial, SphereGeometry, Vector4 } from "three";
 
@@ -61,12 +49,8 @@ const COLOR_ACENTO = new Color(0x3fd8c9);
  * peso en el chunk de arranque. La prueba fue el gate de baseline, que saltó +1,9 % con
  * ellos dentro (+0,5 % sin ellos). La explicación va aquí, que esto sí se elimina.
  *
- * `vertexShader`: decodifica la elevación de los tres levels desde el atributo `uv`
- * (la geometría es una esfera equirectangular) y desplaza el vértice a lo largo de su
- * normal: en una esfera desplazada radialmente la normal no cambia, así que la
- * analítica sigue valiendo. El reparto entre niveles lo elige `ElevationLOD` por
- * distancia de cámara (`mezclaTresNiveles`), y el cruce continuo es lo que evita las
- * caídas bruscas de LOD.
+ * `vertexShader`: solo lleva las posiciones y las varyings; la geometría es la esfera
+ * lisa de 1.2.1, sin displacement.
  *
  * `fragmentShader`, en orden:
  *   1. `superficie` es la textura de 1.4.1 (o el color base): **sin día/noche**, el
@@ -76,27 +60,14 @@ const COLOR_ACENTO = new Color(0x3fd8c9);
  *      vive en el borde del disco, uniforme alrededor (no hay terminador que acentuar).
  */
 const vertexShader = /* glsl */ `
-uniform sampler2D nivelBajo;
-uniform sampler2D nivelMedio;
-uniform sampler2D nivelAlto;
-uniform float mezclaMedio;
-uniform float pesoNivelAlto;
-uniform float escalaElevacion;
-uniform float nivelMar;
 varying vec3 vNormalMundo;
 varying vec3 vPosicionMundo;
 varying vec2 vUv;
 void main() {
-  vec2 cuadr = vec2(uv.x, 1.0 - uv.y);
-  float bajo = (texture2D(nivelBajo, cuadr).r * 256.0 + texture2D(nivelBajo, cuadr).g + texture2D(nivelBajo, cuadr).b / 256.0) - 32768.0;
-  float medio = (texture2D(nivelMedio, cuadr).r * 256.0 + texture2D(nivelMedio, cuadr).g + texture2D(nivelMedio, cuadr).b / 256.0) - 32768.0;
-  float alto = (texture2D(nivelAlto, cuadr).r * 256.0 + texture2D(nivelAlto, cuadr).g + texture2D(nivelAlto, cuadr).b / 256.0) - 32768.0;
-  float elevacion = max(mix(mix(bajo, medio, mezclaMedio), alto, pesoNivelAlto), nivelMar);
-  vec3 pos = position * (1.0 + elevacion * escalaElevacion);
   vNormalMundo = normalize(mat3(modelMatrix) * normal);
-  vPosicionMundo = (modelMatrix * vec4(pos, 1.0)).xyz;
+  vPosicionMundo = (modelMatrix * vec4(position, 1.0)).xyz;
   vUv = uv;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }
 `;
 
@@ -177,20 +148,6 @@ export class AtmosphereMesh {
         u_rectA: { value: new Vector4(0, 0, 1, 1) },
         u_cruce: { value: 0 },
         u_tieneAtlas: { value: 0 },
-        // Elevación de 1.3.1: apagada por defecto (escala 0), la enciende
-        // `GlobeModule.cargarElevacion()`. `nivelMar` (1.3.2) es el mínimo de la
-        // elevación: aplanar océanos; el valor lo pone la constante `NIVEL_MAR`.
-        nivelBajo: { value: null },
-        // Tercer nivel de DEM (1.3.3): el z3 que baja `TileManager` en runtime. Sin él,
-        // `nivelMedio` y `nivelAlto` llevan el asset z2 y `mezclaMedio` la rampa validada
-        // de 1.3.1 (`mezclaTresNiveles` con `hayTercero = false`), así que el relieve es
-        // idéntico al de antes de este paso.
-        nivelMedio: { value: null },
-        mezclaMedio: { value: 0 },
-        nivelAlto: { value: null },
-        pesoNivelAlto: { value: 0 },
-        escalaElevacion: { value: 0 },
-        nivelMar: { value: 0 },
       },
       vertexShader,
       fragmentShader,

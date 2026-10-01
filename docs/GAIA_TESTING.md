@@ -1,8 +1,8 @@
 # GAIA — Plan de Testing y Métricas de Rendimiento
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.6  
-> **Fecha:** 2026-09-29
+> **Versión del Documento:** 1.7  
+> **Fecha:** 2026-10-01
 
 ---
 
@@ -150,7 +150,7 @@ performance.measure("fcp", "gaia:boot", "gaia:globe-ready");
 | Chunk de arranque (main) | ≤ 180 KB               | App mínima + React core                                        |
 | Chunk Three.js           | ≤ 250 KB               | Cargado bajo demanda (code splitting)                          |
 | React + HUD              | ≤ 120 KB               | Vía `build.rollupOptions.output.manualChunks`                  |
-| Texturas / heightmap     | _streaming por tiles_  | TileManager de GLOBOTextures (Esri/Terrarium)                  |
+| Texturas satelitales     | _streaming por tiles_  | TileManager de GLOBOTextures (Esri)                            |
 | **Total JS inicial**     | **≤ 450 KB**           | Verificado en CI con `size-limit` o `rollup-plugin-visualizer` |
 
 > [!IMPORTANT]
@@ -300,7 +300,6 @@ Se prioriza **Vitest** (misma cadena TS/ESM que Vite/esbuild) sobre Jest. Casos 
 | Archivo / Módulo        | Pruebas                                                                                                                      |
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `utils/coordinates.ts`  | `geodesicToCartesian(lat, lon, R)`: ecuador, polos, valores de muestra                                                       |
-| `utils/terrarium.ts`    | `decodeTerrarium(r, g, b)`: ceros, negativos (−100 m), picos                                                                 |
 | `utils/colorScales.ts`  | FRP → color/tamaño (4 bandas), gradiente de magnitud, umbrales µSv/h                                                         |
 | `utils/dispose.ts`      | `disposeObject3D` libera geometry+material+textura (mock de `dispose`)                                                       |
 | `store/actions.ts`      | `toggleLayer`, `setSeaLevel` (clamping 0–10), `selectObject`/`clearSelection`, `setConnectionStatus` (assert sobre snapshot) |
