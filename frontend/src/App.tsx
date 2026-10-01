@@ -51,6 +51,17 @@ function Lienzo() {
     // Textura satelital (ROADMAP 1.4.1): descarga los tres niveles Esri en segundo
     // plano; hasta que llega el nivel 0 el globo se ve con el color base.
     void motor.globo.iniciarTextura();
+
+    // Dataset de prueba (ROADMAP 1.6.1): 100 puntos para leer de un vistazo si el mapa
+    // lat/lon → 3D cae donde toca. Solo en desarrollo, con el mismo `import.meta.env.DEV` y
+    // la misma importación dinámica que el overlay: en el build de producción la rama es
+    // código muerto y los puntos no entran ni en el grafo ni en el bundle.
+    if (import.meta.env.DEV) {
+      void import("./modules/globe/MockPoints").then((m) => {
+        motor.escena.add(m.crearPuntosMock());
+      });
+    }
+
     return () => motor.dispose();
   }, []);
 

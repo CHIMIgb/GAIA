@@ -30,14 +30,18 @@
 import { Raycaster, Vector2, Vector3 } from "three";
 import { TrackballControls } from "three/examples/jsm/controls/TrackballControls.js";
 
+import { RADIO_TIERRA } from "../utils/coordinates";
 import { LAT_LIMITE } from "../utils/tilesSatelite";
 
 import type { Camera, Mesh } from "three";
 
 /**
  * Radio del globo (ROADMAP 1.2.1): es el suelo de la cámara y el cero de la sensibilidad.
+ * Vive en `utils/coordinates.ts` desde 1.6.1, que es quien lo necesita también para colocar
+ * los puntos de las capas: dos números iguales en dos archivos son una desincronización
+ * esperando a ocurrir.
  */
-const RADIO_GLOBO = 1;
+const RADIO_GLOBO = RADIO_TIERRA;
 
 /**
  * Límite de acercamiento, pedido del usuario ("más zoom"): con la superficie a `d − 1` y el
