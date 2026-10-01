@@ -23,6 +23,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   ESCALA_ELEVACION,
+  MALLAS,
   NIVEL_MAR,
 } from "../../../src/modules/globe/ElevationLOD";
 import { GlobeModule } from "../../../src/modules/globe/GlobeModule";
@@ -31,6 +32,20 @@ const montado = () => {
   const escena = new Scene();
   const globo = new GlobeModule(escena);
   return { escena, globo, malla: globo.malla };
+};
+
+/** Heightmap falso de 1x1: los tests de cableado no necesitan PNG ni red. */
+const texturaFalsa = () => {
+  const t = new DataTexture(new Uint8Array([0, 128, 0, 255]), 1, 1);
+  t.needsUpdate = true;
+  return t;
+};
+
+/** Cámara a una distancia del centro, que es lo único que mira el LOD. */
+const camaraEn = (distancia: number) => {
+  const camara = new PerspectiveCamera(45, 1, 0.1, 100);
+  camara.position.set(0, 0, distancia);
+  return camara;
 };
 
 describe("GlobeModule — geoide base (ROADMAP 1.2.1)", () => {
@@ -80,7 +95,8 @@ describe("GlobeModule — geoide base (ROADMAP 1.2.1)", () => {
     // Se mide en el encuadre más grande posible —el limbo pegado al borde de una pantalla
     // de 1920, R = 960 px—, que es el peor caso al que se puede llegar moviendo la
     // cámara. Con los 32 segmentos por defecto de Three serían 4,6 px: un polígono
-    // evidente. Con 128 son 0,29 px.
+    // evidente. La malla de 1.2.1 (128) daba 0,29 px; desde 1.3.3 la más gruesa de la
+    // escalera es 256, así que el criterio se cumple con más holgura (0,07 px).
     const apartamiento = 960 * (1 - Math.cos(Math.PI / segmentos));
 
     expect(apartamiento).toBeLessThan(0.5);
@@ -136,16 +152,10 @@ describe("GlobeModule — geoide base (ROADMAP 1.2.1)", () => {
  * y comprueban el cableado; que el relieve *se vea* lo comprueba el navegador.
  */
 describe("GlobeModule — elevación por LOD (ROADMAP 1.3.1)", () => {
-  const textura = () => {
-    const t = new DataTexture(new Uint8Array([0, 128, 0, 255]), 1, 1);
-    t.needsUpdate = true;
-    return t;
-  };
-
   it("cargarElevacion enciende el displacement con la escala canónica", () => {
     const { globo } = montado();
-    const baja = textura();
-    const alta = textura();
+    const baja = texturaFalsa();
+    const alta = texturaFalsa();
 
     globo.cargarElevacion(baja, alta);
 
@@ -160,7 +170,7 @@ describe("GlobeModule — elevación por LOD (ROADMAP 1.3.1)", () => {
 
   it("reparte el peso por frame según la distancia de la cámara", () => {
     const { globo } = montado();
-    globo.cargarElevacion(textura(), textura());
+    globo.cargarElevacion(texturaFalsa(), texturaFalsa());
 
     const u = (globo.atmosfera.material as ShaderMaterial).uniforms;
     const camara = new PerspectiveCamera(45, 1, 0.1, 100);
@@ -194,8 +204,8 @@ describe("GlobeModule — elevación por LOD (ROADMAP 1.3.1)", () => {
 
   it("al destruirse suelta las texturas y deja de tocar los uniforms", () => {
     const { globo } = montado();
-    const baja = textura();
-    const alta = textura();
+    const baja = texturaFalsa();
+    const alta = texturaFalsa();
     globo.cargarElevacion(baja, alta);
 
     const espias = [vi.spyOn(baja, "dispose"), vi.spyOn(alta, "dispose")];
@@ -212,3 +222,94 @@ describe("GlobeModule — elevación por LOD (ROADMAP 1.3.1)", () => {
     for (const espia of espias) expect(espia).toHaveBeenCalled();
   });
 });
+
+/**
+ * Escalera de mallas del relieve (ROADMAP 1.3.3).
+ *
+ * `TerrainMesh` cambia de geometría al cruzar de peldaño, sin cambiar de malla ni de
+ * material: los pasos 1.2.2 (atmósfera) y 1.4.1 (textura) se apoyan en una sola malla y un
+ * solo material, así que la escalera no puede añadir un draw call. La geometría vieja se
+ * suelta al sustituirla para no tener 36 MB de vértices de dos peldaños a la vez.
+ */
+// Timeout holgado: estos tests construyen mallas de verdad (la más fina, 1024×512, tarda
+// ~2,5 s en jsdom, y bajo carga de CPU el límite por defecto de 5 s se queda corto).
+describe(
+  "GlobeModule — escalera de mallas del relieve (ROADMAP 1.3.3)",
+  { timeout: 20_000 },
+  () => {
+    const segmentosDe = (malla: Mesh) => {
+      const { widthSegments, heightSegments } = (
+        malla.geometry as SphereGeometry
+      ).parameters;
+      return [widthSegments, heightSegments];
+    };
+
+    /** Monta el globo con el relieve encendido: sin él no hay LOD de malla que valga. */
+    const conRelieve = () => {
+      const { escena, globo, malla } = montado();
+      globo.cargarElevacion(texturaFalsa(), texturaFalsa());
+      const pintar = (distancia: number) =>
+        globo.malla.onBeforeRender?.(
+          null as never,
+          escena,
+          camaraEn(distancia),
+        );
+      return { escena, globo, malla, pintar };
+    };
+
+    it("hasta que el primer frame elige peldaño se queda con la más gruesa", () => {
+      const { malla } = montado();
+      expect(segmentosDe(malla)).toEqual([MALLAS[0].ancho, MALLAS[0].alto]);
+    });
+
+    it("el encuadre de arranque cambia al peldaño medio sin cambiar de malla", () => {
+      const { globo, malla, pintar } = conRelieve();
+      const material = malla.material;
+
+      pintar(2.9);
+
+      expect(segmentosDe(malla)).toEqual([MALLAS[1].ancho, MALLAS[1].alto]);
+      // Misma malla y mismo material: la escalera no suma draw calls.
+      expect(globo.malla).toBe(malla);
+      expect(malla.material).toBe(material);
+    });
+
+    it("de cerca cambia a la más fina", () => {
+      const { pintar, malla } = conRelieve();
+
+      pintar(1.2);
+
+      expect(segmentosDe(malla)).toEqual([MALLAS[2].ancho, MALLAS[2].alto]);
+    });
+
+    it("al cambiar de peldaño suelta la geometría vieja", () => {
+      const { pintar, malla } = conRelieve();
+      const vieja = malla.geometry;
+      const espia = vi.spyOn(vieja, "dispose");
+
+      pintar(1.2);
+
+      expect(malla.geometry).not.toBe(vieja);
+      expect(espia).toHaveBeenCalled();
+    });
+
+    it("dentro de un peldaño no reconstruye la geometría", () => {
+      const { pintar, malla } = conRelieve();
+      pintar(2.9);
+      const actual = malla.geometry;
+      const espia = vi.spyOn(actual, "dispose");
+
+      // Dos distancias dentro de la misma banda (2,2–3,6).
+      pintar(2.6);
+      pintar(3.0);
+
+      expect(espia).not.toHaveBeenCalled();
+      expect(malla.geometry).toBe(actual);
+    });
+
+    it("el peldaño más grueso cumple el criterio de silueta de 1.2.1", () => {
+      // El peldaño más grueso es el que se ve de lejos: si él cumple, los otros dos también.
+      expect(960 * (1 - Math.cos(Math.PI / MALLAS[0].ancho))).toBeLessThan(0.5);
+    });
+  },
+);

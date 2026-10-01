@@ -23,6 +23,10 @@
  * (descarga los tres niveles Esri y los empaca en atlas) y su `sincronizar()` se cuela
  * en el mismo `onBeforeRender`, así el reparto por distancia de textura y relieve va en
  * un solo punto por frame.
+ *
+ * Desde 1.3.3 el mismo hook cambia el peldaño de malla (`ajustarMalla`): la esfera pasa
+ * de 256×128 a 512×256 y a 1024×512 segmentos al acercarse, con la histéresis de
+ * `indiceMalla`. Cambia la geometría, no la malla ni el material.
  */
 import { LinearFilter, Texture, TextureLoader } from "three";
 
@@ -30,7 +34,13 @@ import elevacionAlta from "../../assets/textures/elevacion_alta.png";
 import elevacionBaja from "../../assets/textures/elevacion_baja.png";
 
 import { AtmosphereMesh } from "./AtmosphereMesh";
-import { ESCALA_ELEVACION, NIVEL_MAR, pesoNivel } from "./ElevationLOD";
+import {
+  ESCALA_ELEVACION,
+  MALLAS,
+  NIVEL_MAR,
+  indiceMalla,
+  pesoNivel,
+} from "./ElevationLOD";
 import { TerrainMesh } from "./TerrainMesh";
 import { TileManager } from "./TileManager";
 
@@ -46,6 +56,8 @@ export class GlobeModule {
   private nivelBajo: Texture | null = null;
   private nivelAlto: Texture | null = null;
   private tiles: TileManager | null = null;
+  /** Peldaño de malla puesto (índice en `MALLAS`), para no reconstruirla cada frame. */
+  private mallaActual = 0;
   private suelto = false;
 
   constructor(escena: Scene) {
@@ -113,10 +125,10 @@ export class GlobeModule {
 
   /**
    * Reparto por distancia en el único hook por frame de la malla: el peso entre los dos
-   * heightmaps (1.3.1) y el cruce de niveles del atlas (1.4.1) salen de la misma
-   * distancia de cámara, así que comparten `onBeforeRender`. La cámara se pasa entera
-   * porque el atlas de vista de z6 necesita saber qué punto de la superficie tiene
-   * debajo para saber qué tiles bajar. Si aún no hay textura
+   * heightmaps (1.3.1), el peldaño de malla (1.3.3) y el cruce de niveles del atlas
+   * (1.4.1) salen de la misma distancia de cámara, así que comparten `onBeforeRender`.
+   * La cámara se pasa entera porque el atlas de vista de z6 necesita saber qué punto de
+   * la superficie tiene debajo para saber qué tiles bajar. Si aún no hay textura
    * (`iniciarTextura()` sin llamar o sin niveles listos), `sincronizar` es un no-op.
    */
   private programarLODPorDistancia(): void {
@@ -125,8 +137,21 @@ export class GlobeModule {
       const distancia = camara.position.length();
       this.atmosfera.material.uniforms.pesoNivelAlto.value =
         pesoNivel(distancia);
+      this.ajustarMalla(distancia);
       this.tiles?.sincronizar(distancia, camara);
     };
+  }
+
+  /**
+   * Peldaño de malla según la distancia (ROADMAP 1.3.3). `indiceMalla` lleva la
+   * histéresis y `fijarMalla` es idempotente, así que esto se puede llamar en cada
+   * frame sin reconstruir nada mientras la cámara no cruce de banda.
+   */
+  private ajustarMalla(distancia: number): void {
+    const indice = indiceMalla(distancia, this.mallaActual);
+    if (indice === this.mallaActual) return;
+    this.mallaActual = indice;
+    this.terreno.fijarMalla(MALLAS[indice]);
   }
 
   private limpiarTexturas(): void {
