@@ -1,3 +1,12 @@
 # GAIA_RECOMENDACIONES.md arrastra formato anterior a prettier (reflow de encabezados y
 # cursivas en todo el fichero). Se excluye para que tocarlo no lo reformatee entero.
 docs/GAIA_RECOMENDACIONES.md
+
+# Los cinco docs de abajo traen tablas alineadas a mano: prettier las rellena distinto y
+# el reflow entero cae en el commit de cualquier cambio de una línea (pasó en SECURITY.md
+# al abrir la CSP para los hosts del DEM). Los otros docs sí siguen pasando por prettier.
+docs/GAIA_DATA_SOURCES.md
+docs/GAIA_SECURITY.md
+docs/GAIA_STATE.md
+docs/GAIA_TECH_STACK.md
+docs/GAIA_WORKFLOWS.md
