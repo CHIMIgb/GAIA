@@ -24,7 +24,12 @@ import {
 import { GlobeModule } from "../modules/globe/GlobeModule";
 import { registerDrawCallsSource } from "../utils/frameStats";
 
-import { CameraController, DISTANCIA_POR_DEFECTO } from "./CameraController";
+import {
+  altoDelLienzo,
+  CameraController,
+  distanciaDeEncuadre,
+  FOV_CAMARA,
+} from "./CameraController";
 import { Resizer } from "./Resizer";
 
 /** `--gaia-bg` de GAIA_VISUAL_DESIGN §5.1. */
@@ -47,11 +52,12 @@ export class Engine {
     this.escena = new Scene();
     this.escena.background = new Color(FONDO_ESPACIO);
 
-    this.camara = new PerspectiveCamera(45, 1, 0.1, 100);
-    // Zoom por defecto pedido por el usuario: 1.4 radios (`DISTANCIA_POR_DEFECTO`), con el
-    // campo de visión de 45° el globo entra a media pantalla. Cae en la banda del atlas de
-    // vista, que a esta distancia da z7: nítido de salida, sin tener que acercar la cámara.
-    this.camara.position.set(0, 0, DISTANCIA_POR_DEFECTO);
+    this.camara = new PerspectiveCamera(FOV_CAMARA, 1, 0.1, 100);
+    // Encuadre de arranque: el planeta entero con hueco, deducido del alto del lienzo. Lo
+    // aplica ya el constructor para que ningún test ni el primer frame vean la cámara
+    // dentro del globo; `CameraController` lo recalcula al montarse y en cada resize
+    // mientras el usuario no haya tocado la cámara.
+    this.camara.position.set(0, 0, distanciaDeEncuadre(altoDelLienzo(canvas)));
 
     this.escena.add(new AmbientLight(0xffffff, 0.8));
     // Desde 1.2.2 la `DirectionalLight` sobra: el `ShaderMaterial` de la atmósfera no lee

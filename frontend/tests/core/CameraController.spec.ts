@@ -17,17 +17,27 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import {
   CameraController,
-  DISTANCIA_POR_DEFECTO,
+  distanciaDeEncuadre,
 } from "../../src/core/CameraController";
 
 /** VISUAL_DESIGN §10: "auto-rotación solo en idle > 30 s". */
 const IDLE_MS = 30_000;
 
+const lienzo = (altoPx = 0): HTMLCanvasElement => {
+  const canvas = document.createElement("canvas");
+  if (altoPx)
+    Object.defineProperty(canvas, "clientHeight", {
+      value: altoPx,
+      configurable: true,
+    });
+  return canvas;
+};
+
 const nuevo = () =>
-  new CameraController(
-    new PerspectiveCamera(45, 1, 0.1, 100),
-    document.createElement("canvas"),
-  );
+  new CameraController(new PerspectiveCamera(45, 1, 0.1, 100), lienzo());
+
+/** jsdom no da alto al lienzo, así que el controlador cae al de un monitor de 1080. */
+const ALTO_SIN_LAYOUT = 1080;
 
 beforeAll(() => {
   // jsdom no implementa `matchMedia`, que sí está en cualquier navegador. Un stub que
@@ -74,8 +84,36 @@ describe("CameraController — cámara orbital (ROADMAP 1.1.2)", () => {
 
     // Pedido del usuario antes de validar 1.4.1: a 1.05 la cámara se asomaba a la cara
     // lejana del globo (el antípoda) en vez de a la superficie, porque el plano cercano
-    // (0.1) recortaba el punto justo bajo la cámara. A 1.25 quedan 0.25 de margen.
+    // (0.1) recortaba el punto justo bajo la cámara. A 1.25 quedan 0.25 de margen, y es
+    // donde el atlas de vista alcanza z8.
     expect(controles.minDistance).toBe(1.25);
+  });
+
+  it("el encuadre de arranque se deduce del alto del lienzo, no de un número fijo", () => {
+    const distancia = (alto: number) => {
+      const c = new PerspectiveCamera(45, 1, 0.1, 100);
+      new CameraController(c, lienzo(alto));
+      return c.position.length();
+    };
+
+    // El pedido: el planeta se adapta a cada pantalla y siempre queda un hueco entre sus
+    // bordes y los del alto del lienzo. Cuanto más alto el lienzo, algo menos distancia
+    // hace falta para dejar los mismos 48 px de margen.
+    expect(distancia(800)).toBeCloseTo(distanciaDeEncuadre(800), 6);
+    expect(distancia(800)).toBeGreaterThan(distancia(1080));
+    expect(distancia(1080)).toBeGreaterThan(distancia(1440));
+    // Y en todos los casos el disco cabe entero: el mínimo geométrico es
+    // 1/sin(fov/2) = 2,61, por debajo del cual el planeta tocaría los bordes.
+    for (const alto of [400, 600, 800, 1080, 1440, 2160]) {
+      expect(distancia(alto)).toBeGreaterThanOrEqual(
+        1 / Math.sin((22.5 * Math.PI) / 180),
+      );
+    }
+    // El hueco es real en píxeles, no una promesa: el radio del planeta en pantalla
+    // coincide con la mitad del alto menos el hueco.
+    const focal = 800 / (2 * Math.tan((22.5 * Math.PI) / 180));
+    const radio = focal * Math.tan(Math.asin(1 / distancia(800)));
+    expect(radio).toBeCloseTo(400 - 48, 1);
   });
 
   it("el arrastre se afina al hacer zoom y se acelera de lejos", () => {
@@ -87,14 +125,41 @@ describe("CameraController — cámara orbital (ROADMAP 1.1.2)", () => {
       return ctrl.controles.rotateSpeed;
     };
 
-    // El factor va con la altura sobre la superficie (d − 1) contra el zoom por defecto
-    // (1.4 radios): en la vista de arranque se gira como siempre, en el zoom máximo (1.25,
-    // a 0.25 de la superficie) el giro es un 62 % y a 6 radios el tope lo deja en el doble.
-    // Ni se para del todo ni se desborda.
-    const alturaPorDefecto = DISTANCIA_POR_DEFECTO - 1;
-    expect(a(DISTANCIA_POR_DEFECTO)).toBeCloseTo(1.8, 6);
-    expect(a(1.25)).toBeCloseTo((1.8 * 0.25) / alturaPorDefecto, 6);
+    // El factor va con la altura sobre la superficie (d − 1) contra el encuadre de
+    // partida, que sale del alto del lienzo (aquí el de 1080 por falta de layout en
+    // jsdom): allí se gira como siempre, al acercarse el giro se afina y a 6 radios el
+    // tope lo deja en el doble. Ni se para del todo ni se desborda.
+    const arranque = distanciaDeEncuadre(ALTO_SIN_LAYOUT);
+    const alturaPorDefecto = arranque - 1;
+    expect(a(arranque)).toBeCloseTo(1.8, 6);
+    expect(a(1.4)).toBeCloseTo((1.8 * 0.4) / alturaPorDefecto, 6);
     expect(a(6)).toBeCloseTo(1.8 * 2, 6);
+  });
+
+  it("al redimensionar recalcula el encuadre, pero no se lo pisa si el usuario ya movió", () => {
+    const canvas = lienzo(800);
+    const camara = new PerspectiveCamera(45, 1, 0.1, 100);
+    const ctrl = new CameraController(camara, canvas);
+    const alto = (px: number) =>
+      Object.defineProperty(canvas, "clientHeight", {
+        value: px,
+        configurable: true,
+      });
+
+    expect(camara.position.length()).toBeCloseTo(distanciaDeEncuadre(800), 6);
+    alto(1440);
+    window.dispatchEvent(new Event("resize"));
+    expect(camara.position.length()).toBeCloseTo(distanciaDeEncuadre(1440), 6);
+
+    // El usuario hace zoom con la rueda y redimensiona: su zoom manda, pero el encuadre
+    // de referencia (la sensibilidad del arrastre) sí se recalcula con el alto nuevo.
+    canvas.dispatchEvent(new Event("wheel"));
+    camara.position.setLength(1.5);
+    ctrl.update();
+    alto(600);
+    window.dispatchEvent(new Event("resize"));
+    expect(camara.position.length()).toBeCloseTo(1.5, 6);
+    expect(ctrl.controles.rotateSpeed).toBeLessThan(1.8);
   });
 
   it("el clic derecho no arrastra el planeta (sin pan)", () => {
