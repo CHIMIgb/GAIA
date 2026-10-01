@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.121
+> **Versión del Documento:** 1.122
 > **Estado:** Fase 0 **cerrada con dos excepciones** — 64 de 66 micro-pasos validados; los 2 pendientes (`0.7.5`, `0.7.13`) no son cumplibles con los docs actuales y quedan anotados como tal. **Fase 1 en curso** (el paso 1.3 —elevación y topografía— está **descartado** por decisión del usuario: el globo es liso); F2 a F13 sin empezar.
 > **Última actualización:** 2026-10-01
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -561,7 +561,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.5.2 — Zoom limitado a nivel ciudad**
 
-- [ ] Limitar zoom máximo (distancia mínima) para no perder contexto.
+- [x] Limitar zoom máximo (distancia mínima) para no perder contexto. _*(validado: el suelo de 1,25 radios **ya existía** desde 1.1.2 —lo impone `TrackballControls._checkDistances()`, que corta el zoom en [minDistance, maxDistance] en cada `update()`—, así que este paso no cambia el valor: `DISTANCIA_MINIMA` sigue en 1,25 radios, la que ajustó y validó el usuario en 1.1.2, y "para no perder contexto" queda como su razón. Lo que sí es nuevo es la otra mitad del criterio —"llegar" sea suave— y sale de bajar `zoomSpeed` dentro de una `BANDA_ZOOM_SUAVE` de 0,15 radios de altura, hasta cero justo en el suelo. Es la única palanca que Three aplica *antes* de cortar: el clamp es duro y corre después, cuando ya no queda dato de lo que pedía la rueda. La contrapartida —el freno sale de una entrada, así que frena en las dos direcciones dentro de la banda— es la razón de que la banda sea corta a propósito (el 6 % del recorrido): salir del primer plano sigue siendo inmediato. Sin rebote ni *scale-pop*: en el suelo el zoom se anula (VISUAL_DESIGN §10 y §13); el vuelo del doble clic sigue parando exactamente en el suelo, ya validado en 1.5.1; el pellizco con dos dedos va por otro camino (el factor lo saca `_zoomCamera` de la distancia entre dedos) y conserva el tope duro. **Hallazgo que queda escrito en un test:** el clamp de three solo corre si `noZoom` **o** `noPan` sigue activo —se salta cuando los dos están apagados—, así que apagar el pan por la vía de `noPan` en vez de `mouseButtons.RIGHT = null` (que es como está hoy) llevaría el tope en silencio y la cámara atravesaría el globo. 160 tests en frontend (5 nuevos, todos sobre la rueda real de `TrackballControls`, que en jsdom dispara el mismo manejador que en el navegador), typecheck, lint, lint:imports, build, check:links y `perf:check` en verde. Revisión visual en navegador hecha por el usuario.)*_
 - **Criterio:** no se puede traspasar el límite; feedback visual suave.
 - **Estimado:** ~1 h.
 
