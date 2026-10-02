@@ -1,7 +1,7 @@
 # GAIA — Performance
 
-> **Versión del Documento:** 2.8
-> **Fecha:** 2026-09-30
+> **Versión del Documento:** 2.9
+> **Fecha:** 2026-10-01
 > **Propósito:** presupuestos, umbrales y baselines de rendimiento de GAIA. Referencia, no fuente: los valores canónicos viven en su doc de origen y aquí solo se citan.
 
 ## 1. Regla de este documento
@@ -141,6 +141,38 @@ mide)`, no como un 0 que parecería una mejora. Es la puerta que sí existe
 - **Es una cifra del scaffold,** no un objetivo: cuando entren el globo y los módulos,
   lo que se compara es la diferencia contra este número, no el absoluto.
 
+### 4.3 Baseline de runtime: FPS y memoria del globo (paso 1.6.2)
+
+| Medida              | Valor medido | Presupuesto              | Margen            |
+| ------------------- | ------------ | ------------------------ | ----------------- |
+| FPS medio (30 s)    | 59,9         | ≥ 50 (criterio 1.6.2)    | 9,9 FPS de margen |
+| p95 de frame        | 16,8 ms      | ≤ 18 ms (`TESTING` §3.2) | 1,2 ms de margen  |
+| Geometrías en GPU   | 2 → 2 (0)    | sin subidas sostenidas   | sin cambio        |
+| Texturas en VRAM    | 5 → 5 (0)    | sin subidas sostenidas   | sin cambio        |
+| Draw calls (máximo) | 2            | ≤ 8 (`RNF-02`)           | 6 de margen       |
+
+- **Medido el** 2026-10-01 sobre el commit `1d78030`, con la pestaña recién cargada y el
+  globo quieto en dev: 30,0 s, 1800 frames, informe "criterio 1.6.2 cumple".
+- **Cómo se mide:** la tecla `t` del `DevOverlay` arranca el time-lapse de 30 s y suelta un
+  informe de ocho líneas que se pega tal cual aquí. `d` oculta el overlay. Es la lectura
+  de `renderer.info` de Three (draw calls, geometrías y texturas) más los deltas de frame
+  del rAF del overlay.
+- **Sin renderer no hay `cumple`:** el informe sale entero en `n/d` y
+  `criterio 1.6.2 NO CUMPLE`, porque `cumpleCriterio` necesita las dos respuestas del
+  criterio —FPS y memoria— y no basta con que la de FPS salga buena. Un `cumple` por
+  ausencia de datos sería una puerta que se salta sola. Pulsar `t` sin renderer avisa al
+  instante.
+- **La cifra incluye la capa de mock de 1.6.1:** los 2 draw calls y las 2 geometrías son
+  el globo (1) más los 100 puntos estáticos, que solo se montan en desarrollo. En
+  producción el globo va solo en 1 draw call. No se mide aparte porque para eso haría
+  falta código que apague una capa, y contra un presupuesto de ≤8 la diferencia es de un
+  draw call y no altera el veredicto.
+- **Es una cifra de navegador humano, no un E2E:** Playwright se cuelga en este entorno
+  sin GPU y sin salida, así que automatizar la lectura habría medido la cuenta del propio
+  navegador en vez de la del globo. Es la misma desviación que en 1.6.1 y afecta a la
+  alineación visual, no solo a esto. Lo que sí es automatizado es la decisión: la lógica
+  del criterio vive en `frontend/src/utils/timeLapse.ts` con sus tests, sin navegador.
+
 ## 5. Herramientas de medición (estado real, no la prescripción)
 
 | Qué                      | Herramienta                                                             | Estado                                          |
@@ -150,6 +182,7 @@ mide)`, no como un 0 que parecería una mejora. Es la puerta que sí existe
 | Duración por endpoint    | Línea `duración …avg=…p95=…` con `DEBUG`                                | Desde 0.7.2                                     |
 | Frames largos            | `DevOverlay` (contador) + `PerformanceObserver('long-animation-frame')` | Desde 0.7.7 — ver la nota de dos umbrales       |
 | FCP                      | `npm run fcp` (Playwright + `PerformanceObserver`)                      | Desde 0.7.4 — baseline en §4.2                  |
+| FPS y memoria (30 s)     | `DevOverlay`, tecla `t`                                                 | Desde 1.6.2 — baseline en §4.3                  |
 | Análisis por chunk       | `npm run analyze` (`rollup-plugin-visualizer`)                          | Desde 0.7.6 — treemap HTML en `dist/stats.html` |
 
 ### 5.1 Los dos umbrales de los frames largos (0.7.7)
@@ -193,6 +226,7 @@ no lo lista y el overlay muestra `n/d` en vez de un 0 que parecería una medici�
 | 0.7.8            | Este documento                                       |
 | 0.7.11           | Bloque de rendimiento en el README                   |
 | 0.7.12           | Fichero de baseline versionado                       |
+| 1.6.2            | §4.3, baseline de FPS y memoria del globo            |
 
 ## Enlaces
 

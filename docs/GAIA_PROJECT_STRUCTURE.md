@@ -1,7 +1,7 @@
 # GAIA — Estructura del Proyecto
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.11  
+> **Versión del Documento:** 1.12  
 > **Fecha:** 2026-10-01
 
 ---
@@ -167,6 +167,8 @@ frontend/
 │   │
 │   ├── utils/                         ← Funciones utilitarias puras
 │   │   ├── coordinates.ts             ← geodesicToCartesian(lat, lon, radio) → Vector3 y RADIO_TIERRA (implementado en 1.6.1)
+│   │   ├── frameStats.ts              ← Ventana de deltas de frame: FPS, p95, frames largos, draw calls y memoria del renderer (0.7.1, memoria en 1.6.2)
+│   │   ├── timeLapse.ts               ← Lógica del criterio de 1.6.2: resumen de 30 s, detección de fuga por medianas y el informe de ocho líneas
 │   │   ├── colorScales.ts             ← Funciones de interpolación de color para FRP, magnitud, µSv/h
 │   │   ├── tilemath.ts                ← Cálculos de tiles: lat/lon ↔ tile coords (x, y, z)
 │   │   └── dispose.ts                 ← disposeObject3D(obj): libera geometry + material + texture recursivamente
@@ -536,17 +538,17 @@ El bundle es hoy un único chunk porque el grafo es React + Valtio + el cliente 
 
 ## 6. Convenciones de Nomenclatura
 
-| Elemento              | Convención                           | Ejemplo                                      |
-| --------------------- | ------------------------------------ | -------------------------------------------- |
-| Archivos TypeScript   | `PascalCase.ts` (clases/componentes) | `FireModule.ts`, `App.tsx`                   |
-| Archivos utilitarios  | `camelCase.ts`                       | `coordinates.ts`, `colorScales.ts`           |
-| Archivos de tipos     | `kebab.types.ts`                     | `fire.types.ts`, `api.types.ts`              |
-| Archivos de servicios | `kebab.service.ts`                   | `fires.service.ts`                           |
-| Workers               | `kebab.worker.ts`                    | `ingestion.worker.ts`                        |
-| Shaders GLSL          | `kebab.vert` / `kebab.frag`          | `atmosphere.frag`                            |
-| Archivos Python       | `snake_case.py`                      | `firms_client.py`, `cache_keys.py`           |
-| Endpoints FastAPI     | `/api/kebab-plural`                  | `/api/fires`, `/api/radiation`               |
-| Variables de entorno  | `UPPER_SNAKE_CASE`                   | `REDIS_URL`, `DATABASE_URL`, `FIRMS_MAP_KEY` |
+| Elemento              | Convención                           | Ejemplo                                                             |
+| --------------------- | ------------------------------------ | ------------------------------------------------------------------- |
+| Archivos TypeScript   | `PascalCase.ts` (clases/componentes) | `FireModule.ts`, `App.tsx`                                          |
+| Archivos utilitarios  | `camelCase.ts`                       | `coordinates.ts`, `colorScales.ts`, `frameStats.ts`, `timeLapse.ts` |
+| Archivos de tipos     | `kebab.types.ts`                     | `fire.types.ts`, `api.types.ts`                                     |
+| Archivos de servicios | `kebab.service.ts`                   | `fires.service.ts`                                                  |
+| Workers               | `kebab.worker.ts`                    | `ingestion.worker.ts`                                               |
+| Shaders GLSL          | `kebab.vert` / `kebab.frag`          | `atmosphere.frag`                                                   |
+| Archivos Python       | `snake_case.py`                      | `firms_client.py`, `cache_keys.py`                                  |
+| Endpoints FastAPI     | `/api/kebab-plural`                  | `/api/fires`, `/api/radiation`                                      |
+| Variables de entorno  | `UPPER_SNAKE_CASE`                   | `REDIS_URL`, `DATABASE_URL`, `FIRMS_MAP_KEY`                        |
 
 ---
 
