@@ -69,6 +69,29 @@ const PX_TILE = 256;
 /** Rectángulo mercator del mundo entero: el caso de los atlas globales z0-z4. */
 const MUNDO_ENTERO = { u0: 0, v0: 0, ancho: 1, alto: 1 };
 
+/** Ordena claves de un rectángulo por distancia al centro (más cerca primero). */
+const ordenarPorCercania = (
+  z: number,
+  x0: number,
+  y0: number,
+  cols: number,
+  rows: number,
+): string[] => {
+  const centroCol = (cols - 1) / 2;
+  const centroFila = (rows - 1) / 2;
+  const lado = ladoDeZoom(z);
+  const claves: Array<{ clave: string; d2: number }> = [];
+  for (let fila = 0; fila < rows; fila++) {
+    for (let col = 0; col < cols; col++) {
+      const x = (x0 + col) % lado;
+      const dx = col - centroCol;
+      const dy = fila - centroFila;
+      claves.push({ clave: claveTile(z, x, y0 + fila), d2: dx * dx + dy * dy });
+    }
+  }
+  return claves.sort((a, b) => a.d2 - b.d2).map((k) => k.clave);
+};
+
 /**
  * Tiles en vuelo a la vez. De uno en uno, los 256 de z4 serían 256 viajes de ida y
  * vuelta; el proveedor aguanta bien este paralelismo y el tiempo cae a una fracción.
@@ -267,17 +290,14 @@ export class TileManager {
       return null;
     this.capEnCurso = clave;
     try {
-      const lado = ladoDeZoom(rect.z);
       const tiles = new Map<string, ImageBitmap>();
-      const claves: string[] = [];
-      for (let fila = 0; fila < rect.rows; fila++) {
-        for (let col = 0; col < rect.cols; col++) {
-          // La columna da la vuelta al mundo (el rectángulo puede cruzar el
-          // antimeridiano); la fila ya viene recortada a la altura del nivel.
-          const x = (rect.x0 + col) % lado;
-          claves.push(claveTile(rect.z, x, rect.y0 + fila));
-        }
-      }
+      const claves = ordenarPorCercania(
+        rect.z,
+        rect.x0,
+        rect.y0,
+        rect.cols,
+        rect.rows,
+      );
       await this.llenarTiles(rect.z, claves, tiles);
       const textura = this.crearTextura(
         tiles,
