@@ -380,3 +380,12 @@ describe("TileManager — atlas de vista (cap)", () => {
     gestionado.dispose();
   });
 });
+
+it("cuando todos los niveles fallan, el globo se queda con el color base", async () => {
+  const { gestionado } = nuevoManager(() => true); // todos caen
+  await gestionado.precargar();
+  gestionado.sincronizar(3);
+  const u = gestionado["material"].uniforms;
+  expect(u.u_tieneAtlas.value).toBe(0);
+  gestionado.dispose();
+});
