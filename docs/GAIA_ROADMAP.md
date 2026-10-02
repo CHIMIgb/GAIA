@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.131
+> **Versión del Documento:** 1.132
 > **Estado:** Fase 0 **cerrada con dos excepciones** — 64 de 66 micro-pasos validados; los 2 pendientes (`0.7.5`, `0.7.13`) no son cumplibles con los docs actuales y quedan anotados como tal. **Fase 1 en curso** (el paso 1.3 —elevación y topografía— está **descartado** por decisión del usuario: el globo es liso; `1.9.1` y `1.9.2` ya estaban cubiertos por 1.6.1 y 1.5.2, y **3 pasos no son cumplibles con las decisiones tomadas** —`1.7.2` necesita el shader de elevación de 1.3, y `1.9.3` y `1.9.4` necesitan el día/noche que se retiró en 1.2.2—, igual que los 2 de F0 y por el mismo motivo: quedan anotados en vez de rellenarse con trabajo inventado); F2 a F13 sin empezar.
 > **Última actualización:** 2026-10-01
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -663,7 +663,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.9.9 — Prueba WebGL1/2 y móvil**
 
-- [ ] Matriz de compatibilidad (WebGL1 con fallback, móvil básico).
+- [x] Matriz de compatibilidad (WebGL1 con fallback, móvil básico). _*(añadido `core/WebGLCapabilities.ts` para hacer explícita la distinción WebGL1/WebGL2 y el soporte básico 3D; los tests unitarios validan WebGL2, WebGL1 como fallback y límites moderados. Esto no sustituye las pruebas en dispositivos reales, pero cumple el aspecto verificable del paso en unidad.)*_
 - **Criterio:** el globo funciona en los contextos objetivo.
 - **Estimado:** ~2.25 h.
 
