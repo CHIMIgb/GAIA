@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.126
+> **Versión del Documento:** 1.127
 > **Estado:** Fase 0 **cerrada con dos excepciones** — 64 de 66 micro-pasos validados; los 2 pendientes (`0.7.5`, `0.7.13`) no son cumplibles con los docs actuales y quedan anotados como tal. **Fase 1 en curso** (el paso 1.3 —elevación y topografía— está **descartado** por decisión del usuario: el globo es liso; `1.9.1` y `1.9.2` ya estaban cubiertos por 1.6.1 y 1.5.2, y **3 pasos no son cumplibles con las decisiones tomadas** —`1.7.2` necesita el shader de elevación de 1.3, y `1.9.3` y `1.9.4` necesitan el día/noche que se retiró en 1.2.2—, igual que los 2 de F0 y por el mismo motivo: quedan anotados en vez de rellenarse con trabajo inventado); F2 a F13 sin empezar.
 > **Última actualización:** 2026-10-01
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -639,7 +639,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.9.5 — Pausa al perder foco**
 
-- [ ] Pausar render al perder visibilidad de pestaña.
+- [x] Pausar render al perder visibilidad de pestaña. _*(hecho en `core/RenderLoop.ts`: el `requestAnimationFrame` del motor y su pausa se sacaron de `Engine.start()` a una clase aparte, sin WebGL ni Three, porque en jsdom `start()` no llega —pide contexto— y así el criterio se comprueba entero con reloj falso: cuatro avances son cuatro frames; con `document.hidden` no se pide ninguno en dos segundos y al volver se sigue; y el primer frame de vuelta lleva la hora de ahora, no la del frame anterior a la pausa, que es la desincronización que pedía evitar. `dispose()` suelta el listener para que un motor desmontado por React no resucite con el evento. Lo que el test no prueba es la pausa que hacen los navegadores por su cuenta cuando la pestaña está oculta —que sí ocurre y por eso el paso es una garantía escrita, no una mejora de rendimiento medible—, ni que no se llegue a *renderizar* con la pestaña oculta en un navegador de verdad, que sigue siendo cosa del job de Playwright.)*_
 - **Criterio:** el render se reanuda sin desincronización.
 - **Estimado:** ~1 h.
 

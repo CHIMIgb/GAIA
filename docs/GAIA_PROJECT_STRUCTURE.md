@@ -1,7 +1,7 @@
 # GAIA — Estructura del Proyecto
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.12  
+> **Versión del Documento:** 1.13  
 > **Fecha:** 2026-10-01
 
 ---
@@ -41,6 +41,7 @@ frontend/
 │   │   ├── SceneManager.ts            ← Gestión de objetos en la escena (add/remove/dispose)
 │   │   ├── CameraController.ts        ← TrackballControls + zoom limits + giro de fondo + doble clic
 │   │   ├── Clock.ts                   ← deltaTime, elapsed, FPS counter
+│   │   ├── RenderLoop.ts              ← requestAnimationFrame del motor; corta los frames con la pestaña oculta (1.9.5)
 │   │   ├── Resizer.ts                 ← Listener de resize + actualización de aspect ratio y pixel ratio
 │   │   └── Stats.ts                   ← Integración de stats.js + lectura de renderer.info (draw calls, triangles)
 │   │
@@ -314,7 +315,8 @@ GAIA/
 | `SceneManager.ts`     | Registra y desregistra módulos en la escena. Gestiona el ciclo de vida: `init()` → `update(dt)` → `dispose()`. Garantiza que `dispose()` se invoque al remover cualquier objeto.                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `CameraController.ts` | Wrapper de `TrackballControls` (arcball: giro libre sin polos ni voltereta). Configura límites de zoom (min/max distance), inercia (`staticMoving`), el giro de fondo por inactividad de VISUAL_DESIGN §10 y desactiva el pan del clic derecho. Desde 1.5.1 también es dueña del gesto de acercar a un punto: `apuntarConDobleClic(malla)` registra el `dblclick` y `acercarA(punto)` hace el vuelo con easing. Desde 1.5.2 el tope de zoom es blando (`velocidadDeZoom` baja `zoomSpeed` en la `BANDA_ZOOM_SUAVE`); el radio del globo lo importa de `utils/coordinates.ts` desde 1.6.1 en vez de declararlo aquí. |
 | `Clock.ts`            | Encapsula `THREE.Clock`. Expone `deltaTime`, `elapsedTime` y un contador de FPS rolling (media de últimos 60 frames).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `Resizer.ts`          | Escucha `window.resize`. Actualiza `camera.aspect`, `camera.updateProjectionMatrix()` y `renderer.setSize()`. Gestiona `devicePixelRatio` con cap a 2.0 para rendimiento.                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `RenderLoop.ts`       | El `requestAnimationFrame` del motor y su pausa: con la pestaña oculta no pide ningún frame y al mirarla de nuevo los retoma, pasando el tiempo del frame tal cual para que la cámara no dé un salto. Lo que se hace en cada frame lo pone `Engine`. Desde 1.9.5 vive aparte de `Engine` porque en jsdom no hay WebGL y el criterio del paso se cumple entero aquí.                                                                                                                                                                                                                                                 |
+| `Resizer.ts`          | Escucha `window.resize`. Actualiza `camera.aspect`, `camera.updateProjectionMatrix()` y `renderer.setSize()`. Gestiona `devicePixelRatio` con cap a 2.0 para rendimiento; desde 1.9.6 `comprobarPixelRatio()` vuelve a aplicarlo cuando cambia, para no depender de que un `resize` llegue a dispararse al pasar la ventana de una pantalla a otra.                                                                                                                                                                                                                                                                 |
 | `Stats.ts`            | Integración opcional de `stats.js`. Lee `renderer.info.render.calls` (draw calls) y `renderer.info.memory` (geometrías, texturas en VRAM) para el panel de debug.                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
 ---
