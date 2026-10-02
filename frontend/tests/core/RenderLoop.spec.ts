@@ -13,6 +13,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { RenderLoop } from "../../src/core/RenderLoop";
 
 /** Oculta o muestra la pestaña y avisa, que es el par real de eventos del navegador. */
+const IDLE_MS = 250;
+
 const visibility = (hidden: boolean): void => {
   vi.spyOn(document, "hidden", "get").mockReturnValue(hidden);
   document.dispatchEvent(new Event("visibilitychange"));
@@ -99,4 +101,41 @@ describe("RenderLoop — el bucle y su pausa (ROADMAP 1.9.5)", () => {
     vi.advanceTimersByTime(16 * 5);
     expect(marcas).toHaveLength(0);
   });
+});
+
+it("baja el ritmo cuando está inactivo y lo sube al volver la interacción", () => {
+  vi.useFakeTimers({
+    toFake: [
+      "requestAnimationFrame",
+      "cancelAnimationFrame",
+      "setTimeout",
+      "clearTimeout",
+      "Date",
+      "performance",
+    ],
+  });
+  const marcas: number[] = [];
+  const bucle = new RenderLoop((ahora) => marcas.push(ahora));
+  bucle.setIdle(true);
+  bucle.start();
+
+  // En reposo se pide un frame cada 250 ms (4 FPS), no cada 16 ms: un ahorro notable
+  // sin que el giro de fondo se note entrecortado y sin flicker.
+  vi.runOnlyPendingTimers();
+  expect(marcas).toHaveLength(1);
+
+  vi.advanceTimersByTime(IDLE_MS);
+  expect(marcas).toHaveLength(2);
+
+  bucle.setIdle(false);
+  vi.advanceTimersToNextFrame();
+  expect(marcas).toHaveLength(3);
+
+  // En activo vuelve a 60 FPS: cuatro frames en ~64 ms.
+  vi.advanceTimersToNextFrame();
+  vi.advanceTimersToNextFrame();
+  vi.advanceTimersToNextFrame();
+  expect(marcas).toHaveLength(6);
+
+  bucle.dispose();
 });

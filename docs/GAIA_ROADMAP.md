@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.129
+> **Versión del Documento:** 1.130
 > **Estado:** Fase 0 **cerrada con dos excepciones** — 64 de 66 micro-pasos validados; los 2 pendientes (`0.7.5`, `0.7.13`) no son cumplibles con los docs actuales y quedan anotados como tal. **Fase 1 en curso** (el paso 1.3 —elevación y topografía— está **descartado** por decisión del usuario: el globo es liso; `1.9.1` y `1.9.2` ya estaban cubiertos por 1.6.1 y 1.5.2, y **3 pasos no son cumplibles con las decisiones tomadas** —`1.7.2` necesita el shader de elevación de 1.3, y `1.9.3` y `1.9.4` necesitan el día/noche que se retiró en 1.2.2—, igual que los 2 de F0 y por el mismo motivo: quedan anotados en vez de rellenarse con trabajo inventado); F2 a F13 sin empezar.
 > **Última actualización:** 2026-10-01
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -651,7 +651,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.9.7 — Reducción de muestreo en idle**
 
-- [ ] Bajar la frecuencia de render cuando no hay input.
+- [x] Bajar la frecuencia de render cuando no hay input. _*(`RenderLoop` ahora tiene `setIdle()`: en activo pide frames con rAF (60 FPS), en idle pide con `setTimeout` cada 250 ms (4 FPS). El cambio se activa/desactiva solo cuando hay cambio real para no reenganchar y en `stop()` se limpia el tipo correcto (timeout o rAF). `Engine` marca idle cuando `CameraController.giraEnFondo` es `true` —esto coincide con "no hay input" tras 30 s de inactividad, que es el momento en que el giro de fondo corre a velocidad mínima—, así no baja el ritmo durante un vuelo de doble clic ni durante el arrastre. El test del propio RenderLoop cubre el cruce entre modos.)*_
 - **Criterio:** ahorro de CPU en reposo sin flicker.
 - **Estimado:** ~1.75 h.
 

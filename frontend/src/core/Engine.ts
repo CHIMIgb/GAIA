@@ -106,6 +106,9 @@ export class Engine {
       // `TrackballControls` en cada frame (PROJECT_STRUCTURE §5.1). El tiempo del frame es
       // el que mide el vuelo de acercamiento de 1.5.1.
       this.camaraCtrl?.update(ahora);
+      // 1.9.7: reducción de muestreo en idle cuando no hay interacción.
+      const idle = this.camaraCtrl?.giraEnFondo ?? false;
+      this.bucle?.setIdle(idle);
       // 1.9.6: el ratio del sistema se lee aquí, en un bucle que ya corre, en vez de
       // depender de un `resize` que al cambiar de pantalla puede no llegar. Solo toca el
       // lienzo si de verdad cambió.
