@@ -90,6 +90,23 @@ export class Engine {
     // tenía en `n/d` a la espera de este paso. Sin esto, el contador nunca sale de `n/d`.
     registerDrawCallsSource(renderer);
 
+    // 1.9.8: ante la pérdida del contexto WebGL, el navegador puede cerrar la página si no
+    // se evita el comportamiento por defecto. La restauración vuelve a montar el renderer
+    // para que la escena siga funcionando sin recargar.
+    const canvas = this.canvas;
+    const alPerder = (ev: Event): void => {
+      ev.preventDefault();
+    };
+    canvas.addEventListener("webglcontextlost", alPerder);
+    canvas.addEventListener("webglcontextrestored", () => {
+      canvas.removeEventListener("webglcontextlost", alPerder);
+      this.renderer?.dispose();
+      this.renderer = null;
+      this.bucle?.dispose();
+      this.bucle = null;
+      this.start();
+    });
+
     this.camaraCtrl = new CameraController(this.camara, this.canvas);
     // 1.5.1: el doble clic acerca y centra la cámara en el punto del globo que hay bajo el
     // cursor. El raycast va contra la malla del geoide, así que el gesto funciona con el

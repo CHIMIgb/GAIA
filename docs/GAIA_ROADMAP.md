@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.130
+> **Versión del Documento:** 1.131
 > **Estado:** Fase 0 **cerrada con dos excepciones** — 64 de 66 micro-pasos validados; los 2 pendientes (`0.7.5`, `0.7.13`) no son cumplibles con los docs actuales y quedan anotados como tal. **Fase 1 en curso** (el paso 1.3 —elevación y topografía— está **descartado** por decisión del usuario: el globo es liso; `1.9.1` y `1.9.2` ya estaban cubiertos por 1.6.1 y 1.5.2, y **3 pasos no son cumplibles con las decisiones tomadas** —`1.7.2` necesita el shader de elevación de 1.3, y `1.9.3` y `1.9.4` necesitan el día/noche que se retiró en 1.2.2—, igual que los 2 de F0 y por el mismo motivo: quedan anotados en vez de rellenarse con trabajo inventado); F2 a F13 sin empezar.
 > **Última actualización:** 2026-10-01
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -657,7 +657,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.9.8 — Manejo de pérdida de contexto WebGL**
 
-- [ ] Listener de `webglcontextlost` con restauración.
+- [x] Listener de `webglcontextlost` con restauración. _*(hecho en `Engine.start()`: al perder el contexto se llama `preventDefault()` para evitar que el navegador cierre la página, y al restaurarlo se liberan el `WebGLRenderer` y el bucle (`RenderLoop`) y se vuelve a llamar a `start()` para recrearlos desde cero, con lo que la escena vuelve a funcionar sin recargar.)*_
 - **Criterio:** la app se recupera sin recargar.
 - **Estimado:** ~2.25 h.
 
