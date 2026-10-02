@@ -1,6 +1,7 @@
 /**
  * Motor de renderizado Three.js (ROADMAP 1.1.1 — escena, cámara, luz y bucle;
- * 1.1.2 — cámara orbital y resize; 1.2.1 — geoide; 1.5.1 — doble clic a coordenada).
+ * 1.1.2 — cámara orbital y resize; 1.2.1 — geoide; 1.5.1 — doble clic a coordenada;
+ * 1.9.5 — el bucle se para con la pestaña oculta).
  *
  * El constructor monta el grafo de escena, que es solo Three.js y se puede probar sin
  * navegador. `start()` pide el contexto WebGL y arranca el bucle: es el punto donde la
@@ -32,6 +33,7 @@ import {
   distanciaDeEncuadre,
   FOV_CAMARA,
 } from "./CameraController";
+import { RenderLoop } from "./RenderLoop";
 import { Resizer } from "./Resizer";
 
 /** `--gaia-bg` de GAIA_VISUAL_DESIGN §5.1. */
@@ -47,7 +49,7 @@ export class Engine {
   private renderer: WebGLRenderer | null = null;
   private camaraCtrl: CameraController | null = null;
   private resizer: Resizer | null = null;
-  private frame = 0;
+  private bucle: RenderLoop | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -97,21 +99,22 @@ export class Engine {
     // hacía el motor en 1.1.1.
     this.resizer = new Resizer(this.canvas, this.camara, renderer);
 
-    const paso = (ahora: number): void => {
+    // El bucle es el de 1.9.5, que además corta los frames con la pestaña oculta y los
+    // retoma al mirarla; lo que se hace en cada frame sigue siendo esto.
+    this.bucle = new RenderLoop((ahora) => {
       // Sin este `update()` ni la inercia ni el giro de fondo avanzan: es lo que hace
       // `TrackballControls` en cada frame (PROJECT_STRUCTURE §5.1). El tiempo del frame es
       // el que mide el vuelo de acercamiento de 1.5.1.
       this.camaraCtrl?.update(ahora);
       renderer.render(this.escena, this.camara);
-      this.frame = requestAnimationFrame(paso);
-    };
-    this.frame = requestAnimationFrame(paso);
+    });
+    this.bucle.start();
   }
 
   /** Cancela el bucle y libera GPU y memoria. Sin esto, remontar la vista filtra. */
   dispose(): void {
-    cancelAnimationFrame(this.frame);
-    this.frame = 0;
+    this.bucle?.dispose();
+    this.bucle = null;
     registerDrawCallsSource(null);
     this.resizer?.dispose();
     this.camaraCtrl?.dispose();
