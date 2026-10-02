@@ -2,9 +2,10 @@
   "schema": 1,
   "_nota": "Baseline de rendimiento (ROADMAP 0.7.12). `metricas` es contra lo que compara `npm run perf:baseline`; `historial` es de dónde sale cada cifra, una entrada por sesión de medición. Las claves llevan la unidad para que el comparador no necesite una tabla de unidades. Un dato sin medir va en `historial` y no en `metricas`: gatear una cifra que nunca se midió es una puerta que se salta sola.",
   "metricas": {
-    "bundle_js_inicial_kib": 66.83,
-    "bundle_chunk_arranque_kib": 66.83,
-    "bundle_css_kib": 1.44,
+    "bundle_js_inicial_kib": 201.97,
+    "bundle_chunk_arranque_kib": 71.77,
+    "bundle_chunk_three_kib": 130.21,
+    "bundle_css_kib": 0.37,
     "fcp_ms": 352
   },
   "historial": [
@@ -44,6 +45,82 @@
         "bundle_css_kib": 1.44
       },
       "nota": "Primera medición hecha por la propia herramienta del baseline, a 0,01 KiB. El CSS de §4.1 ponía 1,47 y son 1472 bytes = 1,438 KiB: el doc iba 2 % alto y el gate veía un -4,8 % el primer día sin que hubiera cambiado nada, así que §4.1 se corrige a 1,44."
+    },
+    {
+      "fecha": "2026-09-29",
+      "origen": "medido con `npm run perf:check` al montar la escena base (1.1.1)",
+      "commit": "de97fce",
+      "node": "v22.19.0",
+      "vite": "8.3.1",
+      "cifras": {
+        "bundle_js_inicial_kib": 192.91,
+        "bundle_chunk_arranque_kib": 66.8,
+        "bundle_chunk_three_kib": 126.11,
+        "bundle_css_kib": 0.35
+      },
+      "nota": "Entra Three.js 0.186.1 y el build pasa a dos chunks: `codeSplitting` en `vite.config.ts` saca three al suyo porque el gate mide por separado el arranque (180 KB) y el de three (250 KB). El JS inicial sube de 66.8 a 192.9 KiB, y es el motor entrando, no una regresión: el presupuesto de 450 KiB queda en el 43 % y el chunk de arranque no se mueve. El CSS baja a 0.35 KiB al irse el CSS de arranque de Vite."
+    },
+    {
+      "fecha": "2026-09-29",
+      "origen": "medido con `npm run perf:check` al montar la cámara orbital (1.1.2)",
+      "commit": "b94baca",
+      "node": "v22.19.0",
+      "vite": "8.3.1",
+      "cifras": {
+        "bundle_js_inicial_kib": 198.56,
+        "bundle_chunk_arranque_kib": 67.17,
+        "bundle_chunk_three_kib": 131.39,
+        "bundle_css_kib": 0.35
+      },
+      "nota": "`OrbitControls` entró al chunk de three: +5,3 KiB (126,11 → 131,39), que es el +2,9 % que veía el gate. Crecimiento previsto por el paso, no una regresión, así que el baseline se vuelve a medir. Los controles son de Three.js y no caben en el chunk de arranque por tamaño, no por gusto: el gate los mide con el límite de three. (El control de cámara es hoy `TrackballControls`, desde el cambio de 1.1.2 revisado antes de validar 1.4.1: 130,8 KB gzip en el chunk de three.)"
+    },
+    {
+      "fecha": "2026-09-29",
+      "origen": "medido con `npm run perf:check` al montar la atmósfera día/noche (1.2.2)",
+      "commit": null,
+      "node": "v22.19.0",
+      "vite": "8.3.1",
+      "cifras": {
+        "bundle_js_inicial_kib": 198.99,
+        "bundle_chunk_arranque_kib": 67.88,
+        "bundle_css_kib": 0.35
+      },
+      "nota": "Entra el `ShaderMaterial` de la atmósfera (1.2.2): +1,3 % en el chunk de arranque, que es el +1,1 % que veía el gate (198,56 → 198,99 total). Crecimiento previsto por el paso, no una regresión, así que el baseline se vuelve a medir. Antes de aceptarlo se quitaron los comentarios de dentro de los dos shaders: el minificador no toca el interior de un template literal, así que cada línea de comentario GLSL iba al bundle. Medido: 68,46 → 67,88 KiB, −0,58 KiB. Los 0,7 KiB que quedan son el shader y el módulo, que es código que hace falta. El chunk de three no cambia (131,39) porque el shader es propio, no una clase de Three."
+    },
+    {
+      "fecha": "2026-10-01",
+      "origen": "medido con el `DevOverlay` (tecla `t`), 30 s con el globo quieto en dev (1.6.2)",
+      "commit": "1d78030",
+      "node": "v22.19.0",
+      "vite": "8.3.1",
+      "cifras": {
+        "duracion_s": 30.0,
+        "frames": 1800,
+        "fps_medio": 59.9,
+        "p95_frame_ms": 16.8,
+        "geometrias_gpu_inicio": 2,
+        "geometrias_gpu_final": 2,
+        "texturas_vram_inicio": 5,
+        "texturas_vram_final": 5,
+        "draw_calls_max": 2,
+        "fuga_memoria": false,
+        "criterio_1_6_2": "cumple"
+      },
+      "nota": "Primera medición de runtime, hecha por el usuario en el navegador: `perf:check` mide bundle y `npm run fcp` mide el FCP, y ninguno de los dos ve FPS ni memoria. Por eso estas claves van solo en el historial y no en `metricas`: el gate no las lee, y meterlas en `metricas` haría creer que hay un comparador que no existe. Los 2 draw calls y las 2 geometrías incluyen la capa de mock de 1.6.1, que solo se monta en dev; en producción el globo va solo en 1. Playwright se cuelga en este entorno, así que la lectura es humana y no automatizada (PERFORMANCE §4.3)."
+    },
+    {
+      "fecha": "2026-10-01",
+      "origen": "medido con `npm run perf:check` al cerrar el hito de F1 (1.6.3), con Vite 8.3.1",
+      "commit": "ca6fa72",
+      "node": "v22.19.0",
+      "vite": "8.3.1",
+      "cifras": {
+        "bundle_js_inicial_kib": 201.97,
+        "bundle_chunk_arranque_kib": 71.77,
+        "bundle_chunk_three_kib": 130.21,
+        "bundle_css_kib": 0.37
+      },
+      "nota": "El gate comparativo llevaba rojo desde 1.4.x y en los pasos anteriores solo se paso `perf:check` (presupuesto), no `perf:baseline` (comparativa), asi que nadie lo vio. Medido commit a commit, reconstruyendo el chunk de arranque en cada uno: 1.2.2 `464e804` 70,40 kB → 1.4.2 `9910247` 73,82 kB (+3,42: textura satelital por LOD, antimeridiano y geoide) → 1.5.1 `d423645` 74,29 kB (+0,47: doble clic) → 1.5.2 `45f4122` 74,36 kB (+0,07: banda de zoom suave) → 1.6.1 `3681ce8` 74,36 kB (0,00) → 1.6.2 `ca6fa72` 74,41 kB (+0,05). Es crecimiento previsto de F1, no una regresion: lo que entra desde 1.2.2 son texturas por LOD, mapeo geodesico y codigo de camara, que son los pasos comprados a proposito. Los dos ultimos pasos casi no mueven el chunk porque el overlay y la capa de mock se importan dinamicamente tras `import.meta.env.DEV`: Vite los elimina del grafo en produccion y el build no los contiene. Aviso honesto: el baseline de 1.2.2 guarda 67,88 KiB y su propio commit construye hoy ~69,5 KiB con el gzip de este script, o sea ~2 % por debajo de lo que entonces se medico; el numero se queda sin corregir porque no hay forma de reproducir la medicion original, y reponerlo a 69,5 habria hecho mas rojo aun el gate sin explicar nada. `bundle_chunk_three_kib` lo mide `perf:check` y no `perf:baseline`, asi que sale `n/d` en la comparativa y se actualiza aqui con la cifra de `perf:check`."
     }
   ]
 }

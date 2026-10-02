@@ -1,0 +1,33 @@
+# Fin de línea LF en el repositorio para todos los ficheros de texto.
+# Sin esto, el `core.autocrlf=1` de quien clonea en Windows convierte el
+# working tree a CRLF y cada commit reescribe el fichero entero de punta a
+# punta, lo que esconde los cambios reales dentro de miles de líneas de ruido.
+# Las binarias (texturas del globo, avatares de Playwright, fuentes) se marcan
+# aparte para que git no intente normalizarlas.
+* text=auto eol=lf
+
+# Documentación y código: siempre texto.
+*.md text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.mjs text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.py text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.toml text eol=lf
+*.lock text eol=lf
+*.example text eol=lf
+
+# Binarias: no tocar.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ktx2 binary
+*.bin binary
+*.hdr binary
+*.glb binary
+*.gltf binary

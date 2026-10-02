@@ -1,5 +1,7 @@
 # GAIA — Visualizador Geoespacial 3D en Tiempo Real
 
+> **GAIA** — _Geospatial Atmospheric & Environmental Intelligence Architecture_.
+
 > Plataforma de monitoreo ambiental que integra incendios, sismos, viento, inundaciones y radiación sobre un globo terráqueo interactivo renderizado con WebGL/Three.js a 60 FPS.
 
 ---
@@ -34,9 +36,15 @@
 
 ## Estado
 
-**Fase 0 en curso**: 61 de sus 66 micro-pasos validados. Quedan 5: `0.7.5` y `0.7.13` (los dos bloqueados por huecos de documentación,
-explicados más abajo) y `0.8.13` a `0.8.15`, que son el cierre de documentación de la fase. Las fases F1 a F13 no han
-empezado: 266 micro-pasos.
+**F0 cerrada con 2 excepciones** (64 de 66 micro-pasos validados) y **F1 en curso**: el
+globo 3D está montado y auditado —cámara orbital, geoide de radio 1, atmósfera día/noche,
+textura satelital por LOD, doble clic para acercar y zoom limitado a nivel ciudad— con
+su hito de verificación E2E cerrado en `1.6.3` y medido en navegador a **59,9 FPS de
+media y p95 16,8 ms en 30 s**. De la fase quedan `1.7` (batimetría GEBCO) y `1.8`
+(constelaciones y límites), ambos opcionales, y el QA visual y robustez de `1.9`: tres de
+esos pasos no son cumplibles con lo decidido —el día/noche se retiró en 1.2.2 y el relieve
+en 1.3— y quedan anotados en el [Roadmap](docs/GAIA_ROADMAP.md) en vez de rellenados con
+trabajo inventado. F2 a F13 no han empezado: 234 micro-pasos.
 
 Lo validado hasta ahora demuestra el contrato universal `{ success, data, error }`, el
 rate-limit con token bucket, las sesiones anónimas sin PII, los headers de seguridad,
@@ -58,34 +66,34 @@ Detalle de fases, criterios de aceptación y trazabilidad RF/RNF en el
 
 ## Mapa de fases
 
-**14 fases, 88 grupos y 332 micro-pasos** (~94 jornadas de 6 h). Cada fase cierra con un
+**14 fases, 88 grupos y 333 micro-pasos** (~96 jornadas de 6 h). Cada fase cierra con un
 hito verificable y su propio PR a `main`. Los nombres son los de los encabezados del
 [Roadmap](docs/GAIA_ROADMAP.md), sin el sufijo repetido «— Corte Vertical Completo» de F2
 a F6; allí está el detalle de cada paso, su criterio de aceptación y su estimado.
 
-| Fase                                                                                                         | Nombre                                              | Micro-pasos | Estado                                       |
-| ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- | ----------: | -------------------------------------------- |
-| [F0](docs/GAIA_ROADMAP.md#2-fase-0--fundación-y-plataforma-compartida)                                       | Fundación y Plataforma Compartida                   |          66 | **Cerrada con 2 excepciones** — 64 validados |
-| [F1](docs/GAIA_ROADMAP.md#3-fase-1--motor-3d-y-globo-terráqueo)                                              | Motor 3D y Globo Terráqueo                          |          32 | Pendiente                                    |
-| [F2](docs/GAIA_ROADMAP.md#4-fase-2--módulo-incendios-nasa-firms--corte-vertical-completo)                    | Módulo Incendios (NASA FIRMS)                       |          30 | Pendiente                                    |
-| [F3](docs/GAIA_ROADMAP.md#5-fase-3--módulo-sismos-usgs--corte-vertical-completo)                             | Módulo Sismos (USGS)                                |          27 | Pendiente                                    |
-| [F4](docs/GAIA_ROADMAP.md#6-fase-4--módulo-viento-open-meteo--gpu--corte-vertical-completo)                  | Módulo Viento (Open-Meteo + GPU)                    |          33 | Pendiente                                    |
-| [F5](docs/GAIA_ROADMAP.md#7-fase-5--módulo-inundación-nivel-del-mar--corte-vertical-completo)                | Módulo Inundación (Nivel del Mar)                   |          21 | Pendiente                                    |
-| [F6](docs/GAIA_ROADMAP.md#8-fase-6--módulo-radiación-safecast-eurdep-radnet-gmcmap--corte-vertical-completo) | Módulo Radiación (Safecast, EURDEP, RadNet, GMCMap) |          22 | Pendiente                                    |
-| [F7](docs/GAIA_ROADMAP.md#9-fase-7--hud-analítico-interacción-y-time-scrubber)                               | HUD Analítico, Interacción y Time-Scrubber          |          20 | Pendiente                                    |
-| [F8](docs/GAIA_ROADMAP.md#10-fase-8--resiliencia-end-to-end-y-modo-resguardo)                                | Resiliencia End-to-End y Modo Resguardo             |           9 | Pendiente                                    |
-| [F9](docs/GAIA_ROADMAP.md#11-fase-9--seguridad-y-privacidad-hardening)                                       | Seguridad y Privacidad (Hardening)                  |          20 | Pendiente                                    |
-| [F10](docs/GAIA_ROADMAP.md#12-fase-10--optimización-60-fps-y-memoria-gpu)                                    | Optimización 60 FPS y Memoria GPU                   |          15 | Pendiente                                    |
-| [F11](docs/GAIA_ROADMAP.md#13-fase-11--testing-integral-compatibilidad-y-cicd)                               | Testing Integral, Compatibilidad y CI/CD            |          14 | Pendiente                                    |
-| [F12](docs/GAIA_ROADMAP.md#14-fase-12--despliegue-monitoreo-y-operaciones)                                   | Despliegue, Monitoreo y Operaciones                 |          14 | Pendiente                                    |
-| [F13](docs/GAIA_ROADMAP.md#15-fase-13--pulido-final-docs-y-demostración)                                     | Pulido Final, Docs y Demostración                   |           9 | Pendiente                                    |
+| Fase                                                                                                         | Nombre                                              | Micro-pasos | Estado                                                |
+| ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- | ----------: | ----------------------------------------------------- |
+| [F0](docs/GAIA_ROADMAP.md#2-fase-0--fundación-y-plataforma-compartida)                                       | Fundación y Plataforma Compartida                   |          66 | **Cerrada con 2 excepciones** — 64 validados          |
+| [F1](docs/GAIA_ROADMAP.md#3-fase-1--motor-3d-y-globo-terráqueo)                                              | Motor 3D y Globo Terráqueo                          |          32 | En curso — globo y cámara validados, hito E2E cerrado |
+| [F2](docs/GAIA_ROADMAP.md#4-fase-2--módulo-incendios-nasa-firms--corte-vertical-completo)                    | Módulo Incendios (NASA FIRMS)                       |          30 | Pendiente                                             |
+| [F3](docs/GAIA_ROADMAP.md#5-fase-3--módulo-sismos-usgs--corte-vertical-completo)                             | Módulo Sismos (USGS)                                |          27 | Pendiente                                             |
+| [F4](docs/GAIA_ROADMAP.md#6-fase-4--módulo-viento-open-meteo--gpu--corte-vertical-completo)                  | Módulo Viento (Open-Meteo + GPU)                    |          33 | Pendiente                                             |
+| [F5](docs/GAIA_ROADMAP.md#7-fase-5--módulo-inundación-nivel-del-mar--corte-vertical-completo)                | Módulo Inundación (Nivel del Mar)                   |          21 | Pendiente                                             |
+| [F6](docs/GAIA_ROADMAP.md#8-fase-6--módulo-radiación-safecast-eurdep-radnet-gmcmap--corte-vertical-completo) | Módulo Radiación (Safecast, EURDEP, RadNet, GMCMap) |          22 | Pendiente                                             |
+| [F7](docs/GAIA_ROADMAP.md#9-fase-7--hud-analítico-interacción-y-time-scrubber)                               | HUD Analítico, Interacción y Time-Scrubber          |          20 | Pendiente                                             |
+| [F8](docs/GAIA_ROADMAP.md#10-fase-8--resiliencia-end-to-end-y-modo-resguardo)                                | Resiliencia End-to-End y Modo Resguardo             |           9 | Pendiente                                             |
+| [F9](docs/GAIA_ROADMAP.md#11-fase-9--seguridad-y-privacidad-hardening)                                       | Seguridad y Privacidad (Hardening)                  |          20 | Pendiente                                             |
+| [F10](docs/GAIA_ROADMAP.md#12-fase-10--optimización-60-fps-y-memoria-gpu)                                    | Optimización 60 FPS y Memoria GPU                   |          15 | Pendiente                                             |
+| [F11](docs/GAIA_ROADMAP.md#13-fase-11--testing-integral-compatibilidad-y-cicd)                               | Testing Integral, Compatibilidad y CI/CD            |          14 | Pendiente                                             |
+| [F12](docs/GAIA_ROADMAP.md#14-fase-12--despliegue-monitoreo-y-operaciones)                                   | Despliegue, Monitoreo y Operaciones                 |          14 | Pendiente                                             |
+| [F13](docs/GAIA_ROADMAP.md#15-fase-13--pulido-final-docs-y-demostración)                                     | Pulido Final, Docs y Demostración                   |           9 | Pendiente                                             |
 
 ---
 
 ## Puesta en marcha
 
-Versiones, detalle de cada paso y los `docker run` de Redis y PostgreSQL en
-[Despliegue](docs/GAIA_DEPLOYMENT.md) §3.
+Hay tres niveles, del más corto al más explícito. El detalle de cada paso, los servicios
+y las variables están en [Despliegue](docs/GAIA_DEPLOYMENT.md) §3.
 
 | Herramienta | Versión | Para qué                            |
 | ----------- | ------- | ----------------------------------- |
@@ -96,42 +104,86 @@ Versiones, detalle de cada paso y los `docker run` de Redis y PostgreSQL en
 | PostgreSQL  | 18      | Base de datos e historial (Alembic) |
 | Docker      | 24+     | Opcional, solo para Redis           |
 
+### Nivel 1 — Un solo comando (Redis + backend + frontend)
+
 ```bash
 git clone <url-del-repo> && cd GAIA
-
-# Dependencias. npm va desde la raíz porque el repo son workspaces (frontend y
-# shared); uv desde backend/, que es un proyecto uv propio con su uv.lock.
-npm ci
-cd backend && uv sync && cd ..
-
-# Variables: el backend lee .env desde su propio directorio (Settings, env_file).
-cp .env.example backend/.env      # cambiar DATABASE_URL por la clave real
-
-# La migración necesita la BD y el rol dedicados ya creados; los `createdb` y
-# `psql` están en DEPLOYMENT §3.2, paso 2. Sin eso, alembic sale con
-# ConnectionRefusedError contra el 5432.
-cd backend && uv run alembic upgrade head && cd ..
+npm ci                                # workspaces: instala frontend/ y shared/
+npm run dev:all
 ```
 
-Las variables del backend están todas en `.env.example`, que es la plantilla
-versionada: cada una sale con su valor por defecto y el doc que la fija. Las del
-frontend van en `frontend/.env.local` y solo se leen del bundle si empiezan por
-`VITE_` (`DEPLOYMENT` §4.3).
+`dev:all` levanta Redis con Docker si el 6379 está libre, uvicorn en el 8000 y Vite en
+el 5173, y para los tres con `Ctrl+C`. Si un proceso se cae, para los otros en vez de
+dejarlos huérfanos ocupando el puerto.
+
+Es `scripts/dev.mjs`, sin dependencias nuevas. **No redefine `npm run dev`**: ese sigue
+siendo solo el frontend, como fijan `GAIA_CONTRIBUTING.md` y `GAIA_DEPLOYMENT.md` §3.2
+("la API va aparte, en el 8000").
+
+Lo que `dev:all` **no** hace, porque `DEPLOYMENT` §3.2 lo fija nativo y fuera de Docker
+y porque el backend arranca sin él: crear la BD y el rol de PostgreSQL, y correr
+`alembic upgrade head`. Sin eso no hay historial, y el resto funciona.
+
+### Nivel 2 — Solo el globo (sin backend)
+
+El frontend todavía no llama a la API: el cliente de `frontend/src/services/api.ts`
+existe pero ningún módulo lo usa porque los datos se cablean en F2-F6. Para ver la
+esfera y orbitarla basta con:
 
 ```bash
-# Backend, en una terminal
-cd backend && uv run uvicorn app.main:app --reload --port 8000
+npm run dev                           # http://localhost:5173
+```
 
-# Frontend, en otra
-npm run dev                        # http://localhost:5173
+Vite con HMR; recargar la página basta para volver a aplicar un cambio.
+
+### Nivel 3 — A mano, paso a paso
+
+Lo mismo que `dev:all`, proceso a proceso, para cuando se quiere ver o tocar cada
+pieza. Redis y PostgreSQL:
+
+```bash
+# Redis (Docker o nativo en :6379)
+docker run -d --rm -p 6379:6379 --name gaia-redis redis:7-alpine
+
+# PostgreSQL 18 nativo (NO en Docker) con la BD y el rol dedicados
+# GAIA_DATABASE.md §6.3 — el firewall de Windows corta el tráfico WSL → 5432,
+# así que el backend se levanta desde Windows si la BD es local.
+createdb -U postgres gaia            # una vez
+psql -U postgres -c "CREATE ROLE gaia LOGIN PASSWORD '<clave>'"
+psql -U postgres -c "ALTER DATABASE gaia OWNER TO gaia"
+```
+
+Backend y frontend, en dos terminales:
+
+```bash
+# El backend lee .env desde su propio directorio (Settings, env_file).
+cp .env.example backend/.env          # cambiar DATABASE_URL por la clave real
+cd backend && uv run alembic upgrade head   # crea el esquema (GAIA_DATABASE.md §6.4)
+cd backend && uv run uvicorn app.main:app --reload --port 8000
+```
+
+```bash
+npm run dev                            # http://localhost:5173, en la otra terminal
 ```
 
 Comprobar que está en pie:
 
 ```bash
-curl http://localhost:8000/api/health    # {"success": true, "data": {...}, "error": null}
+curl http://localhost:8000/api/health   # {"success": true, "data": {...}, "error": null}
+npm run perf:check                      # presupuesto de bundle
 npm test                                # unit de los scripts de la raíz y del frontend
 ```
+
+> [!NOTE]
+> En Windows, `uv` puede no estar en el `PATH` de la terminal aunque esté instalado
+> para tu usuario. `uv sync`, `uv run` y `dev:all` fallan con "no se reconoce"; hay
+> que instalarlo para el usuario o añadir su carpeta al `PATH`, y reabrir la terminal.
+
+> [!NOTE]
+> Las variables del backend están todas en `.env.example`, que es la plantilla
+> versionada: cada una sale con su valor por defecto y el doc que la fija. El
+> frontend no necesita ninguna hoy; cuando haga falta, van en `frontend/.env.local`
+> y solo se leen del bundle si empiezan por `VITE_` (`DEPLOYMENT` §4.3).
 
 ### Scripts
 
@@ -139,7 +191,8 @@ Todos desde la raíz, menos los que llevan `-w frontend` o `cd backend`.
 
 | Script                           | Qué hace                                           |
 | -------------------------------- | -------------------------------------------------- |
-| `npm run dev`                    | Vite en el 5173 con HMR                            |
+| `npm run dev:all`                | Redis + backend + frontend a la vez (Ctrl+C para)  |
+| `npm run dev`                    | Solo Vite en el 5173 con HMR                       |
 | `npm run build`                  | `tsc -b` y build de producción                     |
 | `npm test`                       | Unit de los scripts de la raíz y del frontend      |
 | `npm run test:e2e -w frontend`   | Smoke E2E; levanta Vite y uvicorn                  |
@@ -176,21 +229,32 @@ fecha de cada medición están en [Performance](docs/GAIA_PERFORMANCE.md) §4, q
 donde viven los números: aquí se copian para que se vean de entrada, y cada
 columna dice de qué doc sale cada una.
 
-| Medida                   | Baseline | Objetivo          | Fuente del baseline | Fuente del objetivo           |
-| ------------------------ | -------- | ----------------- | ------------------- | ----------------------------- |
-| JS inicial (gzip)        | 66.8 KiB | ≤ 450 KB          | `PERFORMANCE` §4.1  | `TESTING` §3.4                |
-| Chunk de arranque (gzip) | 66.8 KiB | ≤ 180 KB          | `PERFORMANCE` §4.1  | `TESTING` §3.4                |
-| CSS (gzip)               | 1.44 KiB | sin límite fijado | `PERFORMANCE` §4.1  | —                             |
-| FCP (mediana de 3)       | 352 ms   | < 2 s             | `PERFORMANCE` §4.2  | `SPEC` RNF-06, `TESTING` §3.1 |
+| Medida                   | Baseline   | Objetivo          | Fuente del baseline | Fuente del objetivo           |
+| ------------------------ | ---------- | ----------------- | ------------------- | ----------------------------- |
+| JS inicial (gzip)        | 201.97 KiB | ≤ 450 KB          | `PERFORMANCE` §4.1  | `TESTING` §3.4                |
+| Chunk de arranque (gzip) | 71.77 KiB  | ≤ 180 KB          | `PERFORMANCE` §4.1  | `TESTING` §3.4                |
+| Chunk de Three.js (gzip) | 130.21 KiB | sin límite fijado | `PERFORMANCE` §4.1  | —                             |
+| CSS (gzip)               | 0.37 KiB   | sin límite fijado | `PERFORMANCE` §4.1  | —                             |
+| FCP (mediana de 3)       | 352 ms     | < 2 s             | `PERFORMANCE` §4.2  | `SPEC` RNF-06, `TESTING` §3.1 |
+| FPS medio (30 s)         | 59,9       | ≥ 50              | `PERFORMANCE` §4.3  | `ROADMAP` 1.6.2               |
+| p95 de frame             | 16,8 ms    | ≤ 18 ms           | `PERFORMANCE` §4.3  | `TESTING` §3.2                |
+| Draw calls (máximo)      | 2          | ≤ 8               | `PERFORMANCE` §4.3  | `SPEC` RNF-02                 |
 
 - **Cómo se reproducen:** `npm run perf:check` para el bundle, `npm run fcp` para el
-  FCP. El bundle se comprueba en cada CI; el FCP se mide cuando se toca lo que le
-  afecta.
+  FCP, y la tecla `t` del overlay de desarrollo para los 30 s de FPS y memoria. El
+  bundle se comprueba en cada CI; el FCP se mide cuando se toca lo que le afecta; los
+  FPS se miden en un navegador con GPU, no en headless.
 - **Baseline no es presupuesto.** El presupuesto dice si se pasa; el baseline dice
   si se ha empeorado. Cuando se mida otra vez se anota la diferencia contra esta
   cifra, no contra el objetivo.
-- **Sin baseline todavía:** FPS, p95 de frame y draw calls dan `n/d` hasta que exista
-  la escena (fase 1). Sus objetivos ya están fijados en `PERFORMANCE` §2.
+- **FPS, p95 y memoria ya tienen baseline** (filas de arriba), medido en un navegador
+  con GPU por el método de `PERFORMANCE` §4.3; no salen de `npm run fps` porque en
+  headless no hay GPU y el número no significaría nada. Los 2 draw calls incluyen la
+  capa de mock de 100 puntos, que solo se monta en desarrollo: en producción el globo va
+  solo en 1, porque la atmósfera de 1.2.2 entra como shader de la misma malla.
+- **Cómo se mide sin Chromium headless:** `npm run dev`, dejar el globo quieto y pulsar
+  `t`; a los 30 s el overlay suelta un informe de ocho líneas con el veredicto del
+  criterio de 1.6.2. `d` lo oculta.
 
 ## Fuentes de Datos
 

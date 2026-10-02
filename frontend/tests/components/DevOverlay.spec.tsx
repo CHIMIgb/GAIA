@@ -1,13 +1,15 @@
 /**
  * Criterio ROADMAP 0.7.1: el overlay de dev mide FPS y p95 de frame de verdad, y las
  * draw calls aparecen cuando hay renderer (n/d mientras no, que es el estado de hoy:
- * la escena base es 1.1.1).
+ * la escena base es 1.1.1). Memoria y time-lapse llegan en 1.6.2.
  *
- * Aquí solo la matemática, que es lo que tiene lógica: el rAF y el repintado se
- * comprueban en el E2E (`tests/e2e/smoke.spec.ts`).
+ * Aquí la matemática y el unpintado; el rAF se Advance con relojes falsos porque 30 s de
+ * reloj real no son un test.
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { act, render } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { DevOverlay } from "../../src/components/DevOverlay";
 import {
   WINDOW_FRAMES,
   computeStats,
@@ -61,7 +63,9 @@ describe("computeStats", () => {
   it("muestra n/d mientras no hay renderer y las llamadas cuando lo hay", () => {
     expect(computeStats(aFrames(16, 2)).drawCalls).toBeNull();
 
-    registerDrawCallsSource({ info: { render: { calls: 8 } } });
+    registerDrawCallsSource({
+      info: { render: { calls: 8 }, memory: { geometries: 4, textures: 6 } },
+    });
     expect(computeStats(aFrames(16, 2)).drawCalls).toBe(8);
   });
 });
@@ -70,6 +74,24 @@ describe("ventana de muestras", () => {
   it("es de 2 s a 60 FPS", () => {
     // 120 frames ≈ 2 s: la ventana que se muestra en el overlay.
     expect(WINDOW_FRAMES).toBe(120);
+  });
+});
+
+describe("el registro sobrevive a HMR", () => {
+  afterEach(() => registerDrawCallsSource(null));
+
+  it("dos instancias del módulo leen la misma fuente", async () => {
+    registerDrawCallsSource({
+      info: { render: { calls: 3 }, memory: { geometries: 1, textures: 2 } },
+    });
+    // Es lo que hace un hot-update de Vite sobre `frameStats`: el overlay pasa a leer una
+    // instancia nueva mientras el motor sigue registrado en la anterior. Sin el registro en
+    // `globalThis`, el overlay se queda en `n/d` para siempre.
+    vi.resetModules();
+    const otra = await import("../../src/utils/frameStats");
+
+    expect(otra.readMemory()).toEqual({ geometries: 1, textures: 2 });
+    expect(otra.computeStats([16.67, 16.67]).drawCalls).toBe(3);
   });
 });
 
@@ -98,5 +120,96 @@ describe("frames largos y LoAF (0.7.7)", () => {
     // Igual que las draw calls: `0` parecería "se midió y valió 0 ms", que es
     // mentira, y además en Firefox/Safari es la API entera la que no existe.
     expect(summarizeLongTasks([])).toEqual({ tasks: 0, worstMs: null });
+  });
+});
+
+describe("overlay: memoria y time-lapse (1.6.2)", () => {
+  afterEach(() => {
+    registerDrawCallsSource(null);
+    vi.useRealTimers();
+  });
+
+  /** Monta el overlay y deja correr `ms` de rAF. */
+  const montar = async (ms: number): Promise<ReturnType<typeof render>> => {
+    vi.useFakeTimers();
+    const vista = render(<DevOverlay />);
+    await act(async () => {
+      vi.advanceTimersByTime(ms);
+    });
+    return vista;
+  };
+
+  it("enseña n/d de memoria mientras no hay renderer", async () => {
+    const { container } = await montar(300);
+
+    expect(container.textContent).toContain("geo    n/d");
+    expect(container.textContent).toContain("tex    n/d");
+  });
+
+  it("enseña la memoria cuando el motor registra su fuente", async () => {
+    registerDrawCallsSource({
+      info: { render: { calls: 8 }, memory: { geometries: 4, textures: 6 } },
+    });
+
+    const { container } = await montar(300);
+
+    expect(container.textContent).toContain("geo    4");
+    expect(container.textContent).toContain("tex    6");
+  });
+
+  it("sin renderer avisa al empezar, para no esperar 30 s en balde", async () => {
+    const { container } = await montar(300);
+
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "t" }));
+    });
+
+    expect(container.textContent).toContain("sin renderer: saldrá n/d");
+  });
+
+  it("la duración es la del intervalo, no los minutos que lleve la página abierta", async () => {
+    registerDrawCallsSource({
+      info: { render: { calls: 4 }, memory: { geometries: 4, textures: 6 } },
+    });
+    // 30 s de vida previa: si el reloj del informe fuera el absoluto de la página, saldría
+    // "duración 60 s", que es justo lo que se midió con la pestaña abierta y HMR encima.
+    const { container } = await montar(30_000);
+
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "t" }));
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(31_000);
+    });
+
+    const informe =
+      container.querySelector('[data-testid="dev-overlay-informe"]')
+        ?.textContent ?? "";
+    const segundos = Number(informe.match(/duración ([\d.]+) s/)?.[1]);
+    expect(segundos).toBeGreaterThan(29);
+    expect(segundos).toBeLessThan(31);
+  });
+
+  it("con `t` mide 30 s y suelta el informe del criterio", async () => {
+    registerDrawCallsSource({
+      info: { render: { calls: 4 }, memory: { geometries: 4, textures: 6 } },
+    });
+    const { container } = await montar(300);
+
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "t" }));
+    });
+    expect(container.textContent).toContain("midiendo 30 s");
+
+    await act(async () => {
+      vi.advanceTimersByTime(31_000);
+    });
+
+    const informe = container.querySelector(
+      '[data-testid="dev-overlay-informe"]',
+    )?.textContent;
+    expect(informe).toContain("geo 4 → 4 (0)");
+    expect(informe).toContain("fuga de memoria no");
+    expect(informe).toContain("criterio 1.6.2 cumple");
   });
 });

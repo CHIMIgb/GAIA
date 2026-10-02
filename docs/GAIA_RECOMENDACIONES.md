@@ -19,7 +19,7 @@ Este documento registra los hallazgos y las recomendaciones accionables, ordenad
 
 1. **Separación de concerns documental**: SPEC / TECH_STACK / API_CONTRACT / DATA_SOURCES / WORKFLOWS / STATE / DEPLOYMENT / SECURITY / DATABASE / ROADMAP son dominios bien delimitados.
 2. **Trazabilidad RF/RNF**: cada shader, endpoint y workflow cita su requisito.
-3. **ROADMAP de 332 micro-pasos** con criterios de aceptación, estimaciones en horas y fases con hito visible.
+3. **ROADMAP de 333 micro-pasos** con criterios de aceptación, estimaciones en horas y fases con hito visible.
 4. **Presupuestos medibles**: draw calls ≤ 8, p95 ≤ 18 ms, FCP < 2 s, bundle ≤ 450 KB gzip.
 5. **Seguridad con sustancia**: sesión sin PII (sha256), rate-limit, cadena de fallback, CSP con nonce.
 

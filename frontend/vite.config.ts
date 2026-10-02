@@ -37,7 +37,24 @@ export const pluginsDeAnalisis = (mode: string) =>
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  build: pluginsDeAnalisis(mode),
+  build: {
+    ...pluginsDeAnalisis(mode),
+    rollupOptions: {
+      output: {
+        // Three.js en su propio chunk. No es una preferencia de organization: el gate
+        // de `scripts/bundle-budget.mjs` mide por separado el chunk de arranque (180 KB)
+        // y el de three (250 KB, DEPLOYMENT §5.1), y localiza este último por el nombre
+        // del fichero. Sin esto los ~190 KB de three caen dentro del arranque y el gate
+        // falla por un límite que el doc nunca puso para el motor.
+        //
+        // Es la API de code-splitting de rolldown (Vite 8), no `manualChunks`: allí el
+        // nombre del chunk sale del grupo, que es justo lo que lee el gate.
+        codeSplitting: {
+          groups: [{ name: "three", test: /[\\/]node_modules[\\/]three[\\/]/ }],
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       // Mismo criterio que el `paths` de `tsconfig.app.json`: `@gaia/shared` se

@@ -32,9 +32,17 @@ venv/
 .ruff_cache/
 .mypy_cache/
 htmlcov/
+.coverage
+coverage.json
 
 # Editor
 .vscode/*
 !.vscode/extensions.json
 .idea/
 .DS_Store
+
+# Playwright (E2E)
+test-results/
+playwright-report/
+blob-report/
+.playwright/

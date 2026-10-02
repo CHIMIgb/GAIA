@@ -1,7 +1,7 @@
 # GAIA — Performance
 
-> **Versión del Documento:** 1.4
-> **Fecha:** 2026-09-28
+> **Versión del Documento:** 2.10
+> **Fecha:** 2026-10-01
 > **Propósito:** presupuestos, umbrales y baselines de rendimiento de GAIA. Referencia, no fuente: los valores canónicos viven en su doc de origen y aquí solo se citan.
 
 ## 1. Regla de este documento
@@ -81,25 +81,58 @@ mide)`, no como un 0 que parecería una mejora. Es la puerta que sí existe
 
 ### 4.1 Baseline del bundle (paso 0.7.3)
 
-| Medida                   | Baseline | Presupuesto                     | Margen                          |
-| ------------------------ | -------- | ------------------------------- | ------------------------------- |
-| JS inicial (gzip)        | 66.8 KiB | ≤ 450 KB (`DEPLOYMENT` §5.1)    | 383 KiB libre, 15 % usado       |
-| Chunk de arranque (gzip) | 66.8 KiB | ≤ 180 KB (`DEPLOYMENT` §5.1)    | 113 KiB libre, 37 % usado       |
-| Chunk Three.js           | `n/d`    | ≤ 250 KB (`DEPLOYMENT` §5.1)    | se mide en 1.1.1, cuando exista |
-| CSS (gzip)               | 1.44 KiB | sin límite fijado en ningún doc | —                               |
+| Medida                   | Baseline   | Presupuesto                     | Margen                    |
+| ------------------------ | ---------- | ------------------------------- | ------------------------- |
+| JS inicial (gzip)        | 201.97 KiB | ≤ 450 KB (`DEPLOYMENT` §5.1)    | 248 KiB libre, 45 % usado |
+| Chunk de arranque (gzip) | 71.77 KiB  | ≤ 180 KB (`DEPLOYMENT` §5.1)    | 108 KiB libre, 40 % usado |
+| Chunk Three.js           | 130.21 KiB | ≤ 250 KB (`DEPLOYMENT` §5.1)    | 120 KiB libre, 52 % usado |
+| CSS (gzip)               | 0.37 KiB   | sin límite fijado en ningún doc | —                         |
 
-- **Medido el** 2026-09-27 sobre `f6c6abe`, con Node v22.19.0 y Vite 8.3.1:
-  `npm run build && npm run perf:check`.
-- **El baseline es un solo chunk.** El build emite únicamente `index-*.js` (21 módulos)
-  porque `frontend/vite.config.ts` todavía no define `manualChunks`, que es lo que
-  prescriben `DEPLOYMENT` §5.1 y `TESTING` §3.4. React y la app van dentro del chunk de
-  arranque. Cuando se añada el code splitting, el **total** seguirá siendo comparable
-  chunk a chunk no: el mismo byte pasa de "arranque" a "React + HUD", y comparar antes de
-  eso produce un falso positivo.
-- **Dos cifras para la misma medida:** el footer de Vite imprime 69.30 kB y `perf:check`
-  66.8 KiB. Es el mismo fichero con distinto nivel de compresión y base: con nivel 6 el
-  chunk mide 67.0 KiB (comprobado). Gana la de `perf:check`, que es la que se compara
-  contra el presupuesto, porque es la que usa el mismo criterio siempre.
+- **Medido el** 2026-10-01 con Node v22.19.0 y Vite 8.3.1:
+  `npm run build && npm run perf:check`, al cerrar el hito de F1 (1.6.3). Las cifras
+  anteriores están todas en el historial de `docs/performance/baseline.json`.
+- **El baseline se volvió a medir en 1.6.3 porque el gate estaba en rojo desde 1.4.x.**
+  `perf:baseline` compara contra la última medición y falla al 1 %; entre 1.2.2 y 1.6.2
+  el chunk de arranque pasó de 70,40 a 74,41 kB gzip (+5,7 %), y en los pasos
+  anteriores solo se pasó `perf:check` —que mide presupuesto, no comparativa—, así que
+  el rojo no llegó a verse. Medido commit a commit, el crecimiento es el que compraron
+  los pasos de F1 y no una regresión: +3,42 kB en 1.4.x (textura satelital por LOD,
+  antimeridiano y geoide), +0,47 en 1.5.1 (doble clic), +0,07 en 1.5.2 (banda de zoom
+  suave) y +0,05 en 1.6.2 —este último casi nulo porque el overlay y la capa de mock
+  son importaciones dinámicas tras `import.meta.env.DEV` y Vite las borra del grafo en
+  producción—. Con el presupuesto, todo esto sigue siendo el 45 % del bundle de
+  arranque. Queda sin corregir un detalle del baseline de 1.2.2: guarda 67,88 KiB y su
+  propio commit construye hoy ~69,5 KiB con el gzip del script, así que está ~2 % por
+  debajo de lo que se midstió entonces; no hay manera de reproducir aquella medición y
+  reponerlo habría hecho más rojo el gate sin explicar nada.
+- **El +1,1 % del arranque es el shader de 1.2.2, no una regresión.** Antes de aceptarlo
+  se quitaron los comentarios que estaban **dentro** de los dos shaders: el minificador no
+  toca el interior de un template literal, así que cada línea de comentario GLSL se
+  contaba como peso. Medido: `68.46 → 67.88 KiB`, −0,58 KiB. Los ~0,7 KiB que quedan son
+  el shader y el módulo, que es código que hace falta. El chunk de Three.js no se mueve
+  (131.39 KiB) porque el shader es propio, no una clase de Three.
+- **Dos chunks desde 1.1.1.** Antes de entrar Three.js el build era un solo chunk
+  (`index-*.js`, 21 módulos) y React iba dentro del arranque; con el motor montado,
+  `codeSplitting` en `frontend/vite.config.ts` saca Three.js a `three-*.js` y deja el
+  arranque en 67.17 KiB. No es decoración: el gate mide por separado el arranque (180 KB)
+  y el de three (250 KB) y localiza este último por el nombre del fichero, así que sin
+  el split los 198 KiB del motor caerían dentro del arranque y se medirían contra un
+  límite que `DEPLOYMENT` §5.1 nunca puso para él.
+- **El salto del JS inicial (66.8 → 198.56 KiB) es el motor entrando**, no una regresión:
+  es lo que anticipa `PROJECT_STRUCTURE` §7 ("el bundle es hoy un único chunk porque la
+  grafo es React + Valtio... todavía no hay `three`") y lo que fija el 43 % de los 450 KiB
+  de presupuesto. `OrbitControls` añadió 5,3 KiB más en 1.1.2; hoy el control de cámara es
+  `TrackballControls` (1.1.2 revisado antes de validar 1.4.1), 1,4 KiB más ligero dentro del
+  chunk de three (132.2 → 130.8 KB gzip).
+- **Cuándo se vuelve a medir el baseline:** cuando el cambio que engorda el bundle es
+  deliberado —una dependencia o una funcionalidad nueva—, no cuando aparece una delta sin
+  explicación. Un gate que se re-declara en cada commit no distingue "ha entrado la cámara
+  orbital" de "ha subido esbuild a 8.3.2", que es justo lo que tiene que distinguir. Cada
+  re-medición deja su entrada en el historial de `baseline.json` con su `commit`.
+- **Dos cifras para la misma medida:** el footer de Vite y `perf:check` no coinciden
+  porque no es el mismo nivel de compresión ni la misma base. Gana la de `perf:check`,
+  que es la que se compara contra el presupuesto y contra el baseline, porque es la que
+  usa el mismo criterio siempre.
 
 ### 4.2 Baseline del FCP (paso 0.7.4)
 
@@ -121,6 +154,38 @@ mide)`, no como un 0 que parecería una mejora. Es la puerta que sí existe
 - **Es una cifra del scaffold,** no un objetivo: cuando entren el globo y los módulos,
   lo que se compara es la diferencia contra este número, no el absoluto.
 
+### 4.3 Baseline de runtime: FPS y memoria del globo (paso 1.6.2)
+
+| Medida              | Valor medido | Presupuesto              | Margen            |
+| ------------------- | ------------ | ------------------------ | ----------------- |
+| FPS medio (30 s)    | 59,9         | ≥ 50 (criterio 1.6.2)    | 9,9 FPS de margen |
+| p95 de frame        | 16,8 ms      | ≤ 18 ms (`TESTING` §3.2) | 1,2 ms de margen  |
+| Geometrías en GPU   | 2 → 2 (0)    | sin subidas sostenidas   | sin cambio        |
+| Texturas en VRAM    | 5 → 5 (0)    | sin subidas sostenidas   | sin cambio        |
+| Draw calls (máximo) | 2            | ≤ 8 (`RNF-02`)           | 6 de margen       |
+
+- **Medido el** 2026-10-01 sobre el commit `1d78030`, con la pestaña recién cargada y el
+  globo quieto en dev: 30,0 s, 1800 frames, informe "criterio 1.6.2 cumple".
+- **Cómo se mide:** la tecla `t` del `DevOverlay` arranca el time-lapse de 30 s y suelta un
+  informe de ocho líneas que se pega tal cual aquí. `d` oculta el overlay. Es la lectura
+  de `renderer.info` de Three (draw calls, geometrías y texturas) más los deltas de frame
+  del rAF del overlay.
+- **Sin renderer no hay `cumple`:** el informe sale entero en `n/d` y
+  `criterio 1.6.2 NO CUMPLE`, porque `cumpleCriterio` necesita las dos respuestas del
+  criterio —FPS y memoria— y no basta con que la de FPS salga buena. Un `cumple` por
+  ausencia de datos sería una puerta que se salta sola. Pulsar `t` sin renderer avisa al
+  instante.
+- **La cifra incluye la capa de mock de 1.6.1:** los 2 draw calls y las 2 geometrías son
+  el globo (1) más los 100 puntos estáticos, que solo se montan en desarrollo. En
+  producción el globo va solo en 1 draw call. No se mide aparte porque para eso haría
+  falta código que apague una capa, y contra un presupuesto de ≤8 la diferencia es de un
+  draw call y no altera el veredicto.
+- **Es una cifra de navegador humano, no un E2E:** Playwright se cuelga en este entorno
+  sin GPU y sin salida, así que automatizar la lectura habría medido la cuenta del propio
+  navegador en vez de la del globo. Es la misma desviación que en 1.6.1 y afecta a la
+  alineación visual, no solo a esto. Lo que sí es automatizado es la decisión: la lógica
+  del criterio vive en `frontend/src/utils/timeLapse.ts` con sus tests, sin navegador.
+
 ## 5. Herramientas de medición (estado real, no la prescripción)
 
 | Qué                      | Herramienta                                                             | Estado                                          |
@@ -130,6 +195,7 @@ mide)`, no como un 0 que parecería una mejora. Es la puerta que sí existe
 | Duración por endpoint    | Línea `duración …avg=…p95=…` con `DEBUG`                                | Desde 0.7.2                                     |
 | Frames largos            | `DevOverlay` (contador) + `PerformanceObserver('long-animation-frame')` | Desde 0.7.7 — ver la nota de dos umbrales       |
 | FCP                      | `npm run fcp` (Playwright + `PerformanceObserver`)                      | Desde 0.7.4 — baseline en §4.2                  |
+| FPS y memoria (30 s)     | `DevOverlay`, tecla `t`                                                 | Desde 1.6.2 — baseline en §4.3                  |
 | Análisis por chunk       | `npm run analyze` (`rollup-plugin-visualizer`)                          | Desde 0.7.6 — treemap HTML en `dist/stats.html` |
 
 ### 5.1 Los dos umbrales de los frames largos (0.7.7)
@@ -173,6 +239,7 @@ no lo lista y el overlay muestra `n/d` en vez de un 0 que parecería una medici�
 | 0.7.8            | Este documento                                       |
 | 0.7.11           | Bloque de rendimiento en el README                   |
 | 0.7.12           | Fichero de baseline versionado                       |
+| 1.6.2            | §4.3, baseline de FPS y memoria del globo            |
 
 ## Enlaces
 

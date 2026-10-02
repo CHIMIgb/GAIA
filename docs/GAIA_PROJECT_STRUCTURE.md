@@ -1,8 +1,8 @@
 # GAIA — Estructura del Proyecto
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.7  
-> **Fecha:** 2026-09-28
+> **Versión del Documento:** 1.13  
+> **Fecha:** 2026-10-01
 
 ---
 
@@ -39,8 +39,9 @@ frontend/
 │   ├── core/                          ← Motor de renderizado Three.js
 │   │   ├── Engine.ts                  ← Clase principal: crea Scene, Camera, Renderer, ejecuta render loop
 │   │   ├── SceneManager.ts            ← Gestión de objetos en la escena (add/remove/dispose)
-│   │   ├── CameraController.ts        ← OrbitControls + zoom limits + damping
+│   │   ├── CameraController.ts        ← TrackballControls + zoom limits + giro de fondo + doble clic
 │   │   ├── Clock.ts                   ← deltaTime, elapsed, FPS counter
+│   │   ├── RenderLoop.ts              ← requestAnimationFrame del motor; corta los frames con la pestaña oculta (1.9.5)
 │   │   ├── Resizer.ts                 ← Listener de resize + actualización de aspect ratio y pixel ratio
 │   │   └── Stats.ts                   ← Integración de stats.js + lectura de renderer.info (draw calls, triangles)
 │   │
@@ -71,10 +72,11 @@ frontend/
 │   ├── modules/                       ← Módulos de visualización (1 carpeta = 1 subsistema)
 │   │   ├── globe/
 │   │   │   ├── GlobeModule.ts         ← Orquestador: crea la esfera, aplica texturas y shaders
-│   │   │   ├── TerrainMesh.ts         ← SphereGeometry + ShaderMaterial con displacement
+│   │   │   ├── TerrainMesh.ts         ← SphereGeometry (esfera lisa) + MeshStandardMaterial
 │   │   │   ├── AtmosphereMesh.ts      ← Esfera exterior con shader de dispersión atmosférica
-│   │   │   ├── TileManager.ts         ← Descarga y caché de tiles satelitales (Esri) y DEM (Terrarium)
-│   │   │   └── CoastlineOverlay.ts    ← Líneas de Natural Earth renderizadas con LineSegments
+│   │   │   ├── TileManager.ts         ← Descarga y caché de tiles satelitales (Esri)
+│   │   │   ├── CoastlineOverlay.ts    ← Líneas de Natural Earth renderizadas con LineSegments
+│   │   │   └── MockPoints.ts          ← Dataset estático de 100 puntos (rejilla 10×10) para 1.6.1, solo en dev
 │   │   │
 │   │   ├── fire/
 │   │   │   ├── FireModule.ts          ← Orquestador: lifecycle de la capa de incendios
@@ -165,8 +167,9 @@ frontend/
 │   │   └── worker.messages.ts         ← Uniones discriminadas de mensajes Worker ↔ Main thread
 │   │
 │   ├── utils/                         ← Funciones utilitarias puras
-│   │   ├── coordinates.ts             ← geodesicToCartesian(lat, lon, radius) → Vector3
-│   │   ├── terrarium.ts               ← decodeTerrarium(r, g, b) → elevation en metros
+│   │   ├── coordinates.ts             ← geodesicToCartesian(lat, lon, radio) → Vector3 y RADIO_TIERRA (implementado en 1.6.1)
+│   │   ├── frameStats.ts              ← Ventana de deltas de frame: FPS, p95, frames largos, draw calls y memoria del renderer (0.7.1, memoria en 1.6.2)
+│   │   ├── timeLapse.ts               ← Lógica del criterio de 1.6.2: resumen de 30 s, detección de fuga por medianas y el informe de ocho líneas
 │   │   ├── colorScales.ts             ← Funciones de interpolación de color para FRP, magnitud, µSv/h
 │   │   ├── tilemath.ts                ← Cálculos de tiles: lat/lon ↔ tile coords (x, y, z)
 │   │   └── dispose.ts                 ← disposeObject3D(obj): libera geometry + material + texture recursivamente
@@ -262,8 +265,7 @@ backend/
 │       ├── firms_latest.json          ← Snapshot reciente de incendios NASA FIRMS
 │       ├── quakes_latest.json         ← Snapshot reciente de sismos USGS
 │       ├── wind_grid_latest.bin       ← Rejilla de viento binaria pre-procesada
-│       ├── radiation_latest.json      ← Snapshot reciente de lecturas Safecast
-│       └── heightmap_global.png       ← Heightmap global de elevación (opcional)
+│       └── radiation_latest.json      ← Snapshot reciente de lecturas Safecast
 │
 ├── tests/                             ← Tests del backend
 │   ├── __init__.py
@@ -307,14 +309,15 @@ GAIA/
 
 ### 5.1 `frontend/src/core/` — Motor de Renderizado
 
-| Archivo               | Responsabilidad                                                                                                                                                                                                                        |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Engine.ts`           | Clase principal. Crea `WebGLRenderer`, `Scene`, `PerspectiveCamera`. Ejecuta el `requestAnimationFrame` loop. Llama a `update()` en cada módulo activo y `render()` en cada frame. Expone `renderer.info` para métricas de draw calls. |
-| `SceneManager.ts`     | Registra y desregistra módulos en la escena. Gestiona el ciclo de vida: `init()` → `update(dt)` → `dispose()`. Garantiza que `dispose()` se invoque al remover cualquier objeto.                                                       |
-| `CameraController.ts` | Wrapper de `OrbitControls`. Configura límites de zoom (min/max distance), damping, auto-rotate inicial y restricción de ángulo polar.                                                                                                  |
-| `Clock.ts`            | Encapsula `THREE.Clock`. Expone `deltaTime`, `elapsedTime` y un contador de FPS rolling (media de últimos 60 frames).                                                                                                                  |
-| `Resizer.ts`          | Escucha `window.resize`. Actualiza `camera.aspect`, `camera.updateProjectionMatrix()` y `renderer.setSize()`. Gestiona `devicePixelRatio` con cap a 2.0 para rendimiento.                                                              |
-| `Stats.ts`            | Integración opcional de `stats.js`. Lee `renderer.info.render.calls` (draw calls) y `renderer.info.memory` (geometrías, texturas en VRAM) para el panel de debug.                                                                      |
+| Archivo               | Responsabilidad                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Engine.ts`           | Clase principal. Crea `WebGLRenderer`, `Scene`, `PerspectiveCamera`. Ejecuta el `requestAnimationFrame` loop. Llama a `update()` en cada módulo activo y `render()` en cada frame. Expone `renderer.info` para métricas de draw calls.                                                                                                                                                                                                                                                                                                                                                                              |
+| `SceneManager.ts`     | Registra y desregistra módulos en la escena. Gestiona el ciclo de vida: `init()` → `update(dt)` → `dispose()`. Garantiza que `dispose()` se invoque al remover cualquier objeto.                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `CameraController.ts` | Wrapper de `TrackballControls` (arcball: giro libre sin polos ni voltereta). Configura límites de zoom (min/max distance), inercia (`staticMoving`), el giro de fondo por inactividad de VISUAL_DESIGN §10 y desactiva el pan del clic derecho. Desde 1.5.1 también es dueña del gesto de acercar a un punto: `apuntarConDobleClic(malla)` registra el `dblclick` y `acercarA(punto)` hace el vuelo con easing. Desde 1.5.2 el tope de zoom es blando (`velocidadDeZoom` baja `zoomSpeed` en la `BANDA_ZOOM_SUAVE`); el radio del globo lo importa de `utils/coordinates.ts` desde 1.6.1 en vez de declararlo aquí. |
+| `Clock.ts`            | Encapsula `THREE.Clock`. Expone `deltaTime`, `elapsedTime` y un contador de FPS rolling (media de últimos 60 frames).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `RenderLoop.ts`       | El `requestAnimationFrame` del motor y su pausa: con la pestaña oculta no pide ningún frame y al mirarla de nuevo los retoma, pasando el tiempo del frame tal cual para que la cámara no dé un salto. Lo que se hace en cada frame lo pone `Engine`. Desde 1.9.5 vive aparte de `Engine` porque en jsdom no hay WebGL y el criterio del paso se cumple entero aquí.                                                                                                                                                                                                                                                 |
+| `Resizer.ts`          | Escucha `window.resize`. Actualiza `camera.aspect`, `camera.updateProjectionMatrix()` y `renderer.setSize()`. Gestiona `devicePixelRatio` con cap a 2.0 para rendimiento; desde 1.9.6 `comprobarPixelRatio()` vuelve a aplicarlo cuando cambia, para no depender de que un `resize` llegue a dispararse al pasar la ventana de una pantalla a otra.                                                                                                                                                                                                                                                                 |
+| `Stats.ts`            | Integración opcional de `stats.js`. Lee `renderer.info.render.calls` (draw calls) y `renderer.info.memory` (geometrías, texturas en VRAM) para el panel de debug.                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
 ---
 
@@ -324,7 +327,7 @@ GAIA/
 | -------------------------- | :---------: | ------------------------------------------------------------------- | :----------: |
 | `globe/atmosphere.vert`    |   Vertex    | Posiciones del halo atmosférico exterior                            |    RF-01     |
 | `globe/atmosphere.frag`    |  Fragment   | Dispersión Fresnel / Rayleigh + ciclo día/noche                     |    RF-01     |
-| `globe/terrain.vert`       |   Vertex    | Decodificación Terrarium RGB → displacement de vértices             |    RF-02     |
+| `globe/terrain.vert`       |   Vertex    | Posiciones y uv de la esfera (sin displacement)                     |    RF-02     |
 | `globe/terrain.frag`       |  Fragment   | Textura satelital (Esri) + iluminación Phong/Lambert                |    RF-02     |
 | `fire/fire.vert`           |   Vertex    | Posicionamiento de instancias de incendio sobre la esfera           |    RF-03     |
 | `fire/fire.frag`           |  Fragment   | Gradiente de color según FRP (amarillo → rojo → blanco)             |    RF-04     |
@@ -368,7 +371,7 @@ interface IGaiaModule {
 | `radiation/` | RadiationModule, RadiationMesh, AlertThresholds       | InstancedMesh (puntos) o Heatmap          |     1      |
 | **Total**    |                                                       |                                           |  **7–8**   |
 
-> El total de draw calls se mantiene dentro del presupuesto de **≤ 8 por frame** (RNF-02).
+> El total de draw calls se mantiene dentro del presupuesto de **≤ 8 por frame** (RNF-02). `globe/MockPoints.ts` (el dataset de 100 puntos de 1.6.1) suma 1 draw call, pero solo se monta en desarrollo: no cuenta para el presupuesto de producción.
 
 ---
 
@@ -537,17 +540,17 @@ El bundle es hoy un único chunk porque el grafo es React + Valtio + el cliente 
 
 ## 6. Convenciones de Nomenclatura
 
-| Elemento              | Convención                           | Ejemplo                                      |
-| --------------------- | ------------------------------------ | -------------------------------------------- |
-| Archivos TypeScript   | `PascalCase.ts` (clases/componentes) | `FireModule.ts`, `App.tsx`                   |
-| Archivos utilitarios  | `camelCase.ts`                       | `coordinates.ts`, `colorScales.ts`           |
-| Archivos de tipos     | `kebab.types.ts`                     | `fire.types.ts`, `api.types.ts`              |
-| Archivos de servicios | `kebab.service.ts`                   | `fires.service.ts`                           |
-| Workers               | `kebab.worker.ts`                    | `ingestion.worker.ts`                        |
-| Shaders GLSL          | `kebab.vert` / `kebab.frag`          | `atmosphere.frag`                            |
-| Archivos Python       | `snake_case.py`                      | `firms_client.py`, `cache_keys.py`           |
-| Endpoints FastAPI     | `/api/kebab-plural`                  | `/api/fires`, `/api/radiation`               |
-| Variables de entorno  | `UPPER_SNAKE_CASE`                   | `REDIS_URL`, `DATABASE_URL`, `FIRMS_MAP_KEY` |
+| Elemento              | Convención                           | Ejemplo                                                             |
+| --------------------- | ------------------------------------ | ------------------------------------------------------------------- |
+| Archivos TypeScript   | `PascalCase.ts` (clases/componentes) | `FireModule.ts`, `App.tsx`                                          |
+| Archivos utilitarios  | `camelCase.ts`                       | `coordinates.ts`, `colorScales.ts`, `frameStats.ts`, `timeLapse.ts` |
+| Archivos de tipos     | `kebab.types.ts`                     | `fire.types.ts`, `api.types.ts`                                     |
+| Archivos de servicios | `kebab.service.ts`                   | `fires.service.ts`                                                  |
+| Workers               | `kebab.worker.ts`                    | `ingestion.worker.ts`                                               |
+| Shaders GLSL          | `kebab.vert` / `kebab.frag`          | `atmosphere.frag`                                                   |
+| Archivos Python       | `snake_case.py`                      | `firms_client.py`, `cache_keys.py`                                  |
+| Endpoints FastAPI     | `/api/kebab-plural`                  | `/api/fires`, `/api/radiation`                                      |
+| Variables de entorno  | `UPPER_SNAKE_CASE`                   | `REDIS_URL`, `DATABASE_URL`, `FIRMS_MAP_KEY`                        |
 
 ---
 

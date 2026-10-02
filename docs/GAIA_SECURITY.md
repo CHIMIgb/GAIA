@@ -1,8 +1,8 @@
 # GAIA — Seguridad de la Aplicación
 
 > **Proyecto:** GAIA 3D  
-> **Versión del Documento:** 1.3  
-> **Fecha:** 2026-09-23  
+> **Versión del Documento:** 1.5  
+> **Fecha:** 2026-10-01  
 
 ---
 
@@ -198,7 +198,7 @@ Con cabeceras `Retry-After: 30` y `RateLimit-*` estándar. El frontend (Workflow
 
 | Header                            | Valor                                      | Bloquea                         |
 | --------------------------------- | ------------------------------------------ | ------------------------------- |
-| `Content-Security-Policy`         | `default-src 'self'; script-src 'self' 'nonce-{n}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://server.arcgisonline.com; object-src 'none'; frame-ancestors 'none'; base-uri 'self'` | XSS por inyección de script/iframe |
+| `Content-Security-Policy`         | `default-src 'self'; script-src 'self' 'nonce-{n}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://server.arcgisonline.com https://services.arcgisonline.com https://s3.amazonaws.com; object-src 'none'; frame-ancestors 'none'; base-uri 'self'` | XSS por inyección de script/iframe |
 | `Strict-Transport-Security`       | `max-age=31536000; includeSubDomains`      | Downgrade a HTTP / MITM        |
 | `X-Content-Type-Options`          | `nosniff`                                  | MIME sniffing (ej. JSON→HTML)  |
 | `X-Frame-Options`                 | `DENY`                                     | Clickjacking                    |
@@ -207,6 +207,8 @@ Con cabeceras `Retry-After: 30` y `RateLimit-*` estándar. El frontend (Workflow
 
 > [!NOTE]
 > El nonce CSP se inyecta en la build de producción con un plugin de Vite (`transformIndexHtml` en `vite.plugins.ts`): el meta CSP y los atributos `nonce` de los `<script>`/`<link>` se generan por request. En desarrollo, el HMR usa scripts inline: se permite `'nonce-{n}'` regenerado por el dev server (o `'unsafe-inline'` solo en modo dev).
+>
+> `img-src` autoriza además los hosts de las fuentes de imagen del globo: `services.arcgisonline.com` (tiles satelitales de Esri, GLOBE_TEXTURES §1.1). `server.arcgisonline.com` se conserva tal como estaba en la política original; ningún cargador del código lo usa (los tiles van a `services.arcgisonline.com`).
 
 ### 6.3 Tests de seguridad
 

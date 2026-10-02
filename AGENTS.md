@@ -37,7 +37,7 @@ Todos los docs de `docs/` comparten valores canónicos en paralelo. Al editar cu
 
 ## Roadmap (`GAIA_ROADMAP.md`)
 
-- Números verificables que deben cuadrar en TODA mención: 14 fases · 88 grupos · **332 micro-pasos · 564 h ≈ 94 jornadas** (jornada = 6 h). Las horas de cada fase deben cuadrar con (jornadas de la fase × 6) ±1.2 h.
+- Números verificables que deben cuadrar en TODA mención: 14 fases · 88 grupos · **333 micro-pasos · 576 h ≈ 96 jornadas** (jornada = 6 h). Las horas de cada fase deben cuadrar con (jornadas de la fase × 6) ±1.2 h.
 - Estado real: **en ejecución desde el grupo 0.1**; la Fase 0 avanza paso a paso sobre `feat/fase-0` y cada paso se valida antes de pasar al siguiente. No afirmar que una fase está "terminada" sin que todos sus pasos estén `validated`.
 - Recomendaciones accionables priorizadas en `GAIA_RECOMENDACIONES.md` (P0–P3); P0 = arrancar Fase 0 (Vite scaffold + health FastAPI + Redis PING + migration Alembic + contrato).
 - La barra verde del ROADMAP la pone quien valida, no el implementador: el checklist que la acompaña está en `docs/GAIA_DOD.md`.

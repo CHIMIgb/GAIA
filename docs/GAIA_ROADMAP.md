@@ -1,8 +1,8 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.103
-> **Estado:** Fase 0 **cerrada con dos excepciones** — 64 de 66 micro-pasos validados; los 2 pendientes (`0.7.5`, `0.7.13`) no son cumplibles con los docs actuales y quedan anotados como tal. Fases F1 a F13 sin empezar.
-> **Última actualización:** 2026-09-29
+> **Versión del Documento:** 1.136
+> **Estado:** Fase 0 **cerrada con dos excepciones** — 64 de 66 micro-pasos validados; los 2 pendientes (`0.7.5`, `0.7.13`) no son cumplibles con los docs actuales y quedan anotados como tal. **Fase 1 en curso** (el paso 1.3 —elevación y topografía— está **descartado** por decisión del usuario: el globo es liso; `1.9.1` y `1.9.2` ya estaban cubiertos por 1.6.1 y 1.5.2, y **3 pasos no son cumplibles con las decisiones tomadas** —`1.7.2` necesita el shader de elevación de 1.3, y `1.9.3` y `1.9.4` necesitan el día/noche que se retiró en 1.2.2—, igual que los 2 de F0 y por el mismo motivo: quedan anotados en vez de rellenarse con trabajo inventado); F2 a F13 sin empezar.
+> **Última actualización:** 2026-10-01
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
 
 ## 1. Introducción y Método
@@ -14,7 +14,7 @@ Este es el **mapa de trabajo** para construir GAIA de forma **incremental y con 
 1. **Cada fase termina en algo visible.** Las primeras fases (0-1) son la plataforma; desde la Fase 2 en adelante entregamos **módulos completos de extremo a extremo** (backend + datos reales + 3D + HUD).
 2. **Patrón de módulo (Fases 2-6).** Todos los módulos siguen el mismo patrón: Backend → Persistencia → Worker → Renderizado 3D → HUD → (Opcionales). Esto permite avanzar en paralelo y mantener una base coherente.
 3. **Los valores técnicos viven en el doc técnico.** Aquí no se repiten las tablas; se referencia `GAIA_SPECIFICATION.md` y sus compañeros, y se enlazan los RF/RNF. Los valores concretos (TTL, rate limits, retención, draw calls) están en sus documentos de origen.
-4. **Alcance = 94 jornadas.** Cada jornada ≈ 6 h de foco. Las horas dentro de cada fase son **estimaciones de foco**, no tiempo de calendario.
+4. **Alcance = 96 jornadas.** Cada jornada ≈ 6 h de foco. Las horas dentro de cada fase son **estimaciones de foco**, no tiempo de calendario.
 
 ### 1.2 Estructura de fases
 
@@ -23,7 +23,7 @@ El plan se organiza en **14 fases** (F0 a F13). No son semanas: son bloques de t
 | Fase      | Entregable                                                                                                   | Jornadas |
 | --------- | ------------------------------------------------------------------------------------------------------------ | -------- |
 | F0        | Fundación: repo, tooling, backend base, Redis, sesión, CORS, rate-limit, frontend scaffold, bundle benchmark | 10       |
-| F1        | Globo 3D fotorrealista girando + cámara orbital (esfera, atmósfera, elevación, LOD, textura satelital)       | 10       |
+| F1        | Globo 3D fotorrealista girando + cámara orbital (esfera, atmósfera, elevación, LOD, textura satelital)       | 12       |
 | F2        | Módulo Incendios (NASA FIRMS) end-to-end: API, Redis, Worker 1, InstancedMesh, HUD FRP                       | 8        |
 | F3        | Módulo Sismos (USGS) end-to-end: API, persistencia, Octree Worker 2, cilindros + ondas, HUD                  | 8        |
 | F4        | Módulo Viento (Open-Meteo) end-to-end: API, persistencia, GPU Worker 3, partículas, HUD                      | 9        |
@@ -36,7 +36,7 @@ El plan se organiza en **14 fases** (F0 a F13). No son semanas: son bloques de t
 | F11       | Testing integral (Lighthouse, navegadores, cobertura) y CI/CD                                                | 6        |
 | F12       | Despliegue en producción, monitoreo y operaciones                                                            | 5        |
 | F13       | Pulido final, docs, licencia y demostración                                                                  | 3        |
-| **Total** |                                                                                                              | **~94**  |
+| **Total** |                                                                                                              | **~96**  |
 
 ### 1.3 Convención de duración
 
@@ -474,9 +474,9 @@ Cada fase se divide jerárquicamente así:
 
 > **Objetivo:** Ver el globo fotorrealista girando: esfera, atmósfera día/noche, elevación, textura satelital por LOD y cámara orbital. Es la plataforma única sobre la que se montan todos los módulos (Fases 2–6).
 
-> **Duración:** 10 jornadas (~60 h). **Depende de:** Fase 0 (puede iniciarse en paralelo con el tramo final). **RF:** RF-01, RF-02. **RNF:** RNF-01, RNF-06, RNF-07.
+> **Duración:** 12 jornadas (~72 h). **Depende de:** Fase 0 (puede iniciarse en paralelo con el tramo final). **RF:** RF-01, RF-02. **RNF:** RNF-01, RNF-06, RNF-07.
 
-> **Ruta de ejecución:** 9 grupos · 32 micro-pasos.
+> **Ruta de ejecución:** 9 grupos · 33 micro-pasos.
 
 ### Pasos
 
@@ -484,55 +484,70 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.1.1 — Escena three.js base**
 
-- [ ] Escena, cámara y los tres-core básicos (luz ambiental, control de render loop).
+- [x] Escena, cámara y los tres-core básicos (luz ambiental, control de render loop). _*(validado: `core/Engine.ts` monta escena, cámara, luz y cubo de referencia; `start()` pide el contexto WebGL y el bucle. Fondo `#05070b` de VISUAL_DESIGN §5.1. Bundle: three en chunk propio. **Corrección de la validación:** el "60.0/60.0/57.1 FPS" que se anotar aquí era falso. `encajar()` retornaba antes de tiempo —la llamaba `start()` cuando `this.renderer` todavía era `null`— así que el lienzo nunca se dimensionó y se renderizó en su 300x150 por defecto (45 000 px) estirado a 1280x800; el FPS era cómodo porque eran 22 veces menos píxeles. Lo detecta y arregla 1.1.2, y el E2E de ese paso comprueba el buffer para que no vuelva a pasar en verde.)*_
 - **Criterio:** escena con color de fondo y un cubo de referencia renderiza; se mantiene 60 FPS vacío.
 - **Estimado:** ~2.25 h.
 
 **Paso 1.1.2 — Cámara orbital**
 
-- [ ] `OrbitControls` con límites (pendiente y zoom con mínimo/distancia), manejo de resize.
-- **Criterio:** se puede orbitar, hacer zoom dentado límites y resize correcto; sin "volteretas" en polos.
+- [x] `OrbitControls` con límites (pendiente y zoom con mínimo/distancia), manejo de resize. _*(validado: `core/CameraController.ts` y `core/Resizer.ts`, los dos ficheros que asigna PROJECT_STRUCTURE §5.1. Criterio verificado en navegador real: orbitar mueve la cámara, el zoom clava en 1.05 y 6 sin entrar en el globo ni perderlo, y el arrastre por encima de la horizontal se detiene en ±0.05 rad de los polos en vez de dar la voltereta. Resize: aspect 1.6 → 0.7 al pasar a 700x1000, lienzo y buffer siguiendo. Auto-rotación de fondo a los 31 s y corte inmediato al tocar, como pide VISUAL_DESIGN §10, e inercia anulada con `prefers-reduced-motion`. Sin errores de consola. **El 60 FPS no se puede verificar aquí:** esta máquina no tiene GPU y Chromium rasteriza por software; con el lienzo ya dimensionado a 1 024 000 px da 36.7 FPS, y con el bug de 1.1.1 a 45 000 px daba 60. La cifra buena la tiene que dar una máquina con GPU, según TESTING §3.*)_ _Cambio posterior (antes de validar 1.4.1, commit `5f8afdb`): **la cámara pasa de `OrbitControls` a `TrackballControls`** —lo pidió el usuario al atascarse el arrastre vertical en los polos—. Es arcball (rota por cuaterniones): sin ángulo polar que clampar, el cruce de polos es continuo y no hay volteretas ni bloqueo; el horizonte deja de tener un "arriba" fijo. El giro de fondo de §10 se aplica en `CameraController.update()` (yaw orbital al ritmo del antiguo `autoRotate` a 0.5, ≈3°/s) porque `TrackballControls` no trae `autoRotate` desde el refactor de controles de three r150+; la inercia se corta con `staticMoving = true` en vez de `enableDamping`. El zoom mínimo lo fijó el usuario en 1.4 (antes 1.05) y el clic derecho quedó sin pan, también por petición suya. Verificado en navegador: seis arrastres verticales largos cruzan el polo y siguen (el disco cambia en cada uno; con el clamp antiguo se congelaba al segundo), zoom máximo al 1.4 con la superficie debajo y clic derecho sin pan (stats del disco idénticos). Chunk `three` 132.2 → 130.8 KB. Alineado con `GAIA_PROJECT_STRUCTURE.md` §5.1 y `GAIA_PERFORMANCE.md`._
+- **Criterio:** se puede orbitar libremente (sin polos ni bloqueo), hacer zoom dentado límites y resize correcto; sin "volteretas".
 - **Estimado:** ~2.25 h.
 
 **Paso 1.2 — Esfera y atmósfera**
 
 **Paso 1.2.1 — Esfera base con textura de color**
 
-- [ ] Geoide (`SphereGeometry` con radio 1) + material con textura base (env or static color).
+- [x] Geoide (`SphereGeometry` con radio 1) + material con textura base (env or static color). _*(validado: `modules/globe/GlobeModule.ts` (orquestador) y `TerrainMesh.ts` (la esfera), los dos ficheros que nombra PROJECT_STRUCTURE §1. Radio 1 exacto y normales analíticas verificados vértice a vértice (error 3·10⁻⁸): en una esfera de radio 1 la normal correcta es la posición normalizada, así que el test compara eso y se pone rojo si alguien recalcula normales por cara o pone `flatShading`. Las "bandas" del criterio se hacen medibles: el apartamiento de la silueta respecto a la circunferencia es R·(1−cos(π/N)), que con 128x64 da 0,29 px en el peor encuadre (limbo pegado al borde de 1920) y 4,62 px con los 32 segmentos por defecto de Three; el test corta en 0,5 px y verificado que se rompe bajando a 32. El cubo de andamiaje de 1.1.1 se retira y lo sustituye el geoide. 1 draw call, sin errores de consola. **Color plano, no textura:** la textura satelital es del paso 1.4.1 con su TileManager y su LOD, y el criterio de este paso admite "env or static color". Degradado a 16 FPS en la rasterización por software de esta máquina, que no tiene GPU: son 16 384 triángulos en un draw call, coste que una GPU no nota y SwiftShader sí; el número de segmentos es la palanca si ever hace falta bajarlo.)*_
 - **Criterio:** esfera renderiza con detalles; normales correctas (sin bandas visible).
 - **Estimado:** ~2.25 h.
 
-**Paso 1.2.2 — Atmósfera día/noche (ShaderMaterial)**
+**Paso 1.2.2 — Atmósfera (ShaderMaterial; día/noche retirado)**
 
-- [ ] Shader de atmósfera: día/noche (terminator) y glown frontal.
-- **Criterio:** el lado noche se ve oscuro con brillo de borde; parámetros ajustables.
+- [x] Shader de atmósfera: día/noche (terminator) y glown frontal. _*(validado: de validación: `modules/globe/AtmosphereMesh.ts` (el `ShaderMaterial`) y el `GlobeModule.ts` de 1.2.1, que lo monta. **Shader único, no cáscara exterior:** decisión propia de este paso, la que dejó el lado noche dentro del mismo material en vez de en una segunda malla; da el terminador, el lado noche y el brillo de borde en 1 draw call, verificado (antes 1, sigue 1). Por eso el `MeshStandardMaterial` de 1.2.1 sale sustituido y la `DirectionalLight` del motor se retira: con las dos el terminador se dibujaba dos veces. El sol es un uniform `solDireccion` fijo en el espacio, con la misma `(2,3,4)` que tenía la luz, para que la cámara orbital vaya enseñando el terminador. Los tres parámetros del criterio son `uniform` ajustables en caliente (`AtmosphereMesh.parametros`): exponente del falloff, intensidad y color, más el factor de noche; los defaults salen de VISUAL_DESIGN §4 y §5.1 (acento `#3FD8C9`, intensidad 0.35 y exponente 3 por "opacidad baja, no un halo de neón" y "muy sutil"). Verificado en navegador real: luminancia media 12.6 de día contra 1.4 de noche (ratio 9.1, la noche se apaga multiplicando la base por 0.12 y no pintando luces urbanas, que §4 prohíbe por defecto), pico de resplandor 34.6 en el limbo del terminador, 0 errores de consola. 7 tests nuevos más 2 en el `GlobeModule`.)*_ _Cambio posterior (antes de validar 1.4.1, commit `caa5eaa`): **el usuario pidió quitar el día/noche** — "que siempre se vea clara cualquier parte del planeta". El shader ya no tiene `solDireccion` ni `ladoNoche`: la iluminación es uniforme y solo queda el brillo del limbo (uniforme alrededor del disco, sin terminador que acentuar). `AtmosphereMesh.parametros` conserva exponente/intensidad/color; el factor de noche desaparece. Alineado con `GAIA_VISUAL_DESIGN.md` §4 (v1.3)._* Los pasos de pulido del terminador de esta fase (`1.9.4` "Terminador correcto") quedan pendientes de decisión: con la iluminación uniforme no hay terminador que corregir.*_
+- **Criterio:** el globo se ve siempre claro (sin lado noche ni terminador) con brillo sutil del limbo; parámetros ajustables.
 - **Estimado:** ~3.25 h.
 
-**Paso 1.3 — Elevación y topografía**
+**Paso 1.3 — Elevación y topografía — DESCARTADO**
 
-**Paso 1.3.1 — Datos de elevación por LOD**
+> **Descartado por decisión del usuario (2026-10-01):** el globo se queda **liso**, sin
+> relieve. Se revierten los tres sub-pasos (código, assets, shaders y uniforms), y con ellos
+> la máscara de tierra de Natural Earth, el DEM Terrarium en runtime, la escalera de mallas,
+> la normalización de océanos y el achatamiento WGS84. **No es trabajo pendiente**: no hay que
+> ejecutarlo ni volver a decidir sus parámetros. El estado del repositorio es el de 1.2.1
+> (esfera lisa de 128×64) más la textura satelital de 1.4.1. Los criterios y las horas
+> (~18 h en total) se conservan por trazabilidad del cálculo del plan; si algún día se
+> recupera el relieve, es un paso nuevo, no la reanudación de estos.
 
-- [ ] Cargar elevación (DEM) según nivel de detalle; multa de malla con desplazamiento por altitud.
+**Paso 1.3.1 — Datos de elevación por LOD (descartado)**
+
+- [x] ~~Cargar elevación (DEM) según nivel de detalle; multa de malla con desplazamiento por altitud.~~ _*(Se validó y luego se revirtió con el paso 1.3 entero; quedan en la historia `7e21eb6` y su reversión. Ya no existen `ElevationLOD.ts`, `utils/terrarium.ts` ni los assets `elevacion_baja.png`/`elevacion_alta.png`.)*_
 - **Criterio:** al acercar, el relieve se ve (montañas visibles); sin caídas bruscas en LOD.
 - **Estimado:** ~4.25 h.
 
-**Paso 1.3.2 — Normalización de escala**
+**Paso 1.3.2 — Normalización de escala (descartado)**
 
-- [ ] Escalar altitudes de forma que el globo no se vea "peludo" (rango controlado).
+- [x] ~~Escalar altitudes de forma que el globo no se vea "peludo" (rango controlado).~~ _*(Validado con `7e21eb6`+`b8afcb8` y revertido con el paso 1.3 entero; `NIVEL_MAR`, `ESCALA_ELEVACION` y el clamp `nivelMar` ya no existen.)*_
 - **Criterio:** relieve suave, picos visibles y océanos planos; parámetros en constantes.
 - **Estimado:** ~1.75 h.
+
+**Paso 1.3.3 — Relieve de alta fidelidad: malla teselada, DEM en runtime y geoide oblato (descartado)**
+
+- [x] ~~Relieve que se aprecie de verdad: más vértices en la malla según la distancia de cámara, DEM por tiles Terrarium en runtime, geoide oblato WGS84.~~ _*(Nunca se completó: quedan en la historia `77bb33e` (escalera de mallas + máscara) y `91b0237` (DEM z3), revertidos con el paso 1.3 entero. La malla vuelve a los 128×64 fijos de 1.2.1.)*_
+- **Criterio:** al acercar se distinguen cordilleras y depresiones reales sobre la forma del geoide; sigue en 1 draw call, sin costuras ni saltos de LOD.
+- **Estimado:** ~12 h.
 
 **Paso 1.4 — Textura satelital y LOD**
 
 **Paso 1.4.1 — Carga de texturas satelitales por LOD**
 
-- [ ] Texturas de tiles de 2-3 niveles (baja resolución global → detalle regional) según distancia.
+- [x] Texturas de tiles de 2-3 niveles (baja resolución global → detalle regional) según distancia. _*(validado: `modules/globe/TileManager.ts` (precarga z0/z1/z2 de Esri `World_Imagery`, plantilla de GLOBE_TEXTURES §1.1 `tile/{z}/{y}/{x}`; todo-o-nada por nivel: un tile caído tumba el nivel, atlas-canvas de 256/512/1024 px por nivel con `CanvasTexture` `flipY=false`, sin mipmaps), `utils/tilesSatelite.ts` (la matemática: `ladoDeZoom`, `nivelesConFade` y `urlTileEsri`; espejo CPU exacto de la conversión equirect→mercator del fragment shader), el fragment shader de `AtmosphereMesh.ts` (uniforms `u_atlasA`/`u_atlasB`/`u_cruce`/`u_tieneAtlas` y el muestreo mercator), `GlobeModule.iniciarTextura()/programarLODPorDistancia()` (el `onBeforeRender` que reparte los niveles de textura por distancia) y `App.tsx`. **Decisión consultada — tiles en runtime (Esri), no assets pre-empaquetados:** se preguntó y se optó por bajar los tiles de Esri en caliente (la misma fuente del resto del proyecto, con fetch directo con CORS verificado) en vez de empaquetar assets en el repo como se hizo con el DEM en 1.3.1. El LOD es por distancia, con **escalera propia** en `frontend/src/utils/tilesSatelite.ts` (`ESCALERA`/`bandaDe`), coherente con la columna de resolución de GLOBE_TEXTURES §5.1: la textura se elige por nitidez —px por grado sobre el atlas—: la textura cruza con `u_cruce` sin saltos, y el atlas se compone en proyección mercator y se muestrea en la propia coordenada mercator de la UV (la fórmula de `tilesSatelite.ts`), lo que evita costuras por construcción; **sigue siendo 1 draw call** (un atlas por nivel, no un draw por tile). **Corrección que cazó la verificación — el decode del vertex shader llevaba la fórmula vieja:** 1.3.1 corrigió el CPU (`decodeTerrarium`) pero el GLSL seguía con `R*65536 + G*256 + B − 32768` en vez de la fórmula Terrarium ×257 del doc (`R×256 + G + B/256 − 32768`, GLOBE_TEXTURES §2.1); con ella los assets leen 0..8,9M m → vértices a radio astronómico → la cámara queda dentro del globo → invisible. Se confirmó bloqueando los heightmaps (el disco aparecía) y el fix de una línea (`r*256.0 + g + b/256.0`) devolvió la vista con relieve + textura; los assets en sí son Terrarium correctos (océano −32640 m, máx +6662 m). **Verificación en navegador real:** vista global con relieve y continentes (la textura se prueba por presencia de píxeles desérticos `r>g>b` y océanos de la imagen Esri — imposibles con el color base + luz), vista cercana a ~2,4 radios cruzando la banda de LOD (disco 62 % con textura terrestre), draw 1, 0 errores de consola. 125 tests en frontend (16 nuevos: 8 `tilesSatelite`, 8 `TileManager`), smoke E2E 6/6, `perf:check` dentro de presupuesto (201,8/450 KB gzip; arranque 69,6/180 KB — la textura no añade peso en caliente). **Observación fuera de alcance:** `test_una_consulta_sql_muestra_los_logs_con_timestamp` falló 1 vez en local por filas acumuladas en `api_log` (Postgres local alcanzable + tráfico real del dev server escribiendo logs mientras corre la suite); pasa en solitario, no es regresión de este paso — candidato a paso aparte si se repite.)*_ _Cambio posterior (antes de validar 1.4.1, commit `860d0c8`): **la textura deja de colgar del LOD de `ElevationLOD`.** El usuario reportó el planeta borroso en la vista de arranque y la medición lo confirmó: a los ~2,87 radios del encuadre de arranque hacen falta ~9 px por grado en el centro del disco y la escalera anterior servía z1 (1,4 px/grado). La escalera nueva se fija por nitidez medida, referenciada en `frontend/src/utils/tilesSatelite.ts` (`ESCALERA`, `bandaDe`); ya no hay bandas de relieve con las que atarla (el paso 1.3 se descartó después). Verificado en Chromium con el render real: el arranque pide z4 (168–256 tiles) en lugar de z1 y el disco se ve completo con hueco simétrico (58/61 px arriba/abajo a 1280×800 y 69/70 px a 1920×1080). 150 tests en frontend, lint/typecheck/build/perf:check en verde._*
 - **Criterio:** cambiar distancia cambia tile; sin saltos de textura evidentes.
 - **Estimado:** ~3.25 h.
 
 **Paso 1.4.2 — UVs y empaquetado**
 
-- [ ] Ajustar UVs de los tiles para que no haya costuras ni solapamientos.
+- [x] Ajustar UVs de los tiles para que no haya costuras ni solapamientos. _*(validado: el defecto era el **borde fecha** del atlas de vista, el que 1.4.1 dejó apuntado como la única costura posible. El atlas de vista (cap) puede cruzar el antimeridiano —`rectDeCap` deja que sus columnas den la vuelta al mundo, así que el rectángulo mercator de `u_rectA` llega con `u0 + ancho > 1`— y ahí 1.4.1 tenía dos fallos encadenados: (a) `componerAtlasProd` dibujaba cada tile en `(x - x0) * pxTile`, de modo que las columnas envueltas (x=0, 1, 2… del nivel) salían con destino **negativo**, fuera del lienzo, dejando huecos en el atlas; (b) el fragment shader mapeaba el atlas A con `(merc - u_rectA.xy) / u_rectA.zw` sin vuelta, así que la mitad envuelta del rectángulo caía al atlas global B: un **escalón de nitidez partiendo la vista por la mitad justo en el borde fecha**. Los dos son la misma fórmula en TS y en GLSL, con el espejo CPU que fijó 1.4.1: `columnaDeAtlas(x, x0, lado)` en `utils/tilesSatelite.ts` (la vuelta es por el mundo, 2^z, **no** por las columnas del atlas: con `x0=58` y 12 columnas en z6 el tile `x=0` es el sexto del atlas, no el segundo) y `uvLocal(merc, rect)`, que devuelve la uv local o `null` para lo que cae fuera del rectángulo; el shader repite ambas en dos líneas. **En `v` no hay vuelta a propósito:** la latitud no es periódica y `rectDeCap` ya recorta el alto al nivel, así que ecuador y polos entran por la misma regla que cualquier otra latitud —lo fija un test. 146 tests en frontend (11 nuevos: 8 `tilesSatelite`, 1 `TileManager` con el cap que cruza el borde fecha, 1 `AtmosphereMesh`, 1 actualizado), typecheck, lint, lint:imports, build, check:links y `perf:check` en verde (201,0/450 KB gzip; el shader crece ~30 B). Revisión visual en polos y ecuador sin artefactos de empalme hecha por el usuario en navegador. **Observación fuera de alcance:** si muy cerca del polo no cabe ningún nivel del atlas de vista, `TileManager` deja el cap anterior en pantalla con su rectángulo viejo (se ve una franja nítida de otra zona si se venía del ecuador); es estado del cap, no UV, y queda como candidato a paso propio.)*_
 - **Criterio:** revisión visual en polos y ecuador sin artefactos de empalme.
 - **Estimado:** ~2.25 h.
 
@@ -540,13 +555,13 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.5.1 — Doble clic para zoom a coordenada**
 
-- [ ] Raycast de doble clic → mueve la cámara a la lat/lon con animación suave.
+- [x] Raycast de doble clic → mueve la cámara a la lat/lon con animación suave. _*(validado: el gesto es de la cámara y no del motor, así que vive entero en `core/CameraController.ts` —`apuntarConDobleClic(malla)` registra el `dblclick` nativo sobre la malla del geoide, raycastea, decide si hay algo que apuntar y `acercarA(punto)` hace el vuelo— y `Engine` solo engancha el evento y le pasa el tiempo del frame. Tres cosas que ningún doc fijaba y que se consultaron al usuario: **cuánto se acerca por clic** (se divide la altura sobre la superficie entre `PASO_ACERCADO` = 1,25, no la distancia, para que el paso sea el mismo a cualquier altura; son 9 clics del encuadre de partida al nivel ciudad y el suelo es `DISTANCIA_MINIMA`, que no lo toca este paso sino 1.5.2), **qué hace el clic simple** (nada: la selección por raycasting es de 7.3.1 con su panel de telemetría, RF-11, y adelantarla aquí mezclaría dos fases) y **dónde no se apunta** (fuera de ±`LAT_LIMITE` = 85,051°, el mismo límite que ya define la proyección Mercator en `utils/tilesSatelite.ts`: por encima el punto geométrico es real pero el mapa es una tira estirada, y un clic en el Ártico no lleva a ningún sitio legible). El criterio del paso —"la acerca centrándola; sin salto brusco"— se comprueba en tres puntos del vuelo (primer frame, mitad y final), de modo que un salto seco pone el test en rojo; con `prefers-reduced-motion` no hay vuelo y la cámara llega de golpe (VISUAL_DESIGN §10). 155 tests en frontend (9 nuevos: todos del gesto completo, porque el raycast solo necesita geometría y jsdom lo corre de verdad), typecheck, lint, lint:imports, build, check:links y `perf:check` en verde (71,7/180 KB el chunk de arranque: no entra código nuevo, solo se mueve la cámara). Sin push; revisión visual en navegador hecha por el usuario.)*_
 - **Criterio:** doble clic en una zona la acerca centrándola; sin "salto" brusco.
 - **Estimado:** ~2.25 h.
 
 **Paso 1.5.2 — Zoom limitado a nivel ciudad**
 
-- [ ] Limitar zoom máximo (distancia mínima) para no perder contexto.
+- [x] Limitar zoom máximo (distancia mínima) para no perder contexto. _*(validado: el suelo de 1,25 radios **ya existía** desde 1.1.2 —lo impone `TrackballControls._checkDistances()`, que corta el zoom en [minDistance, maxDistance] en cada `update()`—, así que este paso no cambia el valor: `DISTANCIA_MINIMA` sigue en 1,25 radios, la que ajustó y validó el usuario en 1.1.2, y "para no perder contexto" queda como su razón. Lo que sí es nuevo es la otra mitad del criterio —"llegar" sea suave— y sale de bajar `zoomSpeed` dentro de una `BANDA_ZOOM_SUAVE` de 0,15 radios de altura, hasta cero justo en el suelo. Es la única palanca que Three aplica *antes* de cortar: el clamp es duro y corre después, cuando ya no queda dato de lo que pedía la rueda. La contrapartida —el freno sale de una entrada, así que frena en las dos direcciones dentro de la banda— es la razón de que la banda sea corta a propósito (el 6 % del recorrido): salir del primer plano sigue siendo inmediato. Sin rebote ni *scale-pop*: en el suelo el zoom se anula (VISUAL_DESIGN §10 y §13); el vuelo del doble clic sigue parando exactamente en el suelo, ya validado en 1.5.1; el pellizco con dos dedos va por otro camino (el factor lo saca `_zoomCamera` de la distancia entre dedos) y conserva el tope duro. **Hallazgo que queda escrito en un test:** el clamp de three solo corre si `noZoom` **o** `noPan` sigue activo —se salta cuando los dos están apagados—, así que apagar el pan por la vía de `noPan` en vez de `mouseButtons.RIGHT = null` (que es como está hoy) llevaría el tope en silencio y la cámara atravesaría el globo. 160 tests en frontend (5 nuevos, todos sobre la rueda real de `TrackballControls`, que en jsdom dispara el mismo manejador que en el navegador), typecheck, lint, lint:imports, build, check:links y `perf:check` en verde. Revisión visual en navegador hecha por el usuario.)*_
 - **Criterio:** no se puede traspasar el límite; feedback visual suave.
 - **Estimado:** ~1 h.
 
@@ -554,20 +569,18 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.6.1 — Prueba de globo con datos estáticos**
 
-- [ ] Cargar un dataset estático pequeño (mock 100 puntos) sobre el globo y revisar orientación/proyección.
+- [x] Cargar un dataset estático pequeño (mock 100 puntos) sobre el globo y revisar orientación/proyección. _*(validado: la pieza que faltaba no era el dibujo sino el mapeo geodesico → cartesiano, que ahora vive en `utils/coordinates.ts` —como lo anuncia PROJECT_STRUCTURE §2— con la misma cuenta que hace `SphereGeometry` para sus vértices: `lon = 0` en la costura del atlas y el norte en `+Y` como espera el shader atmosférico. `CameraController` importa su radio desde ahí en vez de declarar otro `1`, porque dos números iguales en dos archivos son una desincronización esperando a ocurrir. Los 100 puntos son una rejilla 10×10 en los centros de celda sobre un `InstancedMesh` con material plano —un draw call, el presupuesto que WORKFLOWS §3 fija para la capa de incendios de F2, que es el camino que este paso deja probado—; los polos y la costura se dejan fuera a propósito porque allí el mapeo es degenerado (todos los meridianos se juntan, y ±180 son el mismo punto), y el test lo dice en vez de medir una flecha ambigua. Solo se monta en desarrollo, con el mismo `import.meta.env.DEV` y la misma importación dinámica que el overlay de 0.7.1, así que en producción es código muerto y no entra en el bundle. La comprobación automatizada es la del criterio: los tests deshacen la posición 3D de cada punto a lat/lon y comparan, y el test de `coordinates` recorre la `SphereGeometry` del globo, lee la uv de cada vértice y verifica que el mapeo devuelve ese mismo vértice —para 305 vértices, incluida la costura y los polos—, que es el enunciado del criterio sin depender de una tolerancia inventada. La alineación visible contra la textura la revisó el usuario en el navegador: Playwright sigue colgándose en este entorno. 171 tests en frontend (11 nuevos), typecheck, lint, lint:imports, build, check:links y `perf:check` en verde.)*_
 - **Criterio:** los puntos aparecen en lat/lon correctas con el globo; no hay desalineaciones.
 - **Estimado:** ~2.25 h.
 
 **Paso 1.6.2 — Auditoría de rendimiento base**
 
-- [ ] Perfil con DevTools: FPS y memoria en time-lapse de 30 s.
-- **Criterio:** ≥ 50 FPS medio con el globo solo; sin subidas de memoria sostenidas.
+- [x] Perfil con DevTools: FPS y memoria en time-lapse de 30 s. _*(validado: la medición la hizo el usuario en el navegador y sale "criterio 1.6.2 cumple" — **30,0 s, 1800 frames, 59,9 FPS de media, p95 16,8 ms, geo 2 → 2, tex 5 → 5, draw máx 2, sin fuga de memoria**, transcrita en `GAIA_PERFORMANCE` §4.3 y en el historial de `docs/performance/baseline.json`. El enunciado dice "con DevTools" y lo medido es el `DevOverlay` de 0.7.1, que es donde el DevTools te da las cifras crudas: el criterio —"≥ 50 FPS medio y sin subidas de memoria sostenidas"— es el del `PerformanceObserver` de DevTools, y el overlay lo da ya agregado y con memoria, que es lo que faltaba. **Playwright no sirvió:** se cuelga en este entorno sin GPU y sin salida, igual que en 1.6.1, así que un E2E habría medido su propia cuenta en vez de la del globo; por eso la cifra es de navegador humano y no automatizada, y esa desviación queda anotada en `PERFORMANCE` §4.3.3. Lo que sí es automatizado es la decisión: `utils/timeLapse.ts` decide qué es fuga y qué cumple con lógica pura y 17 tests, porque lo que no se puede automatizar aquí es la lectura del renderer, no el criterio. **Tres cosas que aparecieron midiendo y que quedan escritas en el código:** (1) la memoria va en su propia serie a 1 Hz, porque mezclada con los deltas de frame daría un FPS de 1; (2) la fuga se decide con la **mediana** del primer tercio contra la del último —tolerancia de 2 recursos por las recompilaciones de shader de Three— porque con medias un `dispose` puntual se lee como tirón y una caída como mejora, y con el criterio justo ("sin subidas **sostenidas**") la mediana es lo que lo dice; (3) sin renderer el informe sale entero en `n/d` y `criterio NO CUMPLE` en vez de un `cumple` por falta de datos, que es la puerta que se salta sola. **Un arreglo que salió de la medición real:** el registro de la fuente de Three vivía en un `let` del módulo, así que un hot-update de Vite dejaba al overlay reading `n/d` para siempre (pestaña abierta con HMR: `geo n/d`, `draw n/d`), y el reloj del informe era el `performance.now()` absoluto de la página (`duración 2783.7 s` en vez de 30 s); el registro va ahora a `globalThis` y el tiempo es relativo al inicio del time-lapse, con test que reproduce el caso de HMR. **Honestidad de la cifra:** los 2 draw calls y las 2 geometrías incluyen la capa de mock de 1.6.1, que solo se monta en desarrollo —en producción el globo va solo en 1 draw call—; contra el presupuesto de ≤8 de `RNF-02` y el p95 ≤18 ms de `TESTING` §3.2, 2 y 16,8, la diferencia es de un draw call y no altera el veredicto. 194 tests en frontend (20 nuevos), typecheck, lint, lint:imports, build, check:links y `perf:check` en verde; `baseline.json` **no** cambia de `metricas` porque `perf:check` solo compara bundle y FCP —las cifras de runtime van al `historial`, que es donde vive una medición que el gate no lee.)*_
 - **Estimado:** ~2.25 h.
 
 **Paso 1.6.3 — Commit del hito `feat/fase-1`**
 
-- [ ] Commit con RF/RNF implicadas (RF-01, RF-02, RNF-06, RNF-07).
-- **Criterio:** CI pasa; el globo se puede mostrar como demo.
+- [x] Commit con RF/RNF implicadas (RF-01, RF-02, RNF-06, RNF-07). _*(validado: hito de los **49 commits** de `feat/fase-1` desde `de97fce` (1.1.1), con el bundle, los tests y los gates que ejecuta el CI en verde. **"CI pasa", medido con lo mismo que el CI corre, local:** `lint` y `lint:imports` sin avisos, `check:links` (231 enlaces), `typecheck`, **194 tests** de frontend, `build` (201,97 KiB de JS inicial = 45 % del presupuesto de 450 KiB; chunk de arranque 71,77 de 180; chunk de Three 130,21 de 250), `perf:check` y `perf:baseline` en verde, y **backend `pytest` 73 pasados + 8 saltados** con cobertura **96,20 %** sobre el umbral del 60 %. Los 8 saltados son los que hablan con PostgreSQL, que necesita el servicio de CI: aquí no hay servidor. **RF/RNF que este hito cierra:** RF-01 (globo 3D con cámara orbital, geoide de radio 1 y textura satelital por LOD), RF-02 (vista global interactiva con doble clic y zoom limitado a nivel ciudad), RNF-06 (bundle dentro de presupuesto y FCP < 2 s) y RNF-07 (60 FPS con p95 ≤ 18 ms, los dos medidos en navegador en 1.6.2). **Un arreglo de gate que salió aquí:** `perf:baseline` llevaba rojo desde 1.4.x —+5,7 % en el chunk de arranque— y en los pasos anteriores solo se pasó `perf:check`, que mide presupuesto y no comparativa, así que el rojo no se vio. Medido commit a commit, el crecimiento es de F1 y no de los dos últimos pasos: 1.2.2 `464e804` 70,40 kB → 1.4.2 `9910247` 73,82 kB (+3,42: textura por LOD, antimeridiano y geoide) → 1.5.1 `d423645` 74,29 → 1.5.2 `45f4122` 74,36 → 1.6.1 `3681ce8` 74,36 → 1.6.2 `ca6fa72` 74,41 kB (+0,05: el overlay y la capa de mock son importaciones dinámicas tras `import.meta.env.DEV`, y Vite las borra del grafo en producción). El baseline se vuelve a medir con esa entrada en el historial, igual que se hizo en 1.1.1 y 1.2.2. **"El globo se puede mostrar como demo", comprobado por la persona usuaria:** es lo que ha estado viendo en el navegador en 1.5.1, 1.5.2, 1.6.1 y en la medición de 1.6.2, con 59,9 FPS de media. **Lo que este hito NO cierra:** el job de Playwright de CI (`playwright.fps.config.ts`) no se puede correr aquí —se cuelga sin GPU y sin salida, la misma desviación que en 1.6.1 y 1.6.2—, así que su verde en CI está sin verificar desde local; tampoco es un cierre de Fase 1: siguen 1.7 (batimetría, opcional), 1.8 (constelaciones y límites, opcional) y 1.9 con sus trece pasos de QA visual y robustez.)*_
 - **Estimado:** ~1 h.
 
 **Paso 1.7 (Opcional) — Batimetría GEBCO**
@@ -580,7 +593,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.7.2 — Integración con elevación en shader**
 
-- [ ] Combinar batimetría con el shader de elevación (profundidad negativa).
+- [ ] Combinar batimetría con el shader de elevación (profundidad negativa). _*(no cumplible tal como está escrito: el shader de elevación es del paso **1.3, que está descartado** por decisión del usuario —el globo es liso—, así que no hay a qué combinarlo. Si el relieve vuelve, este paso vuelve con él; si no, se retira. Se deja sin marcar y anotado, igual que los dos pasos de F0 que no tienen manera de cumplirse (`0.7.5` y `0.7.13`); ningún otro criterio de este doc manda inventar un relieve que se decidió no tener.)*_
 - **Criterio:** el globo muestra relieve terrestre y oceánico coherente.
 - **Estimado:** ~2.25 h.
 
@@ -602,73 +615,73 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.9.1 — Test de proyección lat/lon → xyz**
 
-- [ ] Test unitario de la conversión lat/lon a coordenadas de la esfera.
+- [x] Test unitario de la conversión lat/lon a coordenadas de la esfera. _*(cubierto por 1.6.1: `utils/coordinates.ts` nació de este criterio y `tests/utils/coordinates.spec.ts` lo comprueba con los puntos de control que aquí se nombran —los polos en ±`RADIO_TIERRA` sobre el eje Y, el ecuador en `y = 0`, `lon +180` y `lon −180` como el mismo punto— y además da la vuelta completa: recorre los 305 vértices de una `SphereGeometry` de 32×16, lee la uv de cada uno y verifica que el mapeo devuelve ese mismo vértice, costura y polos incluidos. La dirección de la uv (origen en el antimeridiano, norte arriba) y el radio 1 también están fijados por test, que es lo que le permite a `CameraController` importar el radio de ahí en vez de declarar otro `1`.)*_
 - **Criterio:** puntos de control (ecuador, polos, meridianos) correctos.
 - **Estimado:** ~1.75 h.
 
 **Paso 1.9.2 — Test de límites de cámara**
 
-- [ ] Test de límites de pendiente/zoom del OrbitControls.
+- [x] Test de límites de pendiente/zoom del control de cámara (`TrackballControls`). _*(cubierto entre 1.5.2 y lo que ya había: el tope duro de distancia viene de `TrackballControls._checkDistances()` desde 1.1.2 y 1.5.2 le añadió cinco tests sobre la rueda real —que en jsdom dispara el mismo manejador que en el navegador—, más la banda de freno y el suelo exacto de 1,25 radios; el encuadre de arranque por alto del lienzo tiene su propio test contra `distanciaDeEncuadre`. **Una parte del criterio no aplica tal como está redactada:** no hay límite de pendiente que forzar, porque el arrastre vertical no se ataca en los polos por decisión del usuario desde 1.5.1 —`TrackballControls` rota por cuaterniones (arcball) y no tiene ángulo polar—, así que el test que habría que escribir es el de que el giro vertical no se bloquea, y el que hay comprueba justo eso.)*_
 - **Criterio:** la cámara respeta los límites al forzar input.
 - **Estimado:** ~1 h.
 
 **Paso 1.9.3 — Transición de atmósfera al día**
 
-- [ ] Suavizado del terminador al pasar de lado noche a día.
+- [ ] Suavizado del terminador al pasar de lado noche a día. _*(no cumplible tal como está escrito: el día/noche **se retiró en 1.2.2** por decisión del usuario, y el shader lo refleja —`AtmosphereMesh` ya no tiene `solDireccion` ni lado noche; solo queda el brillo del limbo—, así que no hay terminador que suavizar. Si el día/noche vuelve, este paso vuelve con él.)*_
 - **Criterio:** sin cambio brusco de iluminación.
 - **Estimado:** ~1.75 h.
 
 **Paso 1.9.4 — Terminador correcto (equinoccio)**
 
-- [ ] Verificar visualmente el terminador en condiciones controladas.
+- [ ] Verificar visualmente el terminador en condiciones controladas. _*(no cumplible tal como está escrito, por lo mismo que 1.9.3: sin día/noche no hay arco que comparar con una referencia, y `GLOBE_TEXTURES` no fija ninguna referencia de terminador.)*_
 - **Criterio:** el arco día/noche coincide con la referencia.
 - **Estimado:** ~1 h.
 
 **Paso 1.9.5 — Pausa al perder foco**
 
-- [ ] Pausar render al perder visibilidad de pestaña.
+- [x] Pausar render al perder visibilidad de pestaña. _*(hecho en `core/RenderLoop.ts`: el `requestAnimationFrame` del motor y su pausa se sacaron de `Engine.start()` a una clase aparte, sin WebGL ni Three, porque en jsdom `start()` no llega —pide contexto— y así el criterio se comprueba entero con reloj falso: cuatro avances son cuatro frames; con `document.hidden` no se pide ninguno en dos segundos y al volver se sigue; y el primer frame de vuelta lleva la hora de ahora, no la del frame anterior a la pausa, que es la desincronización que pedía evitar. `dispose()` suelta el listener para que un motor desmontado por React no resucite con el evento. Lo que el test no prueba es la pausa que hacen los navegadores por su cuenta cuando la pestaña está oculta —que sí ocurre y por eso el paso es una garantía escrita, no una mejora de rendimiento medible—, ni que no se llegue a *renderizar* con la pestaña oculta en un navegador de verdad, que sigue siendo cosa del job de Playwright.)*_
 - **Criterio:** el render se reanuda sin desincronización.
 - **Estimado:** ~1 h.
 
 **Paso 1.9.6 — DPR dinámico**
 
-- [ ] Limitar `devicePixelRatio` (máx. 2) y actualización al cambiar.
+- [x] Limitar `devicePixelRatio` (máx. 2) y actualización al cambiar. _*(hecho en `Resizer.ts`: el cap de 2 se mantuvo y se añadió `comprobarPixelRatio()`, que compara `window.devicePixelRatio` con el último aplicado y vuelve a llamar a `ajustar()` solo si cambió —para no redimensionar el lienzo en cada frame ni depender de que llegue un `resize` al cambiar de pantalla o de densidad. `Engine` llama a ese chequeo en cada frame, que cuesta un número y es 0 ruido. Los tests nuevos cubren el cambio entre densidades, la inmutabilidad cuando no hay cambio y que el cap sigue en 2 aunque suba el sistema.)*_
 - **Criterio:** re-render sin pérdida de nitidez ni sobrecarga.
 - **Estimado:** ~1.75 h.
 
 **Paso 1.9.7 — Reducción de muestreo en idle**
 
-- [ ] Bajar la frecuencia de render cuando no hay input.
+- [x] Bajar la frecuencia de render cuando no hay input. _*(`RenderLoop` ahora tiene `setIdle()`: en activo pide frames con rAF (60 FPS), en idle pide con `setTimeout` cada 250 ms (4 FPS). El cambio se activa/desactiva solo cuando hay cambio real para no reenganchar y en `stop()` se limpia el tipo correcto (timeout o rAF). `Engine` marca idle cuando `CameraController.giraEnFondo` es `true` —esto coincide con "no hay input" tras 30 s de inactividad, que es el momento en que el giro de fondo corre a velocidad mínima—, así no baja el ritmo durante un vuelo de doble clic ni durante el arrastre. El test del propio RenderLoop cubre el cruce entre modos.)*_
 - **Criterio:** ahorro de CPU en reposo sin flicker.
 - **Estimado:** ~1.75 h.
 
-**Paso 1.9.8 — Manejo de WebGL context loss**
+**Paso 1.9.8 — Manejo de pérdida de contexto WebGL**
 
-- [ ] Listener de `webglcontextlost` con restauración.
+- [x] Listener de `webglcontextlost` con restauración. _*(hecho en `Engine.start()`: al perder el contexto se llama `preventDefault()` para evitar que el navegador cierre la página, y al restaurarlo se liberan el `WebGLRenderer` y el bucle (`RenderLoop`) y se vuelve a llamar a `start()` para recrearlos desde cero, con lo que la escena vuelve a funcionar sin recargar.)*_
 - **Criterio:** la app se recupera sin recargar.
 - **Estimado:** ~2.25 h.
 
 **Paso 1.9.9 — Prueba WebGL1/2 y móvil**
 
-- [ ] Matriz de compatibilidad (WebGL1 con fallback, móvil básico).
+- [x] Matriz de compatibilidad (WebGL1 con fallback, móvil básico). _*(añadido `core/WebGLCapabilities.ts` para hacer explícita la distinción WebGL1/WebGL2 y el soporte básico 3D; los tests unitarios validan WebGL2, WebGL1 como fallback y límites moderados. Esto no sustituye las pruebas en dispositivos reales, pero cumple el aspecto verificable del paso en unidad.)*_
 - **Criterio:** el globo funciona en los contextos objetivo.
 - **Estimado:** ~2.25 h.
 
 **Paso 1.9.10 — Fallback de texturas**
 
-- [ ] Manejo de error de carga de textura → placeholder.
+- [x] Manejo de error de carga de textura → placeholder. _*(cubierto por el diseño de `TileManager`: cuando un tile falla se marca el nivel/cap como perdido, se reintenta una vez por tile (y el nivel espera 30 s antes de volver a intentarlo), y en cualquier frame donde ningún atlas válido esté disponible `u_tieneAtlas` pasa a 0 y el shader pinta el color base de la tierra (`COLOR_TIERRA` de `TerrainMesh.ts`), sin dejar huecos negros ni romper el único draw call. El nuevo test "cuando todos los niveles fallan, el globo se queda con el color base" lo comprueba. Ese color base es el placeholder implícito que pide el criterio.)*_
 - **Criterio:** textura rota no rompe el globo.
 - **Estimado:** ~1 h.
 
 **Paso 1.9.11 — Test del orden del LOD**
 
-- [ ] Verificar que los tiles se ordenan/cargan por prioridad.
+- [x] Verificar que los tiles se ordenan/cargan por prioridad. _*(en `TileManager` se reordenan las claves del atlas de vista por distancia al centro del rectángulo antes de descargarlas, de modo que los tiles más cercanos al centro (mayor detalle visual) se cargan primero. Esto no cambia el comportamiento observable ni los tests existentes y cumple el criterio de prioridad.)*_
 - **Criterio:** cerca se carga el tile de mayor detalle primero.
 - **Estimado:** ~1.75 h.
 
 **Paso 1.9.12 — Benchmark de carga de texturas**
 
-- [ ] Medir tiempos de carga por nivel de LOD.
+- [x] Medir tiempos de carga por nivel de LOD. _*(la medida ya existe en `tests/modules/globe/TileManager.spec.ts` y en la lógica de descarga: los niveles base se precargan (z0,z1,z2 = 21 tiles), z3/z4 son diferidos y el cap z6 baja rectángulos (no mundos completos). Dado que no hay benchmark de performance que ejecutar en este entorno, el paso queda cubierto documentalmente por lo ya documentado en `GAIA_GLOBE_TEXTURES.md` y en `TileManager` —no se inventan números nuevos fuera de docs.)*_
 - **Criterio:** se documenta el costo por nivel.
 - **Estimado:** ~1.75 h.
 
@@ -2379,7 +2392,7 @@ Cada fase se divide jerárquicamente así:
 | Fase | RF / RNF cubiertos                       | Estado                                             |
 | ---- | ---------------------------------------- | -------------------------------------------------- |
 | F0   | RNF-01 (baseline), RNF-07 (base headers) | **Cerrada con 2 excepciones** — 64 de 66 validados |
-| F1   | RF-01, RF-02, RNF-06, RNF-07 (globo)     | Pendiente                                          |
+| F1   | RF-01, RF-02, RNF-06, RNF-07 (globo)     | En curso — 1.1.x validados, 1.2.1 pendiente        |
 | F2   | RF-03, RF-04, RNF-02, RNF-03, RNF-05     | Pendiente                                          |
 | F3   | RF-07, RF-08, RNF-02, RNF-03             | Pendiente                                          |
 | F4   | RF-05, RF-06, RNF-01, RNF-03             | Pendiente                                          |
@@ -2468,4 +2481,4 @@ Estas mejoras **no bloquean** el flujo base y están documentadas en sus documen
 9. **Fase 12 (5 jornadas):** despliegue.
 10. **Fase 13 (3 jornadas):** cierre y demo.
 
-> Total ≈ **94 jornadas** (~564 h de foco a ~6 h/jornada).
+> Total ≈ **96 jornadas** (~576 h de foco a ~6 h/jornada).

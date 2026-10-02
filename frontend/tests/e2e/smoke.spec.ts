@@ -64,9 +64,10 @@ test("el overlay de dev muestra FPS y se oculta con la tecla d", async ({
   // Números en vivo: tras un refresco (250 ms) ya hay muestras de frame.
   await expect(overlay).toContainText("fps");
   await expect(overlay).toContainText("p95");
-  // Sin renderer todavía (la escena base es 1.1.1), así que `n/d` y no un 0 inventado.
-  await expect(overlay).toContainText("draw n/d");
-  await expect(overlay).not.toContainText("draw 0");
+  // Desde 1.1.1 hay renderer, así que los draw calls son los de verdad: el cubo de
+  // referencia es un draw call. Antes eran `n/d` porque el motor no existía todavía.
+  await expect(overlay).toContainText("draw 1");
+  await expect(overlay).not.toContainText("draw n/d");
 
   // El FPS es real: en un navegador con rAF activo sale de 0 y es plausible.
   const fps = await overlay.locator("xpath=.").innerText();
@@ -79,6 +80,35 @@ test("el overlay de dev muestra FPS y se oculta con la tecla d", async ({
 
   await page.keyboard.press("d");
   await expect(overlay).toBeVisible();
+});
+
+test("el lienzo se dimensiona al tamaño de la ventana", async ({ page }) => {
+  await page.goto("/");
+
+  const lienzo = page.locator("#lienzo");
+  const dpr = await page.evaluate(() => Math.min(window.devicePixelRatio, 2));
+  const buffer = await lienzo.evaluate((c: HTMLCanvasElement) => ({
+    ancho: c.width,
+    alto: c.height,
+    cssAncho: c.clientWidth,
+    cssAlto: c.clientHeight,
+  }));
+
+  // Sin esta comprobación, un `setSize()` que no llega a ejecutarse deja el lienzo en
+  // su 300x150 por defecto —45 000 píxeles en vez de un millón— y todo lo demás sigue
+  // pareciendo verde: el FPS sale holgado y el cubo se ve igual, solo que más pequeño.
+  // Pasó en 1.1.1 y dio un falso "60 FPS" en la validación de ese paso.
+  expect(buffer.cssAncho).toBeGreaterThan(300);
+  expect(buffer.cssAncho).toBe(buffer.ancho / dpr);
+
+  // Y al cambiar el tamaño de la ventana (Resizer, PROJECT_STRUCTURE §5.1).
+  await page.setViewportSize({ width: 700, height: 1000 });
+  await expect
+    .poll(() => lienzo.evaluate((c: HTMLCanvasElement) => c.clientWidth))
+    .toBe(700);
+  await expect
+    .poll(() => lienzo.evaluate((c: HTMLCanvasElement) => c.width))
+    .toBe(Math.round(700 * dpr));
 });
 
 test("el overlay detecta el frame largo al bloquear el main thread", async ({
