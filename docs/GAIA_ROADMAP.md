@@ -1,7 +1,7 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.125
-> **Estado:** Fase 0 **cerrada con dos excepciones** — 64 de 66 micro-pasos validados; los 2 pendientes (`0.7.5`, `0.7.13`) no son cumplibles con los docs actuales y quedan anotados como tal. **Fase 1 en curso** (el paso 1.3 —elevación y topografía— está **descartado** por decisión del usuario: el globo es liso); F2 a F13 sin empezar.
+> **Versión del Documento:** 1.126
+> **Estado:** Fase 0 **cerrada con dos excepciones** — 64 de 66 micro-pasos validados; los 2 pendientes (`0.7.5`, `0.7.13`) no son cumplibles con los docs actuales y quedan anotados como tal. **Fase 1 en curso** (el paso 1.3 —elevación y topografía— está **descartado** por decisión del usuario: el globo es liso; `1.9.1` y `1.9.2` ya estaban cubiertos por 1.6.1 y 1.5.2, y **3 pasos no son cumplibles con las decisiones tomadas** —`1.7.2` necesita el shader de elevación de 1.3, y `1.9.3` y `1.9.4` necesitan el día/noche que se retiró en 1.2.2—, igual que los 2 de F0 y por el mismo motivo: quedan anotados en vez de rellenarse con trabajo inventado); F2 a F13 sin empezar.
 > **Última actualización:** 2026-10-01
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
 
@@ -593,7 +593,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.7.2 — Integración con elevación en shader**
 
-- [ ] Combinar batimetría con el shader de elevación (profundidad negativa).
+- [ ] Combinar batimetría con el shader de elevación (profundidad negativa). _*(no cumplible tal como está escrito: el shader de elevación es del paso **1.3, que está descartado** por decisión del usuario —el globo es liso—, así que no hay a qué combinarlo. Si el relieve vuelve, este paso vuelve con él; si no, se retira. Se deja sin marcar y anotado, igual que los dos pasos de F0 que no tienen manera de cumplirse (`0.7.5` y `0.7.13`); ningún otro criterio de este doc manda inventar un relieve que se decidió no tener.)*_
 - **Criterio:** el globo muestra relieve terrestre y oceánico coherente.
 - **Estimado:** ~2.25 h.
 
@@ -615,25 +615,25 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.9.1 — Test de proyección lat/lon → xyz**
 
-- [ ] Test unitario de la conversión lat/lon a coordenadas de la esfera.
+- [x] Test unitario de la conversión lat/lon a coordenadas de la esfera. _*(cubierto por 1.6.1: `utils/coordinates.ts` nació de este criterio y `tests/utils/coordinates.spec.ts` lo comprueba con los puntos de control que aquí se nombran —los polos en ±`RADIO_TIERRA` sobre el eje Y, el ecuador en `y = 0`, `lon +180` y `lon −180` como el mismo punto— y además da la vuelta completa: recorre los 305 vértices de una `SphereGeometry` de 32×16, lee la uv de cada uno y verifica que el mapeo devuelve ese mismo vértice, costura y polos incluidos. La dirección de la uv (origen en el antimeridiano, norte arriba) y el radio 1 también están fijados por test, que es lo que le permite a `CameraController` importar el radio de ahí en vez de declarar otro `1`.)*_
 - **Criterio:** puntos de control (ecuador, polos, meridianos) correctos.
 - **Estimado:** ~1.75 h.
 
 **Paso 1.9.2 — Test de límites de cámara**
 
-- [ ] Test de límites de pendiente/zoom del control de cámara (`TrackballControls`).
+- [x] Test de límites de pendiente/zoom del control de cámara (`TrackballControls`). _*(cubierto entre 1.5.2 y lo que ya había: el tope duro de distancia viene de `TrackballControls._checkDistances()` desde 1.1.2 y 1.5.2 le añadió cinco tests sobre la rueda real —que en jsdom dispara el mismo manejador que en el navegador—, más la banda de freno y el suelo exacto de 1,25 radios; el encuadre de arranque por alto del lienzo tiene su propio test contra `distanciaDeEncuadre`. **Una parte del criterio no aplica tal como está redactada:** no hay límite de pendiente que forzar, porque el arrastre vertical no se ataca en los polos por decisión del usuario desde 1.5.1 —`TrackballControls` rota por cuaterniones (arcball) y no tiene ángulo polar—, así que el test que habría que escribir es el de que el giro vertical no se bloquea, y el que hay comprueba justo eso.)*_
 - **Criterio:** la cámara respeta los límites al forzar input.
 - **Estimado:** ~1 h.
 
 **Paso 1.9.3 — Transición de atmósfera al día**
 
-- [ ] Suavizado del terminador al pasar de lado noche a día.
+- [ ] Suavizado del terminador al pasar de lado noche a día. _*(no cumplible tal como está escrito: el día/noche **se retiró en 1.2.2** por decisión del usuario, y el shader lo refleja —`AtmosphereMesh` ya no tiene `solDireccion` ni lado noche; solo queda el brillo del limbo—, así que no hay terminador que suavizar. Si el día/noche vuelve, este paso vuelve con él.)*_
 - **Criterio:** sin cambio brusco de iluminación.
 - **Estimado:** ~1.75 h.
 
 **Paso 1.9.4 — Terminador correcto (equinoccio)**
 
-- [ ] Verificar visualmente el terminador en condiciones controladas.
+- [ ] Verificar visualmente el terminador en condiciones controladas. _*(no cumplible tal como está escrito, por lo mismo que 1.9.3: sin día/noche no hay arco que comparar con una referencia, y `GLOBE_TEXTURES` no fija ninguna referencia de terminador.)*_
 - **Criterio:** el arco día/noche coincide con la referencia.
 - **Estimado:** ~1 h.
 

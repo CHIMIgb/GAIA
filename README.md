@@ -41,8 +41,10 @@ globo 3D está montado y auditado —cámara orbital, geoide de radio 1, atmósf
 textura satelital por LOD, doble clic para acercar y zoom limitado a nivel ciudad— con
 su hito de verificación E2E cerrado en `1.6.3` y medido en navegador a **59,9 FPS de
 media y p95 16,8 ms en 30 s**. De la fase quedan `1.7` (batimetría GEBCO) y `1.8`
-(constelaciones y límites), ambos opcionales, y los trece pasos de `1.9` (QA visual y
-robustez del globo). F2 a F13 no han empezado: 234 micro-pasos.
+(constelaciones y límites), ambos opcionales, y el QA visual y robustez de `1.9`: tres de
+esos pasos no son cumplibles con lo decidido —el día/noche se retiró en 1.2.2 y el relieve
+en 1.3— y quedan anotados en el [Roadmap](docs/GAIA_ROADMAP.md) en vez de rellenados con
+trabajo inventado. F2 a F13 no han empezado: 234 micro-pasos.
 
 Lo validado hasta ahora demuestra el contrato universal `{ success, data, error }`, el
 rate-limit con token bucket, las sesiones anónimas sin PII, los headers de seguridad,
