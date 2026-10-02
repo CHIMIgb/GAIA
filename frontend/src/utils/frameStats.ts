@@ -59,11 +59,23 @@ export interface DrawCallsSource {
   };
 }
 
-let drawCallsSource: DrawCallsSource | null = null;
+/**
+ * Dónde vive el registro, y por qué no en este módulo.
+ *
+ * En dev, un hot-update de Vite puede darle a `frameStats` una instancia nueva mientras el
+ * motor —que ya estaba arrancado— sigue con la anterior: los dos registran la fuente en
+ * registros distintos y el overlay se queda en `n/d` para siempre. Medido en este repo tras
+ * dejar la pestaña abierta con HMR, y es justo la mitad del criterio de 1.6.2. Una clave en
+ * `globalThis` hace que las dos instancias lean y escriban el mismo sitio.
+ */
+const CLAVE = "__gaiaDrawCallsSource";
+const ambito = globalThis as typeof globalThis & {
+  [CLAVE]?: DrawCallsSource | null;
+};
 
 /** Lo llama el render de F1 al crearse. `null` deja el contador en `n/d`. */
 export function registerDrawCallsSource(source: DrawCallsSource | null): void {
-  drawCallsSource = source;
+  ambito[CLAVE] = source;
 }
 
 /**
@@ -112,7 +124,8 @@ export function summarizeLongTasks(durations: number[]): LongTaskStats {
 
 function readDrawCalls(): number | null {
   // `info.render.calls` se resetea en cada frame; null = todavía sin renderer.
-  return drawCallsSource ? drawCallsSource.info.render.calls : null;
+  const fuente = ambito[CLAVE];
+  return fuente ? fuente.info.render.calls : null;
 }
 
 /**
@@ -130,13 +143,14 @@ export interface MemoryStats {
 
 /** La fuente registrada, o `null` si no hay renderer. */
 export function readSource(): DrawCallsSource | null {
-  return drawCallsSource;
+  return ambito[CLAVE] ?? null;
 }
 
 export function readMemory(): MemoryStats {
-  if (!drawCallsSource) return { geometries: null, textures: null };
+  const fuente = ambito[CLAVE];
+  if (!fuente) return { geometries: null, textures: null };
   return {
-    geometries: drawCallsSource.info.memory.geometries,
-    textures: drawCallsSource.info.memory.textures,
+    geometries: fuente.info.memory.geometries,
+    textures: fuente.info.memory.textures,
   };
 }

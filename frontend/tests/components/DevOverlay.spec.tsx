@@ -77,6 +77,24 @@ describe("ventana de muestras", () => {
   });
 });
 
+describe("el registro sobrevive a HMR", () => {
+  afterEach(() => registerDrawCallsSource(null));
+
+  it("dos instancias del módulo leen la misma fuente", async () => {
+    registerDrawCallsSource({
+      info: { render: { calls: 3 }, memory: { geometries: 1, textures: 2 } },
+    });
+    // Es lo que hace un hot-update de Vite sobre `frameStats`: el overlay pasa a leer una
+    // instancia nueva mientras el motor sigue registrado en la anterior. Sin el registro en
+    // `globalThis`, el overlay se queda en `n/d` para siempre.
+    vi.resetModules();
+    const otra = await import("../../src/utils/frameStats");
+
+    expect(otra.readMemory()).toEqual({ geometries: 1, textures: 2 });
+    expect(otra.computeStats([16.67, 16.67]).drawCalls).toBe(3);
+  });
+});
+
 describe("frames largos y LoAF (0.7.7)", () => {
   it("cuenta los frames que pasan de 18 ms, y solo esos", () => {
     // 18 ms es el p95 de `TESTING` §3.2: 18 clavado todavía entra, 18.1 se pasa. Y 33
@@ -137,6 +155,39 @@ describe("overlay: memoria y time-lapse (1.6.2)", () => {
 
     expect(container.textContent).toContain("geo    4");
     expect(container.textContent).toContain("tex    6");
+  });
+
+  it("sin renderer avisa al empezar, para no esperar 30 s en balde", async () => {
+    const { container } = await montar(300);
+
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "t" }));
+    });
+
+    expect(container.textContent).toContain("sin renderer: saldrá n/d");
+  });
+
+  it("la duración es la del intervalo, no los minutos que lleve la página abierta", async () => {
+    registerDrawCallsSource({
+      info: { render: { calls: 4 }, memory: { geometries: 4, textures: 6 } },
+    });
+    // 30 s de vida previa: si el reloj del informe fuera el absoluto de la página, saldría
+    // "duración 60 s", que es justo lo que se midió con la pestaña abierta y HMR encima.
+    const { container } = await montar(30_000);
+
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "t" }));
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(31_000);
+    });
+
+    const informe =
+      container.querySelector('[data-testid="dev-overlay-informe"]')
+        ?.textContent ?? "";
+    const segundos = Number(informe.match(/duración ([\d.]+) s/)?.[1]);
+    expect(segundos).toBeGreaterThan(29);
+    expect(segundos).toBeLessThan(31);
   });
 
   it("con `t` mide 30 s y suelta el informe del criterio", async () => {

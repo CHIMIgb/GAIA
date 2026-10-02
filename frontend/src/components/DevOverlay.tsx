@@ -28,6 +28,7 @@ import {
   WINDOW_LONG_TASKS,
   computeStats,
   readMemory,
+  readSource,
   summarizeLongTasks,
   type FrameStats,
   type LongTaskStats,
@@ -82,6 +83,7 @@ export function DevOverlay(): React.JSX.Element | null {
   const [memoria, setMemoria] = useState(readMemory());
   const [grabando, setGrabando] = useState(false);
   const [informe, setInforme] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
   const samples = useRef<number[]>([]);
   const loafDurations = useRef<number[]>([]);
   // Series del time-lapse de 1.6.2: los deltas de frame se acumulan tal cual, y la memoria
@@ -89,6 +91,7 @@ export function DevOverlay(): React.JSX.Element | null {
   const tlDeltas = useRef<number[]>([]);
   const tlMuestras = useRef<MuestraMemoria[]>([]);
   const tlUltimaMuestra = useRef(0);
+  const tlInicio = useRef(0);
   const tlFin = useRef(0);
 
   useEffect(() => {
@@ -130,9 +133,12 @@ export function DevOverlay(): React.JSX.Element | null {
         tlDeltas.current.push(delta);
         if (now >= tlUltimaMuestra.current + CADA_MUESTRA_MS) {
           tlUltimaMuestra.current = now;
-          tlMuestras.current.push(leerMuestra(now));
+          tlMuestras.current.push(leerMuestra(now - tlInicio.current));
         }
         if (now >= tlFin.current) {
+          // Una muestra final, para que la duración sea la del intervalo y no la de la
+          // última muestreada (que siempre queda hasta 1 s antes).
+          tlMuestras.current.push(leerMuestra(now - tlInicio.current));
           setInforme(
             formatearTimeLapse(
               resumirTimeLapse(tlDeltas.current, tlMuestras.current),
@@ -177,6 +183,7 @@ export function DevOverlay(): React.JSX.Element | null {
         tlMuestras.current = [];
         tlUltimaMuestra.current = ahora;
         if (tlFin.current > 0) {
+          tlMuestras.current.push(leerMuestra(ahora - tlInicio.current));
           setInforme(
             formatearTimeLapse(
               resumirTimeLapse(tlDeltas.current, tlMuestras.current),
@@ -185,9 +192,13 @@ export function DevOverlay(): React.JSX.Element | null {
           tlFin.current = 0;
           setGrabando(false);
         } else {
+          tlInicio.current = ahora;
           tlFin.current = ahora + DURACION_TIMELAPSE_MS;
           setGrabando(true);
           setInforme(null);
+          // Sin renderer el informe sale entero en `n/d`: avisar al empezar evita esperar
+          // 30 s para descubrirlo al final.
+          setAviso(readSource() ? null : "sin renderer: saldrá n/d");
         }
       }
     };
@@ -211,7 +222,9 @@ export function DevOverlay(): React.JSX.Element | null {
     <div style={styles.overlay} data-testid="dev-overlay" aria-hidden="true">
       {`fps    ${stats.fps.toFixed(1)}\np95    ${stats.p95Ms.toFixed(1)} ms\ndraw   ${stats.drawCalls ?? "n/d"}\ngeo    ${geo}\ntex    ${tex}\nvent   ${stats.frames}\nlframe ${stats.longFrames}\nloaf   ${longTasks.tasks} peor ${peor}`}
       {grabando && (
-        <div data-testid="dev-overlay-timelapse">midiendo 30 s…</div>
+        <div data-testid="dev-overlay-timelapse">
+          {`midiendo 30 s${aviso ? ` — ${aviso}` : ""}`}
+        </div>
       )}
       {informe && (
         <div style={styles.informe} data-testid="dev-overlay-informe">
