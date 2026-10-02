@@ -1,13 +1,15 @@
 /**
  * Criterio ROADMAP 0.7.1: el overlay de dev mide FPS y p95 de frame de verdad, y las
  * draw calls aparecen cuando hay renderer (n/d mientras no, que es el estado de hoy:
- * la escena base es 1.1.1).
+ * la escena base es 1.1.1). Memoria y time-lapse llegan en 1.6.2.
  *
- * Aquí solo la matemática, que es lo que tiene lógica: el rAF y el repintado se
- * comprueban en el E2E (`tests/e2e/smoke.spec.ts`).
+ * Aquí la matemática y el unpintado; el rAF se Advance con relojes falsos porque 30 s de
+ * reloj real no son un test.
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { act, render } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { DevOverlay } from "../../src/components/DevOverlay";
 import {
   WINDOW_FRAMES,
   computeStats,
@@ -61,7 +63,9 @@ describe("computeStats", () => {
   it("muestra n/d mientras no hay renderer y las llamadas cuando lo hay", () => {
     expect(computeStats(aFrames(16, 2)).drawCalls).toBeNull();
 
-    registerDrawCallsSource({ info: { render: { calls: 8 } } });
+    registerDrawCallsSource({
+      info: { render: { calls: 8 }, memory: { geometries: 4, textures: 6 } },
+    });
     expect(computeStats(aFrames(16, 2)).drawCalls).toBe(8);
   });
 });
@@ -98,5 +102,63 @@ describe("frames largos y LoAF (0.7.7)", () => {
     // Igual que las draw calls: `0` parecería "se midió y valió 0 ms", que es
     // mentira, y además en Firefox/Safari es la API entera la que no existe.
     expect(summarizeLongTasks([])).toEqual({ tasks: 0, worstMs: null });
+  });
+});
+
+describe("overlay: memoria y time-lapse (1.6.2)", () => {
+  afterEach(() => {
+    registerDrawCallsSource(null);
+    vi.useRealTimers();
+  });
+
+  /** Monta el overlay y deja correr `ms` de rAF. */
+  const montar = async (ms: number): Promise<ReturnType<typeof render>> => {
+    vi.useFakeTimers();
+    const vista = render(<DevOverlay />);
+    await act(async () => {
+      vi.advanceTimersByTime(ms);
+    });
+    return vista;
+  };
+
+  it("enseña n/d de memoria mientras no hay renderer", async () => {
+    const { container } = await montar(300);
+
+    expect(container.textContent).toContain("geo    n/d");
+    expect(container.textContent).toContain("tex    n/d");
+  });
+
+  it("enseña la memoria cuando el motor registra su fuente", async () => {
+    registerDrawCallsSource({
+      info: { render: { calls: 8 }, memory: { geometries: 4, textures: 6 } },
+    });
+
+    const { container } = await montar(300);
+
+    expect(container.textContent).toContain("geo    4");
+    expect(container.textContent).toContain("tex    6");
+  });
+
+  it("con `t` mide 30 s y suelta el informe del criterio", async () => {
+    registerDrawCallsSource({
+      info: { render: { calls: 4 }, memory: { geometries: 4, textures: 6 } },
+    });
+    const { container } = await montar(300);
+
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "t" }));
+    });
+    expect(container.textContent).toContain("midiendo 30 s");
+
+    await act(async () => {
+      vi.advanceTimersByTime(31_000);
+    });
+
+    const informe = container.querySelector(
+      '[data-testid="dev-overlay-informe"]',
+    )?.textContent;
+    expect(informe).toContain("geo 4 → 4 (0)");
+    expect(informe).toContain("fuga de memoria no");
+    expect(informe).toContain("criterio 1.6.2 cumple");
   });
 });

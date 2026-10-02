@@ -53,7 +53,10 @@ export interface LongTaskStats {
  * forma con su `renderer` y se registra aquí al arrancar.
  */
 export interface DrawCallsSource {
-  info: { render: { calls: number } };
+  info: {
+    render: { calls: number };
+    memory: { geometries: number; textures: number };
+  };
 }
 
 let drawCallsSource: DrawCallsSource | null = null;
@@ -110,4 +113,30 @@ export function summarizeLongTasks(durations: number[]): LongTaskStats {
 function readDrawCalls(): number | null {
   // `info.render.calls` se resetea en cada frame; null = todavía sin renderer.
   return drawCallsSource ? drawCallsSource.info.render.calls : null;
+}
+
+/**
+ * Geometrías y texturas vivas en la GPU, o `null` si todavía no hay renderer.
+ *
+ * Es la mitad del criterio de 1.6.2 que los FPS no cubren: un `InstancedMesh` que se
+ * recrea por frame deja los FPS en 60 y la VRAM subiendo. `renderer.info.memory` lleva la
+ * cuenta de Three; lo que no hace es saber si lo que sube es memoria o el recolector, y
+ * eso lo decide `resumirTimeLapse`.
+ */
+export interface MemoryStats {
+  geometries: number | null;
+  textures: number | null;
+}
+
+/** La fuente registrada, o `null` si no hay renderer. */
+export function readSource(): DrawCallsSource | null {
+  return drawCallsSource;
+}
+
+export function readMemory(): MemoryStats {
+  if (!drawCallsSource) return { geometries: null, textures: null };
+  return {
+    geometries: drawCallsSource.info.memory.geometries,
+    textures: drawCallsSource.info.memory.textures,
+  };
 }
