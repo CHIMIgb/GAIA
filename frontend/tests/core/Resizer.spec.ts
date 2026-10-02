@@ -99,3 +99,59 @@ describe("Resizer — resize del lienzo (ROADMAP 1.1.2)", () => {
     expect(espia).toHaveBeenCalled();
   });
 });
+
+describe("Resizer — DPR dinámico (ROADMAP 1.9.6)", () => {
+  it("vuelve a aplicar el pixel ratio cuando cambia", () => {
+    vi.spyOn(window, "devicePixelRatio", "get").mockReturnValue(1);
+    const renderer = rendererFalso();
+    const resizer = new Resizer(
+      lienzo(800, 600),
+      new PerspectiveCamera(),
+      renderer,
+    );
+
+    // La ventana pasa de una pantalla sin HiDPI a otra que sí lo tiene. No hay `resize`
+    // que avisar —el tamaño en CSS no cambia— y sin esto el lienzo se queda con el
+    // buffer de la pantalla anterior y el globo sale borroso al agrandar.
+    vi.spyOn(window, "devicePixelRatio", "get").mockReturnValue(2);
+    resizer.comprobarPixelRatio();
+
+    expect(renderer.setPixelRatio).toHaveBeenLastCalledWith(2);
+  });
+
+  it("no toca nada si el ratio sigue igual", () => {
+    const renderer = rendererFalso();
+    const resizer = new Resizer(
+      lienzo(800, 600),
+      new PerspectiveCamera(),
+      renderer,
+    );
+
+    resizer.comprobarPixelRatio();
+    resizer.comprobarPixelRatio();
+
+    // Esta comprobación va en el bucle de render, o sea 60 veces por segundo: si
+    // redimensionara el lienzo en cada frame sin cambio real, se notaría en cualquier
+    // medida. Solo hay una llamada, la del ajuste inicial.
+    expect(renderer.setPixelRatio).toHaveBeenCalledTimes(1);
+    expect(renderer.setSize).toHaveBeenCalledTimes(1);
+  });
+
+  it("un ratio por encima del cap no sobrecarga", () => {
+    vi.spyOn(window, "devicePixelRatio", "get").mockReturnValue(2);
+    const renderer = rendererFalso();
+    const resizer = new Resizer(
+      lienzo(800, 600),
+      new PerspectiveCamera(),
+      renderer,
+    );
+
+    // El cap de 2 sigue en pie: subir el ratio del sistema no sube el del lienzo, que es
+    // la mitad del criterio ("ni sobrecarga") y lo que evita el coste de GPU del punto 2.
+    vi.spyOn(window, "devicePixelRatio", "get").mockReturnValue(3);
+    resizer.comprobarPixelRatio();
+
+    expect(renderer.setPixelRatio).toHaveBeenCalledTimes(1);
+    expect(renderer.setPixelRatio).toHaveBeenCalledWith(2);
+  });
+});

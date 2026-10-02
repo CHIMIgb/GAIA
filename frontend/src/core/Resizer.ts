@@ -22,6 +22,7 @@ export class Resizer {
   private readonly canvas: HTMLCanvasElement;
   private readonly camara: PerspectiveCamera;
   private readonly renderer: RendererAjustable;
+  private pixelRatioAplicado = 0;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -43,14 +44,32 @@ export class Resizer {
     const alto = this.canvas.clientHeight;
     // El pixel ratio antes que el tamaño: `setPixelRatio` recalcula el buffer por su
     // cuenta y el `setSize` de después manda sobre él.
-    this.renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio, PIXEL_RATIO_MAX),
+    this.pixelRatioAplicado = Math.min(
+      window.devicePixelRatio,
+      PIXEL_RATIO_MAX,
     );
+    this.renderer.setPixelRatio(this.pixelRatioAplicado);
     // `false`: el CSS de `index.css` ya pone el lienzo a pantalla completa y no hace
     // falta que Three reescriba el estilo del nodo.
     this.renderer.setSize(ancho, alto, false);
     this.camara.aspect = ancho / alto;
     this.camara.updateProjectionMatrix();
+  };
+
+  /**
+   * Vuelve a aplicar el pixel ratio si cambió desde el último ajuste (ROADMAP 1.9.6).
+   *
+   * El `resize` no basta: al mover la ventana a otra pantalla con distinta densidad —o al
+   * hacer zoom el navegador— el tamaño en píxeles CSS no cambia y puede no llegar ningún
+   * evento, con lo que el lienzo se queda con el buffer de la densidad anterior. Esto lo
+   * llama el bucle en cada frame, que ya está corriendo: comparar un número cuesta nada, y
+   * tras la pausa de 1.9.5 el primer frame de vuelta es justo cuando hace falta. Se
+   * descarta `matchMedia('(resolution: Xdppx)')` porque obliga a reenganchar el listener
+   * en cada cambio para nada.
+   */
+  readonly comprobarPixelRatio = (): void => {
+    const efectivo = Math.min(window.devicePixelRatio, PIXEL_RATIO_MAX);
+    if (efectivo !== this.pixelRatioAplicado) this.ajustar();
   };
 
   dispose(): void {

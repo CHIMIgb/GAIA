@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.127
+> **Versión del Documento:** 1.128
 > **Estado:** Fase 0 **cerrada con dos excepciones** — 64 de 66 micro-pasos validados; los 2 pendientes (`0.7.5`, `0.7.13`) no son cumplibles con los docs actuales y quedan anotados como tal. **Fase 1 en curso** (el paso 1.3 —elevación y topografía— está **descartado** por decisión del usuario: el globo es liso; `1.9.1` y `1.9.2` ya estaban cubiertos por 1.6.1 y 1.5.2, y **3 pasos no son cumplibles con las decisiones tomadas** —`1.7.2` necesita el shader de elevación de 1.3, y `1.9.3` y `1.9.4` necesitan el día/noche que se retiró en 1.2.2—, igual que los 2 de F0 y por el mismo motivo: quedan anotados en vez de rellenarse con trabajo inventado); F2 a F13 sin empezar.
 > **Última actualización:** 2026-10-01
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -645,7 +645,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.9.6 — DPR dinámico**
 
-- [ ] Limitar `devicePixelRatio` (máx. 2) y actualización al cambiar.
+- [x] Limitar `devicePixelRatio` (máx. 2) y actualización al cambiar. _*(hecho en `Resizer.ts`: el cap de 2 se mantuvo y se añadió `comprobarPixelRatio()`, que compara `window.devicePixelRatio` con el último aplicado y vuelve a llamar a `ajustar()` solo si cambió —para no redimensionar el lienzo en cada frame ni depender de que llegue un `resize` al cambiar de pantalla o de densidad. `Engine` llama a ese chequeo en cada frame, que cuesta un número y es 0 ruido. Los tests nuevos cubren el cambio entre densidades, la inmutabilidad cuando no hay cambio y que el cap sigue en 2 aunque suba el sistema.)*_
 - **Criterio:** re-render sin pérdida de nitidez ni sobrecarga.
 - **Estimado:** ~1.75 h.
 
