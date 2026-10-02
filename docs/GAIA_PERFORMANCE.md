@@ -1,6 +1,6 @@
 # GAIA — Performance
 
-> **Versión del Documento:** 2.9
+> **Versión del Documento:** 2.10
 > **Fecha:** 2026-10-01
 > **Propósito:** presupuestos, umbrales y baselines de rendimiento de GAIA. Referencia, no fuente: los valores canónicos viven en su doc de origen y aquí solo se citan.
 
@@ -83,15 +83,28 @@ mide)`, no como un 0 que parecería una mejora. Es la puerta que sí existe
 
 | Medida                   | Baseline   | Presupuesto                     | Margen                    |
 | ------------------------ | ---------- | ------------------------------- | ------------------------- |
-| JS inicial (gzip)        | 198.99 KiB | ≤ 450 KB (`DEPLOYMENT` §5.1)    | 251 KiB libre, 44 % usado |
-| Chunk de arranque (gzip) | 67.88 KiB  | ≤ 180 KB (`DEPLOYMENT` §5.1)    | 112 KiB libre, 38 % usado |
-| Chunk Three.js           | 131.39 KiB | ≤ 250 KB (`DEPLOYMENT` §5.1)    | 119 KiB libre, 53 % usado |
-| CSS (gzip)               | 0.35 KiB   | sin límite fijado en ningún doc | —                         |
+| JS inicial (gzip)        | 201.97 KiB | ≤ 450 KB (`DEPLOYMENT` §5.1)    | 248 KiB libre, 45 % usado |
+| Chunk de arranque (gzip) | 71.77 KiB  | ≤ 180 KB (`DEPLOYMENT` §5.1)    | 108 KiB libre, 40 % usado |
+| Chunk Three.js           | 130.21 KiB | ≤ 250 KB (`DEPLOYMENT` §5.1)    | 120 KiB libre, 52 % usado |
+| CSS (gzip)               | 0.37 KiB   | sin límite fijado en ningún doc | —                         |
 
-- **Medido el** 2026-09-29 con Node v22.19.0 y Vite 8.3.1:
-  `npm run build && npm run perf:check`. Las cifras actuales son las de 1.2.2 (la
-  atmósfera); las de 1.1.2 quedaban en `198.56` / `67.17` y están en el historial de
-  `docs/performance/baseline.json`.
+- **Medido el** 2026-10-01 con Node v22.19.0 y Vite 8.3.1:
+  `npm run build && npm run perf:check`, al cerrar el hito de F1 (1.6.3). Las cifras
+  anteriores están todas en el historial de `docs/performance/baseline.json`.
+- **El baseline se volvió a medir en 1.6.3 porque el gate estaba en rojo desde 1.4.x.**
+  `perf:baseline` compara contra la última medición y falla al 1 %; entre 1.2.2 y 1.6.2
+  el chunk de arranque pasó de 70,40 a 74,41 kB gzip (+5,7 %), y en los pasos
+  anteriores solo se pasó `perf:check` —que mide presupuesto, no comparativa—, así que
+  el rojo no llegó a verse. Medido commit a commit, el crecimiento es el que compraron
+  los pasos de F1 y no una regresión: +3,42 kB en 1.4.x (textura satelital por LOD,
+  antimeridiano y geoide), +0,47 en 1.5.1 (doble clic), +0,07 en 1.5.2 (banda de zoom
+  suave) y +0,05 en 1.6.2 —este último casi nulo porque el overlay y la capa de mock
+  son importaciones dinámicas tras `import.meta.env.DEV` y Vite las borra del grafo en
+  producción—. Con el presupuesto, todo esto sigue siendo el 45 % del bundle de
+  arranque. Queda sin corregir un detalle del baseline de 1.2.2: guarda 67,88 KiB y su
+  propio commit construye hoy ~69,5 KiB con el gzip del script, así que está ~2 % por
+  debajo de lo que se midstió entonces; no hay manera de reproducir aquella medición y
+  reponerlo habría hecho más rojo el gate sin explicar nada.
 - **El +1,1 % del arranque es el shader de 1.2.2, no una regresión.** Antes de aceptarlo
   se quitaron los comentarios que estaban **dentro** de los dos shaders: el minificador no
   toca el interior de un template literal, así que cada línea de comentario GLSL se

@@ -36,14 +36,18 @@
 
 ## Estado
 
-**F0 cerrada con 2 excepciones** (64 de 66 micro-pasos validados) y **F1 en curso**:
-`1.1.1`, `1.1.2` y `1.2.1` realizados, `1.2.1` pendiente de validación — quedan 29 de
-los 32 de la fase. F2 a F13 no han empezado: 234 micro-pasos.
+**F0 cerrada con 2 excepciones** (64 de 66 micro-pasos validados) y **F1 en curso**: el
+globo 3D está montado y auditado —cámara orbital, geoide de radio 1, atmósfera día/noche,
+textura satelital por LOD, doble clic para acercar y zoom limitado a nivel ciudad— con
+su hito de verificación E2E cerrado en `1.6.3` y medido en navegador a **59,9 FPS de
+media y p95 16,8 ms en 30 s**. De la fase quedan `1.7` (batimetría GEBCO) y `1.8`
+(constelaciones y límites), ambos opcionales, y los trece pasos de `1.9` (QA visual y
+robustez del globo). F2 a F13 no han empezado: 234 micro-pasos.
 
 Lo validado hasta ahora demuestra el contrato universal `{ success, data, error }`, el
 rate-limit con token bucket, las sesiones anónimas sin PII, los headers de seguridad,
 la cobertura por fase en CI, el baseline de rendimiento con gate de regresión y el flujo
-base E2E. En F1, el globo 3D con cámara orbital y el geoide de radio 1.
+base E2E.
 
 Los dos pasos de F0 sin manera de cumplirse hoy, y por qué:
 
@@ -65,22 +69,22 @@ hito verificable y su propio PR a `main`. Los nombres son los de los encabezados
 [Roadmap](docs/GAIA_ROADMAP.md), sin el sufijo repetido «— Corte Vertical Completo» de F2
 a F6; allí está el detalle de cada paso, su criterio de aceptación y su estimado.
 
-| Fase                                                                                                         | Nombre                                              | Micro-pasos | Estado                                       |
-| ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- | ----------: | -------------------------------------------- |
-| [F0](docs/GAIA_ROADMAP.md#2-fase-0--fundación-y-plataforma-compartida)                                       | Fundación y Plataforma Compartida                   |          66 | **Cerrada con 2 excepciones** — 64 validados |
-| [F1](docs/GAIA_ROADMAP.md#3-fase-1--motor-3d-y-globo-terráqueo)                                              | Motor 3D y Globo Terráqueo                          |          32 | En curso — 1.1.x validados, 1.2.1 pendiente  |
-| [F2](docs/GAIA_ROADMAP.md#4-fase-2--módulo-incendios-nasa-firms--corte-vertical-completo)                    | Módulo Incendios (NASA FIRMS)                       |          30 | Pendiente                                    |
-| [F3](docs/GAIA_ROADMAP.md#5-fase-3--módulo-sismos-usgs--corte-vertical-completo)                             | Módulo Sismos (USGS)                                |          27 | Pendiente                                    |
-| [F4](docs/GAIA_ROADMAP.md#6-fase-4--módulo-viento-open-meteo--gpu--corte-vertical-completo)                  | Módulo Viento (Open-Meteo + GPU)                    |          33 | Pendiente                                    |
-| [F5](docs/GAIA_ROADMAP.md#7-fase-5--módulo-inundación-nivel-del-mar--corte-vertical-completo)                | Módulo Inundación (Nivel del Mar)                   |          21 | Pendiente                                    |
-| [F6](docs/GAIA_ROADMAP.md#8-fase-6--módulo-radiación-safecast-eurdep-radnet-gmcmap--corte-vertical-completo) | Módulo Radiación (Safecast, EURDEP, RadNet, GMCMap) |          22 | Pendiente                                    |
-| [F7](docs/GAIA_ROADMAP.md#9-fase-7--hud-analítico-interacción-y-time-scrubber)                               | HUD Analítico, Interacción y Time-Scrubber          |          20 | Pendiente                                    |
-| [F8](docs/GAIA_ROADMAP.md#10-fase-8--resiliencia-end-to-end-y-modo-resguardo)                                | Resiliencia End-to-End y Modo Resguardo             |           9 | Pendiente                                    |
-| [F9](docs/GAIA_ROADMAP.md#11-fase-9--seguridad-y-privacidad-hardening)                                       | Seguridad y Privacidad (Hardening)                  |          20 | Pendiente                                    |
-| [F10](docs/GAIA_ROADMAP.md#12-fase-10--optimización-60-fps-y-memoria-gpu)                                    | Optimización 60 FPS y Memoria GPU                   |          15 | Pendiente                                    |
-| [F11](docs/GAIA_ROADMAP.md#13-fase-11--testing-integral-compatibilidad-y-cicd)                               | Testing Integral, Compatibilidad y CI/CD            |          14 | Pendiente                                    |
-| [F12](docs/GAIA_ROADMAP.md#14-fase-12--despliegue-monitoreo-y-operaciones)                                   | Despliegue, Monitoreo y Operaciones                 |          14 | Pendiente                                    |
-| [F13](docs/GAIA_ROADMAP.md#15-fase-13--pulido-final-docs-y-demostración)                                     | Pulido Final, Docs y Demostración                   |           9 | Pendiente                                    |
+| Fase                                                                                                         | Nombre                                              | Micro-pasos | Estado                                                |
+| ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- | ----------: | ----------------------------------------------------- |
+| [F0](docs/GAIA_ROADMAP.md#2-fase-0--fundación-y-plataforma-compartida)                                       | Fundación y Plataforma Compartida                   |          66 | **Cerrada con 2 excepciones** — 64 validados          |
+| [F1](docs/GAIA_ROADMAP.md#3-fase-1--motor-3d-y-globo-terráqueo)                                              | Motor 3D y Globo Terráqueo                          |          32 | En curso — globo y cámara validados, hito E2E cerrado |
+| [F2](docs/GAIA_ROADMAP.md#4-fase-2--módulo-incendios-nasa-firms--corte-vertical-completo)                    | Módulo Incendios (NASA FIRMS)                       |          30 | Pendiente                                             |
+| [F3](docs/GAIA_ROADMAP.md#5-fase-3--módulo-sismos-usgs--corte-vertical-completo)                             | Módulo Sismos (USGS)                                |          27 | Pendiente                                             |
+| [F4](docs/GAIA_ROADMAP.md#6-fase-4--módulo-viento-open-meteo--gpu--corte-vertical-completo)                  | Módulo Viento (Open-Meteo + GPU)                    |          33 | Pendiente                                             |
+| [F5](docs/GAIA_ROADMAP.md#7-fase-5--módulo-inundación-nivel-del-mar--corte-vertical-completo)                | Módulo Inundación (Nivel del Mar)                   |          21 | Pendiente                                             |
+| [F6](docs/GAIA_ROADMAP.md#8-fase-6--módulo-radiación-safecast-eurdep-radnet-gmcmap--corte-vertical-completo) | Módulo Radiación (Safecast, EURDEP, RadNet, GMCMap) |          22 | Pendiente                                             |
+| [F7](docs/GAIA_ROADMAP.md#9-fase-7--hud-analítico-interacción-y-time-scrubber)                               | HUD Analítico, Interacción y Time-Scrubber          |          20 | Pendiente                                             |
+| [F8](docs/GAIA_ROADMAP.md#10-fase-8--resiliencia-end-to-end-y-modo-resguardo)                                | Resiliencia End-to-End y Modo Resguardo             |           9 | Pendiente                                             |
+| [F9](docs/GAIA_ROADMAP.md#11-fase-9--seguridad-y-privacidad-hardening)                                       | Seguridad y Privacidad (Hardening)                  |          20 | Pendiente                                             |
+| [F10](docs/GAIA_ROADMAP.md#12-fase-10--optimización-60-fps-y-memoria-gpu)                                    | Optimización 60 FPS y Memoria GPU                   |          15 | Pendiente                                             |
+| [F11](docs/GAIA_ROADMAP.md#13-fase-11--testing-integral-compatibilidad-y-cicd)                               | Testing Integral, Compatibilidad y CI/CD            |          14 | Pendiente                                             |
+| [F12](docs/GAIA_ROADMAP.md#14-fase-12--despliegue-monitoreo-y-operaciones)                                   | Despliegue, Monitoreo y Operaciones                 |          14 | Pendiente                                             |
+| [F13](docs/GAIA_ROADMAP.md#15-fase-13--pulido-final-docs-y-demostración)                                     | Pulido Final, Docs y Demostración                   |           9 | Pendiente                                             |
 
 ---
 
@@ -225,23 +229,30 @@ columna dice de qué doc sale cada una.
 
 | Medida                   | Baseline   | Objetivo          | Fuente del baseline | Fuente del objetivo           |
 | ------------------------ | ---------- | ----------------- | ------------------- | ----------------------------- |
-| JS inicial (gzip)        | 198.99 KiB | ≤ 450 KB          | `PERFORMANCE` §4.1  | `TESTING` §3.4                |
-| Chunk de arranque (gzip) | 67.88 KiB  | ≤ 180 KB          | `PERFORMANCE` §4.1  | `TESTING` §3.4                |
-| Chunk de Three.js (gzip) | 131.39 KiB | sin límite fijado | `PERFORMANCE` §4.1  | —                             |
-| CSS (gzip)               | 0.35 KiB   | sin límite fijado | `PERFORMANCE` §4.1  | —                             |
+| JS inicial (gzip)        | 201.97 KiB | ≤ 450 KB          | `PERFORMANCE` §4.1  | `TESTING` §3.4                |
+| Chunk de arranque (gzip) | 71.77 KiB  | ≤ 180 KB          | `PERFORMANCE` §4.1  | `TESTING` §3.4                |
+| Chunk de Three.js (gzip) | 130.21 KiB | sin límite fijado | `PERFORMANCE` §4.1  | —                             |
+| CSS (gzip)               | 0.37 KiB   | sin límite fijado | `PERFORMANCE` §4.1  | —                             |
 | FCP (mediana de 3)       | 352 ms     | < 2 s             | `PERFORMANCE` §4.2  | `SPEC` RNF-06, `TESTING` §3.1 |
+| FPS medio (30 s)         | 59,9       | ≥ 50              | `PERFORMANCE` §4.3  | `ROADMAP` 1.6.2               |
+| p95 de frame             | 16,8 ms    | ≤ 18 ms           | `PERFORMANCE` §4.3  | `TESTING` §3.2                |
+| Draw calls (máximo)      | 2          | ≤ 8               | `PERFORMANCE` §4.3  | `SPEC` RNF-02                 |
 
 - **Cómo se reproducen:** `npm run perf:check` para el bundle, `npm run fcp` para el
-  FCP. El bundle se comprueba en cada CI; el FCP se mide cuando se toca lo que le
-  afecta.
+  FCP, y la tecla `t` del overlay de desarrollo para los 30 s de FPS y memoria. El
+  bundle se comprueba en cada CI; el FCP se mide cuando se toca lo que le afecta; los
+  FPS se miden en un navegador con GPU, no en headless.
 - **Baseline no es presupuesto.** El presupuesto dice si se pasa; el baseline dice
   si se ha empeorado. Cuando se mida otra vez se anota la diferencia contra esta
   cifra, no contra el objetivo.
-- **FPS y p95 sin baseline todavía.** **Draw calls ya los hay: 1**, la atmósfera de 1.2.2
-  entra como shader de la misma malla y no suma ninguno. FPS y p95 no se pueden medir
-  aquí: esta máquina no tiene GPU y Chromium rasteriza por software. Sus objetivos ya
-  están fijados en `PERFORMANCE` §2 y la cifra buena la tiene que dar una máquina con GPU
-  (`TESTING` §3).
+- **FPS, p95 y memoria ya tienen baseline** (filas de arriba), medido en un navegador
+  con GPU por el método de `PERFORMANCE` §4.3; no salen de `npm run fps` porque en
+  headless no hay GPU y el número no significaría nada. Los 2 draw calls incluyen la
+  capa de mock de 100 puntos, que solo se monta en desarrollo: en producción el globo va
+  solo en 1, porque la atmósfera de 1.2.2 entra como shader de la misma malla.
+- **Cómo se mide sin Chromium headless:** `npm run dev`, dejar el globo quieto y pulsar
+  `t`; a los 30 s el overlay suelta un informe de ocho líneas con el veredicto del
+  criterio de 1.6.2. `d` lo oculta.
 
 ## Fuentes de Datos
 

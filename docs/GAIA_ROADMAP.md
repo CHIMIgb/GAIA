@@ -1,6 +1,6 @@
 # GAIA Roadmap de Desarrollo — Plan de Trabajo
 
-> **Versión del Documento:** 1.124
+> **Versión del Documento:** 1.125
 > **Estado:** Fase 0 **cerrada con dos excepciones** — 64 de 66 micro-pasos validados; los 2 pendientes (`0.7.5`, `0.7.13`) no son cumplibles con los docs actuales y quedan anotados como tal. **Fase 1 en curso** (el paso 1.3 —elevación y topografía— está **descartado** por decisión del usuario: el globo es liso); F2 a F13 sin empezar.
 > **Última actualización:** 2026-10-01
 > **Autor:** Documento de planificación para el desarrollo de GAIA, un portfolio fullstack.
@@ -580,8 +580,7 @@ Cada fase se divide jerárquicamente así:
 
 **Paso 1.6.3 — Commit del hito `feat/fase-1`**
 
-- [ ] Commit con RF/RNF implicadas (RF-01, RF-02, RNF-06, RNF-07).
-- **Criterio:** CI pasa; el globo se puede mostrar como demo.
+- [x] Commit con RF/RNF implicadas (RF-01, RF-02, RNF-06, RNF-07). _*(validado: hito de los **49 commits** de `feat/fase-1` desde `de97fce` (1.1.1), con el bundle, los tests y los gates que ejecuta el CI en verde. **"CI pasa", medido con lo mismo que el CI corre, local:** `lint` y `lint:imports` sin avisos, `check:links` (231 enlaces), `typecheck`, **194 tests** de frontend, `build` (201,97 KiB de JS inicial = 45 % del presupuesto de 450 KiB; chunk de arranque 71,77 de 180; chunk de Three 130,21 de 250), `perf:check` y `perf:baseline` en verde, y **backend `pytest` 73 pasados + 8 saltados** con cobertura **96,20 %** sobre el umbral del 60 %. Los 8 saltados son los que hablan con PostgreSQL, que necesita el servicio de CI: aquí no hay servidor. **RF/RNF que este hito cierra:** RF-01 (globo 3D con cámara orbital, geoide de radio 1 y textura satelital por LOD), RF-02 (vista global interactiva con doble clic y zoom limitado a nivel ciudad), RNF-06 (bundle dentro de presupuesto y FCP < 2 s) y RNF-07 (60 FPS con p95 ≤ 18 ms, los dos medidos en navegador en 1.6.2). **Un arreglo de gate que salió aquí:** `perf:baseline` llevaba rojo desde 1.4.x —+5,7 % en el chunk de arranque— y en los pasos anteriores solo se pasó `perf:check`, que mide presupuesto y no comparativa, así que el rojo no se vio. Medido commit a commit, el crecimiento es de F1 y no de los dos últimos pasos: 1.2.2 `464e804` 70,40 kB → 1.4.2 `9910247` 73,82 kB (+3,42: textura por LOD, antimeridiano y geoide) → 1.5.1 `d423645` 74,29 → 1.5.2 `45f4122` 74,36 → 1.6.1 `3681ce8` 74,36 → 1.6.2 `ca6fa72` 74,41 kB (+0,05: el overlay y la capa de mock son importaciones dinámicas tras `import.meta.env.DEV`, y Vite las borra del grafo en producción). El baseline se vuelve a medir con esa entrada en el historial, igual que se hizo en 1.1.1 y 1.2.2. **"El globo se puede mostrar como demo", comprobado por la persona usuaria:** es lo que ha estado viendo en el navegador en 1.5.1, 1.5.2, 1.6.1 y en la medición de 1.6.2, con 59,9 FPS de media. **Lo que este hito NO cierra:** el job de Playwright de CI (`playwright.fps.config.ts`) no se puede correr aquí —se cuelga sin GPU y sin salida, la misma desviación que en 1.6.1 y 1.6.2—, así que su verde en CI está sin verificar desde local; tampoco es un cierre de Fase 1: siguen 1.7 (batimetría, opcional), 1.8 (constelaciones y límites, opcional) y 1.9 con sus trece pasos de QA visual y robustez.)*_
 - **Estimado:** ~1 h.
 
 **Paso 1.7 (Opcional) — Batimetría GEBCO**
